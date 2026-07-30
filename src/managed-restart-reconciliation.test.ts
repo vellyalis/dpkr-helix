@@ -123,7 +123,7 @@ try {
   assert.deepEqual(afterReconciliation.project, {
     id: project.id,
     slug: "restart-proof",
-    root: projectRoot,
+    root: project.root,
     permission_preset: "design",
     default_mode: "checkout",
     pinned: 1,
