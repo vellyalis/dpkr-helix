@@ -1,0 +1,4 @@
+# Local signed-in Edge acceptance helpers. These may contain machine-specific
+# paths or copied browser-session state and are never distribution artifacts.
+configure-codex-playwright-edge.cmd
+configure-codex-playwright-edge.ps1

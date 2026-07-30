@@ -1,0 +1,4 @@
+interface:
+  display_name: "Onboard dpkr helix"
+  short_description: "Set up dpkr helix securely on Windows"
+  default_prompt: "Use $onboard-dpkr-helix to set up this clone on another Windows PC and connect it securely to ChatGPT."

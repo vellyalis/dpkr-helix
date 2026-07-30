@@ -1,0 +1,9 @@
+node_modules/
+dist/
+releases/
+.env
+*.log
+.tmp/
+cloudflare/
+.agents/state/
+*.bundle
