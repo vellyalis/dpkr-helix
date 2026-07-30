@@ -21,6 +21,8 @@ import { SqliteProjectStore } from "./project-store.js";
 
 const root = await mkdtemp(join(tmpdir(), "devspace-project-mcp-test-"));
 const execFileAsync = promisify(execFile);
+let store: SqliteProjectStore | undefined;
+let workspaceStore: SqliteWorkspaceStore | undefined;
 
 try {
   const allowedRoot = join(root, "allowed");
@@ -39,7 +41,7 @@ try {
   await git(secondRoot, ["-c", "commit.gpgsign=false", "commit", "--allow-empty", "-m", "Initial commit"]);
 
   let ids = 0;
-  const store = new SqliteProjectStore(stateDir);
+  store = new SqliteProjectStore(stateDir);
   const registry = new ProjectRegistry(store, [allowedRoot], {
     createId: () => `prj_mcp_${++ids}`,
     now: () => "2026-07-28T00:00:00.000Z",
@@ -117,7 +119,7 @@ try {
     DEVSPACE_OAUTH_OWNER_TOKEN: "test-owner-token-that-is-long-enough",
     PORT: "1",
   });
-  const workspaceStore = new SqliteWorkspaceStore(stateDir);
+  workspaceStore = new SqliteWorkspaceStore(stateDir);
   const workspaces = new WorkspaceRegistry(config, workspaceStore, registry);
   const defaultMode = registry.resolveSelector(second.slug).defaultMode;
   assert.equal(defaultMode, "worktree");
@@ -139,10 +141,9 @@ try {
     }),
     /Opened project Shared Name \(second-project\)/,
   );
-
-  workspaceStore.close();
-  store.close();
 } finally {
+  workspaceStore?.close();
+  store?.close();
   await rm(root, { recursive: true, force: true });
 }
 

@@ -38,7 +38,7 @@ export async function createManagedWorktree(input: {
   baseRef?: string;
   config: ServerConfig;
 }): Promise<ManagedWorktree> {
-  const sourcePath = assertAllowedPath(input.sourcePath, input.config.allowedRoots);
+  const sourcePath = await assertPathAllowed(input.sourcePath, input.config.allowedRoots);
 
   try {
     const sourceStats = await stat(sourcePath);
@@ -93,7 +93,7 @@ export async function createManagedWorktree(input: {
 async function resolveGitRoot(path: string, allowedRoots: string[]): Promise<string> {
   try {
     const output = await git(["rev-parse", "--show-toplevel"], path);
-    return await assertGitRootAllowed(output.trim(), allowedRoots);
+    return await assertPathAllowed(output.trim(), allowedRoots);
   } catch (error) {
     if (isGitUnavailable(error)) {
       throw new GitWorktreeError(
@@ -109,22 +109,24 @@ async function resolveGitRoot(path: string, allowedRoots: string[]): Promise<str
   }
 }
 
-async function assertGitRootAllowed(gitRoot: string, allowedRoots: string[]): Promise<string> {
+async function assertPathAllowed(path: string, allowedRoots: string[]): Promise<string> {
   try {
-    return assertAllowedPath(gitRoot, allowedRoots);
-  } catch {
-    const canonicalGitRoot = await realpath(gitRoot);
+    return assertAllowedPath(path, allowedRoots);
+  } catch (error) {
+    const canonicalPath = await realpath(path).catch(() => {
+      throw error;
+    });
     for (const allowedRoot of allowedRoots) {
       const canonicalAllowedRoot = await realpath(allowedRoot).catch(() => undefined);
-      if (!canonicalAllowedRoot || !isPathInsideRoot(canonicalGitRoot, canonicalAllowedRoot)) {
+      if (!canonicalAllowedRoot || !isPathInsideRoot(canonicalPath, canonicalAllowedRoot)) {
         continue;
       }
 
-      const logicalGitRoot = resolve(allowedRoot, relative(canonicalAllowedRoot, canonicalGitRoot));
-      return assertAllowedPath(logicalGitRoot, allowedRoots);
+      const logicalPath = resolve(allowedRoot, relative(canonicalAllowedRoot, canonicalPath));
+      return assertAllowedPath(logicalPath, allowedRoots);
     }
 
-    return assertAllowedPath(canonicalGitRoot, allowedRoots);
+    return assertAllowedPath(canonicalPath, allowedRoots);
   }
 }
 
