@@ -1,10 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdir, realpath, rm, stat } from "node:fs/promises";
-import { basename, join, relative, resolve } from "node:path";
+import { mkdir, rm, stat } from "node:fs/promises";
+import { basename, join } from "node:path";
 import type { ServerConfig } from "./config.js";
-import { assertAllowedPath, isPathInsideRoot } from "./roots.js";
+import { assertAllowedPath, assertCanonicalAllowedPath } from "./roots.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -38,7 +38,7 @@ export async function createManagedWorktree(input: {
   baseRef?: string;
   config: ServerConfig;
 }): Promise<ManagedWorktree> {
-  const sourcePath = await assertPathAllowed(input.sourcePath, input.config.allowedRoots);
+  const sourcePath = await assertCanonicalAllowedPath(input.sourcePath, input.config.allowedRoots);
 
   try {
     const sourceStats = await stat(sourcePath);
@@ -93,7 +93,7 @@ export async function createManagedWorktree(input: {
 async function resolveGitRoot(path: string, allowedRoots: string[]): Promise<string> {
   try {
     const output = await git(["rev-parse", "--show-toplevel"], path);
-    return await assertPathAllowed(output.trim(), allowedRoots);
+    return await assertCanonicalAllowedPath(output.trim(), allowedRoots);
   } catch (error) {
     if (isGitUnavailable(error)) {
       throw new GitWorktreeError(
@@ -106,27 +106,6 @@ async function resolveGitRoot(path: string, allowedRoots: string[]): Promise<str
       "GIT_REPOSITORY_NOT_FOUND",
       `Cannot open workspace in worktree mode because this path is not inside a Git repository: ${path}. Use mode=\"checkout\" to work directly in this directory, or initialize Git and create an initial commit first.`,
     );
-  }
-}
-
-async function assertPathAllowed(path: string, allowedRoots: string[]): Promise<string> {
-  try {
-    return assertAllowedPath(path, allowedRoots);
-  } catch (error) {
-    const canonicalPath = await realpath(path).catch(() => {
-      throw error;
-    });
-    for (const allowedRoot of allowedRoots) {
-      const canonicalAllowedRoot = await realpath(allowedRoot).catch(() => undefined);
-      if (!canonicalAllowedRoot || !isPathInsideRoot(canonicalPath, canonicalAllowedRoot)) {
-        continue;
-      }
-
-      const logicalPath = resolve(allowedRoot, relative(canonicalAllowedRoot, canonicalPath));
-      return assertAllowedPath(logicalPath, allowedRoots);
-    }
-
-    return assertAllowedPath(canonicalPath, allowedRoots);
   }
 }
 

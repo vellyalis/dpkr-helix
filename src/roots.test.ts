@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
-import { homedir } from "node:os";
+import { mkdir, mkdtemp, realpath, rm, symlink } from "node:fs/promises";
+import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { assertAllowedPath, expandHomePath, resolveAllowedPath } from "./roots.js";
+import {
+  AccessDeniedError,
+  assertAllowedPath,
+  assertCanonicalAllowedPath,
+  expandHomePath,
+  resolveAllowedPath,
+} from "./roots.js";
 
 const home = homedir();
 
@@ -30,4 +37,42 @@ if (process.platform === "win32") {
     () => assertAllowedPath("C:\\Users\\Administrator", ["G:\\Projects\\Dev\\Github\\devspace"]),
     /Path is outside allowed roots/,
   );
+}
+
+const physicalRoot = await mkdtemp(join(tmpdir(), "devspace-roots-test-"));
+const outsideRoot = await mkdtemp(join(tmpdir(), "devspace-roots-outside-test-"));
+const aliasRoot = `${physicalRoot}-alias`;
+const nestedRoot = join(physicalRoot, "nested");
+const escapeRoot = join(physicalRoot, "escape");
+await mkdir(nestedRoot);
+await symlink(physicalRoot, aliasRoot, process.platform === "win32" ? "junction" : "dir");
+await symlink(outsideRoot, escapeRoot, process.platform === "win32" ? "junction" : "dir");
+try {
+  assert.equal(
+    await assertCanonicalAllowedPath(await realpath(nestedRoot), [aliasRoot]),
+    join(aliasRoot, "nested"),
+  );
+  assert.equal(
+    await assertCanonicalAllowedPath(
+      join(await realpath(physicalRoot), "missing"),
+      [aliasRoot],
+    ),
+    join(aliasRoot, "missing"),
+  );
+  await assert.rejects(
+    () => assertCanonicalAllowedPath(escapeRoot, [physicalRoot]),
+    AccessDeniedError,
+  );
+  await assert.rejects(
+    () => assertCanonicalAllowedPath(join(escapeRoot, "missing"), [physicalRoot]),
+    AccessDeniedError,
+  );
+  await assert.rejects(
+    () => assertCanonicalAllowedPath(`${physicalRoot}-missing`, [aliasRoot]),
+    AccessDeniedError,
+  );
+} finally {
+  await rm(aliasRoot, { force: true });
+  await rm(physicalRoot, { recursive: true, force: true });
+  await rm(outsideRoot, { recursive: true, force: true });
 }
