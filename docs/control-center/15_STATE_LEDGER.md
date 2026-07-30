@@ -102,3 +102,16 @@ and Git rather than duplicated here.
   inspection, and Windows setup planning.
 - Hosted CI still received no runner because of an account-level billing/payment
   or spending-limit state, so release announcement remains deferred.
+
+## 2026-07-31 — Public three-platform CI completed
+
+- Public runner allocation became available after the initial external
+  rejection.
+- Real Ubuntu, macOS, and Windows runs exposed path-identity differences between
+  logical aliases and physical roots, Windows long and short paths, and missing
+  macOS ripgrep provisioning.
+- The fixes canonicalize only security/query comparisons while preserving stored
+  logical workspace identity; independent focused review rejected an unsafe
+  intermediate implementation and closed its S1 and S2 findings.
+- Hosted CI run `30570280066` passed the complete Ubuntu, macOS, and Windows
+  matrix at source commit `02a4996`, clearing the announcement blocker.

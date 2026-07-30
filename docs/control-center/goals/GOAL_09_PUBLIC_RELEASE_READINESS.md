@@ -128,13 +128,15 @@ when a verified Pi release naturally resolves `>=5.0.8`.
 - Private vulnerability reporting and administrator-enforced branch protection
   are enabled; force-push and branch deletion are disabled.
 - An unauthenticated public clone passed the complete release acceptance.
+- After public runner allocation became available, cross-platform path identity
+  and macOS tool provisioning were corrected. Hosted CI run `30570280066`
+  passed Ubuntu, macOS, and Windows at source commit `02a4996`.
 
 ## Post-release residual
 
 The completed cutover order, recovery point, verification, and irreversibility
 warning are owned by [docs/PUBLIC_RELEASE.md](../../PUBLIC_RELEASE.md).
 
-The public-root hosted CI jobs were rejected before runner assignment because
-the GitHub account requires billing/payment or spending-limit action. This is an
-external announcement blocker, not a repository test failure; resolve it before
-announcing a release.
+The initial hosted jobs were rejected before runner assignment. That external
+condition later cleared; the full three-operating-system run above passed, so
+there is no remaining GOAL_09 announcement blocker.

@@ -128,13 +128,16 @@ Completed release proof:
   writers;
 - an unauthenticated public clone passed clean install, production audit,
   reachable-history inspection, typecheck, the full test suite, build, package
-  inspection, and Windows setup `Plan`.
+  inspection, and Windows setup `Plan`;
+- after public runners became available, CI exposed and closed cross-platform
+  path-identity and tool-provisioning defects; hosted run `30570280066` passed
+  the complete Ubuntu, macOS, and Windows matrix at source commit `02a4996`.
 
 Cutover outcome:
 
 - Source publication is complete and GOAL_09 is closed.
 - No tag, GitHub Release, or npm publication was created.
-- Hosted CI runner allocation remains required before release announcement.
+- The hosted-CI announcement gate is satisfied.
 
 ## Residual risks
 
@@ -146,10 +149,9 @@ Cutover outcome:
 | host capability changes by plan/workspace | external compatibility residual | README links current official host docs and avoids universal write claims |
 | public release cannot be recalled | realized publication boundary | source was published only after explicit owner approval and clean-clone proof |
 | machine-local ignored folders remain on this PC | local-only, expected | ignore rules plus public checker path gate |
-| GitHub-hosted CI receives no runner | announcement blocker | account billing/payment or spending limit must be resolved before announcement |
+| filesystem aliases differ across operating systems | resolved | canonical comparison at security and query boundaries; logical workspace identity remains unchanged; Ubuntu/macOS/Windows CI passed |
 
 ## Next executable action
 
-Resolve the GitHub runner-allocation account blocker before announcing a release.
-Repository work may otherwise resume at GOAL_08 MWU-08.01: freeze P01-P08 and
-record the same-snapshot local-Codex versus Web-plus-helix baseline.
+Resume at GOAL_08 MWU-08.01: freeze P01-P08 and record the same-snapshot
+local-Codex versus Web-plus-helix baseline.

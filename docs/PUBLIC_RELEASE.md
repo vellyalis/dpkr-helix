@@ -8,6 +8,9 @@ package identity and `devspace` command remain only for runtime compatibility.
 
 The source repository is public. The one-time clean-history cutover completed on
 2026-07-31 and must not be repeated during ordinary development pushes.
+After the cutover, hosted CI run `30570280066` passed the complete Ubuntu,
+macOS, and Windows matrix. The source release therefore satisfies the hosted-CI
+announcement gate in this runbook.
 
 ## What belongs in the public repository
 

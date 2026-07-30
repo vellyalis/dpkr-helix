@@ -14,9 +14,8 @@ Last synchronized: 2026-07-31
 - Remote history replacement and visibility change were completed with explicit
   owner approval. No tag, GitHub Release, or npm publication was created.
 - `origin/main` contains the parentless public root and public-safe release state.
-- Public hosted CI runs receive no runner and execute no steps because GitHub
-  reports an account billing/payment or spending-limit blocker. Local clean
-  proof passed; do not present this external failure as a code failure.
+- Hosted CI run `30570280066` passed Ubuntu, macOS, and Windows at source commit
+  `02a4996`; the prior runner-allocation announcement blocker is closed.
 - Verified recovery bundles were created outside the repository. A parentless
   root attributed only to the intended GitHub maintainer passed clean install,
   production audit, history inspection, typecheck, full tests, build, package
@@ -67,6 +66,9 @@ Last synchronized: 2026-07-31
 - An unauthenticated public clone passed install, production audit, history
   inspection, typecheck, full tests, build, package inspection, and Windows
   setup `Plan`.
+- Public-runner portability fixes preserve logical workspace identity while
+  matching macOS aliases and Windows long/short paths, provision ripgrep on
+  macOS, and passed independent focused review through R6.
 
 ## Security boundary
 
@@ -117,8 +119,8 @@ commands merely because the preparation work is complete.
 - independent A3 cutover review through focused R7
 - unauthenticated public clone acceptance
 - public visibility, vulnerability reporting, and branch-protection verification
+- hosted Ubuntu, macOS, and Windows CI run `30570280066`
 
 ## Exact next action
 
-Resolve the GitHub runner-allocation account blocker before announcement.
-Otherwise resume GOAL_08 MWU-08.01 with the same-snapshot P01-P08 baseline.
+Resume GOAL_08 MWU-08.01 with the same-snapshot P01-P08 baseline.
