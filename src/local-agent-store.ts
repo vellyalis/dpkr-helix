@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { openDatabase, type DatabaseHandle } from "./db/client.js";
 import type { ServerConfig } from "./config.js";
+import { canonicalizePathAllowMissingSync } from "./roots.js";
 
 export type LocalAgentStatus = "starting" | "running" | "idle" | "error" | "stopped";
 
@@ -69,13 +70,11 @@ export class LocalAgentStore {
         )
         .all(scope.workspaceId) as LocalAgentRow[];
     } else if (scope.workspaceRoot) {
-      rows = this.database.sqlite
-        .prepare(
-          `select * from local_agent_sessions
-           where workspace_root = ?
-           order by updated_at desc`,
-        )
-        .all(resolve(scope.workspaceRoot)) as LocalAgentRow[];
+      const workspaceRoot = workspaceRootKey(scope.workspaceRoot);
+      rows = (this.database.sqlite
+        .prepare("select * from local_agent_sessions order by updated_at desc")
+        .all() as LocalAgentRow[])
+        .filter((row) => workspaceRootKey(row.workspace_root) === workspaceRoot);
     } else {
       rows = this.database.sqlite
         .prepare("select * from local_agent_sessions order by updated_at desc")
@@ -245,4 +244,17 @@ function readStatus(status: string): LocalAgentStatus {
 
 function escapeLike(value: string): string {
   return value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
+}
+
+function workspaceRootKey(path: string): string {
+  const canonical = normalizeWorkspaceRoot(path);
+  return process.platform === "win32" ? canonical.toLocaleLowerCase("en-US") : canonical;
+}
+
+function normalizeWorkspaceRoot(path: string): string {
+  try {
+    return canonicalizePathAllowMissingSync(path);
+  } catch {
+    return resolve(path);
+  }
 }

@@ -1,3 +1,4 @@
+import { realpathSync } from "node:fs";
 import { realpath } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, relative, resolve, sep } from "node:path";
@@ -65,6 +66,22 @@ export async function assertCanonicalAllowedPath(
 export function resolveAllowedPath(inputPath: string, cwd: string, allowedRoots: string[]): string {
   const absolutePath = resolve(cwd, inputPath);
   return assertAllowedPath(absolutePath, allowedRoots);
+}
+
+export function canonicalizePathAllowMissingSync(path: string): string {
+  let current = resolve(expandHomePath(path));
+  const missingSegments: string[] = [];
+  while (true) {
+    try {
+      return resolve(realpathSync.native(current), ...missingSegments.reverse());
+    } catch (error) {
+      if (!isMissingPathError(error)) throw error;
+      const parent = dirname(current);
+      if (parent === current) throw error;
+      missingSegments.push(basename(current));
+      current = parent;
+    }
+  }
 }
 
 async function canonicalizePathAllowMissing(path: string): Promise<string> {
