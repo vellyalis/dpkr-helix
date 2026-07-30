@@ -2,9 +2,8 @@
 
 ## Status
 
-`CUTOVER_BLOCKED` — publication is approved and local cutover proof is complete.
-Remote visibility remains private while explicit approval is requested to
-permanently delete eight completed pre-public Actions workflow runs.
+`DONE` — the approved clean-history source release is public, security controls
+are enabled, and unauthenticated public-clone acceptance passed.
 
 ## Goal
 
@@ -17,7 +16,8 @@ accidentally publishing the compatibility package to npm.
 ## Invariants
 
 - The live working path remains unchanged.
-- `origin` remains private until the owner explicitly approves publication.
+- `origin` remains private until the owner explicitly approves publication. This
+  invariant was satisfied before the completed visibility change.
 - No password, API key, token, credential, cookie, private key, or real account
   configuration enters Git, a release bundle, handoff state, or chat output.
 - The upstream MIT copyright and license remain intact.
@@ -121,17 +121,20 @@ when a verified Pi release naturally resolves `>=5.0.8`.
   commit attribution, and GitHub Free control-ordering gaps. Attribution was
   proven with an owner-linked parentless root; the runbook now covers intended
   attribution, completed-run inspection/deletion, and post-public security
-  configuration. Permanent workflow-run deletion remains approval-blocked.
+  configuration. Focused R4-R7 closed the destructive-scope, fail-open, and
+  exact-lease regressions with no remaining S0-S2 finding.
+- The eight owner-approved pre-public Actions runs were permanently deleted.
+- The remote was exact-lease replaced by the parentless root, then made public.
+- Private vulnerability reporting and administrator-enforced branch protection
+  are enabled; force-push and branch deletion are disabled.
+- An unauthenticated public clone passed the complete release acceptance.
 
-## Remaining external cutover
+## Post-release residual
 
-The owner approved remote history replacement and visibility change. Their exact
-order, recovery point, verification, and irreversibility warning are owned by
-[docs/PUBLIC_RELEASE.md](../../PUBLIC_RELEASE.md).
+The completed cutover order, recovery point, verification, and irreversibility
+warning are owned by [docs/PUBLIC_RELEASE.md](../../PUBLIC_RELEASE.md).
 
-The latest private hosted CI jobs were rejected before runner assignment because
+The public-root hosted CI jobs were rejected before runner assignment because
 the GitHub account requires billing/payment or spending-limit action. This is an
-external publication prerequisite, not a repository test failure; resolve it
-before announcing a public release. Before visibility changes, obtain separate
-approval to permanently delete all completed runs that reference pre-public
-history.
+external announcement blocker, not a repository test failure; resolve it before
+announcing a release.

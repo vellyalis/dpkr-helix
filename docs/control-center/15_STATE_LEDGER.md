@@ -85,3 +85,20 @@ and Git rather than duplicated here.
 - The runbook now orders workflow-run cleanup before publication and
   vulnerability reporting and branch protection after the repository becomes
   public.
+
+## 2026-07-31 — Source repository published
+
+- The owner separately approved permanent deletion and publication.
+- Eight fixed pre-public Actions run ID/SHA pairs were verified, permanently
+  deleted, and followed by an empty run inventory.
+- A verified private recovery bundle was retained outside the repository before
+  the exact-lease clean-root replacement.
+- The source repository became public with only the intended `main` history and
+  no tags, releases, artifacts, deployments, or environments.
+- Private vulnerability reporting and administrator-enforced protection against
+  force-push and branch deletion were enabled.
+- An unauthenticated public clone passed clean install, production audit,
+  reachable-history inspection, typecheck, full tests, build, package
+  inspection, and Windows setup planning.
+- Hosted CI still received no runner because of an account-level billing/payment
+  or spending-limit state, so release announcement remains deferred.

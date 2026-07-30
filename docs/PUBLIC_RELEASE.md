@@ -6,8 +6,8 @@ The working repository is prepared as a **source release**. It is not an npm
 publication: `package.json` remains intentionally `private`, while the upstream
 package identity and `devspace` command remain only for runtime compatibility.
 
-The repository may remain private indefinitely. Making it public is a separate
-external action and must not be combined with ordinary development pushes.
+The source repository is public. The one-time clean-history cutover completed on
+2026-07-31 and must not be repeated during ordinary development pushes.
 
 ## What belongs in the public repository
 
@@ -24,9 +24,9 @@ The following remain machine-local:
 - real hostnames, local user paths, account IDs, project/workspace/agent/run
   IDs, cookies, Owner passwords, and tokens.
 
-## Normal private preparation
+## Normal release preparation
 
-These checks are safe to run before an ordinary push to the private repository:
+Run these checks before an ordinary push to the public repository:
 
 ```powershell
 npm ci --no-audit

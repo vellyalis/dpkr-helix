@@ -6,7 +6,7 @@ Last synchronized: 2026-07-31
 
 - Repository: `vellyalis/dpkr-helix`
 - Branch: `main`
-- Visibility: PRIVATE
+- Visibility: PUBLIC
 - Working directory: unchanged
 - Product name: `dpkr helix`
 - Compatibility identities: npm `@waishnav/devspace`, CLI/MCP `devspace`,
@@ -14,7 +14,7 @@ Last synchronized: 2026-07-31
 - Distribution model: source repository; npm publication intentionally disabled
 - Upstream: `Waishnav/devspace`
 - License: MIT, upstream copyright retained
-- Private `origin/main`: synchronized with the verified GOAL_09 preparation
+- Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; GOAL_08 remains the canonical next-program
   contract
 
@@ -30,7 +30,7 @@ Last synchronized: 2026-07-31
 | GOAL_06 Live Operations Dashboard | DONE | canonical live/retained operation views |
 | GOAL_07 Integration and Hardening | DONE | distribution, recovery, security, acceptance |
 | GOAL_08 Codex-Parity Coding Quality | NOT_STARTED | requirements/design accepted; MWU-08.01 next |
-| GOAL_09 Public Release Readiness | CUTOVER_BLOCKED | publication approved; permanent removal of eight pre-public Actions runs needs explicit deletion approval |
+| GOAL_09 Public Release Readiness | DONE | clean-history source release published and publicly verified |
 
 ## Goal model — GOAL_09
 
@@ -81,7 +81,7 @@ publishing the compatibility package accidentally.
 | WS-PUB-02 tracked-tree hygiene | VERIFIED | current-tree and parentless-history checks pass |
 | WS-PUB-03 public documentation | VERIFIED | public copy, policies, attribution, and demo asset reviewed |
 | WS-PUB-04 supply-chain/package hygiene | VERIFIED | clean install/audit pass; internal state excluded |
-| WS-PUB-05 public cutover | BLOCKED_EXTERNAL | recovery bundle and clean-root proof complete; old Actions-run deletion approval is required before force-push and visibility change |
+| WS-PUB-05 public cutover | DONE | approved old-run deletion, clean-root push, public security controls, and public-clone acceptance complete |
 | WS-QA-08 measured coding parity | PLANNED | resume at MWU-08.01 after current priority |
 
 ## Architecture and complexity decision
@@ -103,7 +103,7 @@ the audit report clean while leaving old code on disk.
 
 ## Verification surface
 
-Completed local proof:
+Completed release proof:
 
 - current working-tree and parentless-history public-release checks passed;
 - clean-install production audit reported zero vulnerabilities and the repaired
@@ -117,34 +117,39 @@ Completed local proof:
   maintainer passed clean install, production audit, reachable-history
   inspection, typecheck, the full test suite, build, package inspection, and
   Windows setup `Plan`;
-- a verified private recovery bundle exists outside the repository.
+- verified private recovery bundles exist outside the repository;
+- the eight approved pre-public Actions runs were permanently deleted and all
+  remaining runs reference only public-safe history rooted at the parentless
+  release commit;
+- the remote exposes only `main`, with no tags, releases, artifacts,
+  deployments, or environments;
+- repository visibility is public, private vulnerability reporting is enabled,
+  and `main` blocks force-push and deletion for administrators and other
+  writers;
+- an unauthenticated public clone passed clean install, production audit,
+  reachable-history inspection, typecheck, the full test suite, build, package
+  inspection, and Windows setup `Plan`.
 
-Required cutover proof, intentionally deferred:
+Cutover outcome:
 
-- clean-clone acceptance;
-- permanent deletion of eight completed pre-public Actions workflow runs;
-- clean-root force-push and final remote branch/tag/run inspection;
-- visibility change followed by private vulnerability reporting and branch
-  protection verification;
-- hosted CI runner allocation before release announcement.
+- Source publication is complete and GOAL_09 is closed.
+- No tag, GitHub Release, or npm publication was created.
+- Hosted CI runner allocation remains required before release announcement.
 
 ## Residual risks
 
 | Risk | State | Control |
 | --- | --- | --- |
-| old commits retain operational metadata | cutover blocker, not a recognized secret leak | parentless root, exact-lease force push, remote-ref inspection before public |
-| completed Actions runs retain pre-public head SHAs | cutover blocker | permanently delete the eight runs after separate owner approval and verify the run list before visibility change |
+| old commits retain operational metadata | not advertised by public refs | parentless public root; verified private bundle retained outside the repository |
+| completed Actions runs retained pre-public head SHAs | resolved | eight owner-approved runs permanently deleted; remaining run references only public history |
 | unreachable GitHub objects may persist temporarily after force push | accepted only because secret scan found no credentials | do not publish if a later scan finds a secret; recreate repository instead |
 | host capability changes by plan/workspace | external compatibility residual | README links current official host docs and avoids universal write claims |
-| public release cannot be recalled | inherent publication risk | explicit approval immediately before visibility change |
+| public release cannot be recalled | realized publication boundary | source was published only after explicit owner approval and clean-clone proof |
 | machine-local ignored folders remain on this PC | local-only, expected | ignore rules plus public checker path gate |
-| GitHub-hosted CI receives no runner | external cutover prerequisite | account billing/payment or spending limit must be resolved before announcement |
+| GitHub-hosted CI receives no runner | announcement blocker | account billing/payment or spending limit must be resolved before announcement |
 
 ## Next executable action
 
-Obtain explicit approval to permanently delete the eight completed pre-public
-Actions workflow runs. After approval, delete and verify them, regenerate the
-parentless root from the final reviewed tree, exact-lease force-push it, change
-visibility, configure the post-public security controls, and run public-clone
-acceptance. Hosted CI runner allocation remains an announcement blocker. Do not
-resume GOAL_08 while this approved cutover is active.
+Resolve the GitHub runner-allocation account blocker before announcing a release.
+Repository work may otherwise resume at GOAL_08 MWU-08.01: freeze P01-P08 and
+record the same-snapshot local-Codex versus Web-plus-helix baseline.
