@@ -97,6 +97,10 @@ checkout, creates a new Owner password, runs the official Codex browser login
 when needed, starts DevSpace and the tunnel, and checks local/public OAuth
 metadata plus a real Codex subagent run.
 
+The global runtime is installed from a built package archive rather than an npm
+link to the checkout. Normal source dependency maintenance therefore cannot
+lock or partially remove files used by the running service.
+
 The final line prints the MCP URL to enter in ChatGPT Developer mode. ChatGPT
 app creation and its OAuth approval remain interactive account actions.
 
@@ -140,9 +144,10 @@ The updater:
 2. creates a temporary detached worktree at the exact target commit;
 3. installs dependencies and runs the production audit, typecheck, full tests,
    build, and public-release check while the current service remains available;
-4. packages the current installation as a rollback point;
-5. stops and replaces dpkr helix only after preflight succeeds, using a hidden
-   one-shot process;
+4. packages both the verified candidate and current installation, avoiding an
+   npm link from the live runtime to the disposable worktree;
+5. stops and replaces dpkr helix from the candidate archive only after
+   preflight succeeds, using a hidden one-shot process;
 6. checks the CLI, local/public OAuth metadata, and Codex delegation;
 7. fast-forwards the managed source and updates the managed recovery scripts;
 8. restores the previous package, source commit, scripts, desired state, and

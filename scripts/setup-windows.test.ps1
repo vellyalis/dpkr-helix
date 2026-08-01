@@ -69,6 +69,8 @@ function Get-SetupFunctionSource {
         "Throw-UpdateFailure",
         "Get-UpdateFailureCode",
         "Get-SourceUpdatePlan",
+        "New-UpdateTemporaryRoot",
+        "Remove-UpdateTemporaryRoot",
         "Get-SourceUpdatePlanWithoutFetch",
         "Assert-UpdatePlanStillCurrent",
         "Restore-UpdateDeployment",
@@ -179,6 +181,15 @@ try {
   $updateStatus = Read-JsonFile -Path $script:UpdateStatusPath
   Assert-True -Condition ($updateStatus.state -eq "preflight") -Message "Update status state was not persisted."
   Assert-True -Condition ($updateStatus.completedAt -eq $null) -Message "Active update status was marked complete."
+
+  $updateTemporaryRoot = New-UpdateTemporaryRoot
+  Assert-True `
+    -Condition (Test-Path -LiteralPath $updateTemporaryRoot -PathType Container) `
+    -Message "Update temporary root was not created."
+  Remove-UpdateTemporaryRoot -Path $updateTemporaryRoot
+  Assert-True `
+    -Condition (-not (Test-Path -LiteralPath $updateTemporaryRoot)) `
+    -Message "Validated update temporary root was not removed."
 
   $gitFixture = Join-Path $temporaryRoot "git-update"
   $gitOrigin = Join-Path $gitFixture "origin.git"
@@ -470,6 +481,12 @@ try {
     -Condition $sourceText.Contains('"--allow-scripts=@waishnav/devspace"') `
     -Message "Global DevSpace install does not explicitly allow its reviewed postinstall repairs."
   Assert-True `
+    -Condition (
+      $sourceText.Contains('New-DevSpacePackage -Root $Root -Destination $packageRoot') -and
+      -not $sourceText.Contains('"--allow-scripts=@waishnav/devspace",`r`n      "."')
+    ) `
+    -Message "Install mode links the global runtime to the mutable source checkout."
+  Assert-True `
     -Condition ($sourceText.Contains("RecoveryStart") -and $sourceText.Contains("-ForceRestart")) `
     -Message "Recovery start recheck or explicit install restart is missing."
   Assert-True `
@@ -506,6 +523,12 @@ try {
       $sourceText.Contains('"rolled_back"')
     ) `
     -Message "Update fast-forward or rollback contract is incomplete."
+  Assert-True `
+    -Condition (
+      $sourceText.Contains('Install-BuiltDevSpacePackage -PackagePath $candidatePackage') -and
+      -not $sourceText.Contains('Install-BuiltDevSpacePackage -PackagePath $worktreePath')
+    ) `
+    -Message "Update installation is linked to its disposable candidate worktree."
 
   $planOutput = & powershell.exe `
     -NoProfile `

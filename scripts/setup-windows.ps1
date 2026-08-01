@@ -580,7 +580,13 @@ function New-UpdateTemporaryRoot {
 function Remove-UpdateTemporaryRoot {
   param([Parameter(Mandatory = $true)][string] $Path)
   $resolved = [System.IO.Path]::GetFullPath($Path)
-  $temporaryParent = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
+  $directorySeparators = [char[]] @(
+    [System.IO.Path]::DirectorySeparatorChar,
+    [System.IO.Path]::AltDirectorySeparatorChar
+  )
+  $temporaryParent = (
+    [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
+  ).TrimEnd($directorySeparators)
   $parent = [System.IO.Path]::GetFullPath((Split-Path -Parent $resolved))
   $leaf = Split-Path -Leaf $resolved
   if (
@@ -647,7 +653,7 @@ function Invoke-UpdatePreflight {
   }
 }
 
-function New-RollbackPackage {
+function New-DevSpacePackage {
   param(
     [Parameter(Mandatory = $true)][string] $Root,
     [Parameter(Mandatory = $true)][string] $Destination
@@ -657,24 +663,39 @@ function New-RollbackPackage {
     $npm = Get-CommandPath -Name "npm"
   }
   if (-not $npm) {
-    Throw-UpdateFailure -Code "NPM_MISSING" -Message "npm is required for rollback packaging."
+    Throw-UpdateFailure -Code "NPM_MISSING" -Message "npm is required for update packaging."
+  }
+  $lockPath = Join-Path $Root "package-lock.json"
+  $shrinkwrapPath = Join-Path $Root "npm-shrinkwrap.json"
+  $createdShrinkwrap = $false
+  if (-not (Test-Path -LiteralPath $lockPath -PathType Leaf)) {
+    Throw-UpdateFailure -Code "PACKAGE_LOCK_MISSING" -Message (
+      "The verified package lock is missing."
+    )
+  }
+  if (-not (Test-Path -LiteralPath $shrinkwrapPath -PathType Leaf)) {
+    Copy-FileAtomic -SourcePath $lockPath -DestinationPath $shrinkwrapPath
+    $createdShrinkwrap = $true
   }
   Push-Location $Root
   try {
     if (-not (Test-Path -LiteralPath (Join-Path $Root "dist\cli.js") -PathType Leaf)) {
-      Invoke-Checked -FilePath $npm -Arguments @("run", "build")
+      Invoke-Checked -FilePath $npm -Arguments @("run", "build") | Out-Null
     }
     Invoke-Checked -FilePath $npm -Arguments @(
       "pack", "--silent", "--pack-destination", $Destination
-    )
+    ) | Out-Null
   }
   finally {
     Pop-Location
+    if ($createdShrinkwrap -and (Test-Path -LiteralPath $shrinkwrapPath -PathType Leaf)) {
+      Remove-Item -LiteralPath $shrinkwrapPath -Force
+    }
   }
   $packages = @(Get-ChildItem -LiteralPath $Destination -Filter "*.tgz" -File)
   if ($packages.Count -ne 1) {
-    Throw-UpdateFailure -Code "ROLLBACK_PACKAGE_FAILED" -Message (
-      "The previous installation could not be packaged for rollback."
+    Throw-UpdateFailure -Code "PACKAGE_FAILED" -Message (
+      "The verified installation could not be packaged."
     )
   }
   return $packages[0].FullName
@@ -832,16 +853,23 @@ function Install-DevSpace {
   if (-not $npm) {
     throw "npm was not found after installing Node."
   }
+  $packageRoot = New-UpdateTemporaryRoot
   Write-Step "Installing the verified DevSpace checkout"
-  Push-Location $Root
   try {
-    Invoke-Checked -FilePath $npm -Arguments @("ci", "--include=dev")
-    Invoke-Checked -FilePath $npm -Arguments @("run", "build")
+    Push-Location $Root
+    try {
+      Invoke-Checked -FilePath $npm -Arguments @("ci", "--include=dev")
+      Invoke-Checked -FilePath $npm -Arguments @("run", "build")
+    }
+    finally {
+      Pop-Location
+    }
+    $devspacePackage = New-DevSpacePackage -Root $Root -Destination $packageRoot
     Invoke-Checked -FilePath $npm -Arguments @(
       "install",
       "--global",
       "--allow-scripts=@waishnav/devspace",
-      "."
+      $devspacePackage
     )
     Invoke-Checked -FilePath $npm -Arguments @(
       "install",
@@ -850,7 +878,7 @@ function Install-DevSpace {
     )
   }
   finally {
-    Pop-Location
+    Remove-UpdateTemporaryRoot -Path $packageRoot
   }
 }
 
@@ -2015,12 +2043,17 @@ function Invoke-UpdateMode {
 
     $temporaryRoot = New-UpdateTemporaryRoot
     $worktreePath = Join-Path $temporaryRoot "candidate"
+    $candidatePackagePath = Join-Path $temporaryRoot "candidate-package"
     $backupPath = Join-Path $temporaryRoot "rollback"
+    New-Item -ItemType Directory -Path $candidatePackagePath | Out-Null
     New-Item -ItemType Directory -Path $backupPath | Out-Null
     Add-UpdateWorktree -Plan $plan -Path $worktreePath
     Invoke-UpdatePreflight -Root $worktreePath
 
-    $rollbackPackage = New-RollbackPackage -Root $root -Destination $backupPath
+    $candidatePackage = New-DevSpacePackage `
+      -Root $worktreePath `
+      -Destination $candidatePackagePath
+    $rollbackPackage = New-DevSpacePackage -Root $root -Destination $backupPath
     $setupBackup = Join-Path $backupPath "setup-windows.previous.ps1"
     Copy-FileAtomic -SourcePath $script:ManagedScriptPath -DestinationPath $setupBackup
     $hadRecovery = Test-Path -LiteralPath $script:ManagedRecoveryPath -PathType Leaf
@@ -2056,7 +2089,7 @@ function Invoke-UpdateMode {
     $deploymentStarted = $true
     try {
       Stop-DevSpaceRuntime
-      Install-BuiltDevSpacePackage -PackagePath $worktreePath
+      Install-BuiltDevSpacePackage -PackagePath $candidatePackage
 
       if ($previousDesiredState -eq "running") {
         $runtime = Start-DevSpaceRuntime -Settings $settings -ForceRestart

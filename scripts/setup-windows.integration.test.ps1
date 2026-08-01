@@ -60,7 +60,7 @@ function Test-TcpPort {
 
 function Remove-TestDirectory {
   param([Parameter(Mandatory = $true)][string] $Path)
-  for ($attempt = 0; $attempt -lt 4; $attempt += 1) {
+  for ($attempt = 0; $attempt -lt 12; $attempt += 1) {
     if (-not (Test-Path -LiteralPath $Path)) {
       return
     }
@@ -69,7 +69,7 @@ function Remove-TestDirectory {
       return
     }
     catch {
-      if ($attempt -eq 3) {
+      if ($attempt -eq 11) {
         $extendedPath = if ($Path.StartsWith("\\?\")) { $Path } else { "\\?\" + $Path }
         [System.IO.Directory]::Delete($extendedPath, $true)
         if (Test-Path -LiteralPath $Path) {
@@ -108,6 +108,7 @@ else {
 }
 $port = Get-FreeTcpPort
 $copiedSetup = $null
+$primaryError = $null
 
 $staleCutoff = [DateTime]::UtcNow.AddMinutes(-1)
 Get-ChildItem -LiteralPath $systemTempRoot -Directory -Filter ($integrationPrefix + "*") |
@@ -193,6 +194,30 @@ try {
     )) {
     Assert-True -Condition (Test-Path -LiteralPath $path) -Message "Expected file is missing: $path"
   }
+  $installedPackage = Join-Path $env:npm_config_prefix "node_modules\@waishnav\devspace"
+  Assert-True `
+    -Condition (-not ((Get-Item -LiteralPath $installedPackage).Attributes -band [IO.FileAttributes]::ReparsePoint)) `
+    -Message "Installed DevSpace remains linked to the mutable source checkout."
+  $sourceLockPath = Join-Path $isolatedSourceRoot "package-lock.json"
+  $installedSqlitePath = Join-Path $installedPackage "node_modules\better-sqlite3\package.json"
+  Assert-True `
+    -Condition (Test-Path -LiteralPath (Join-Path $installedPackage "npm-shrinkwrap.json")) `
+    -Message "Installed runtime is missing its deployment lock."
+  $expectedSqliteVersion = (& node -e (
+      "const lock=require(process.argv[1]);" +
+      "process.stdout.write(lock.packages['node_modules/better-sqlite3'].version);"
+    ) $sourceLockPath).Trim()
+  Assert-True -Condition ($LASTEXITCODE -eq 0) -Message "Could not inspect the source dependency lock."
+  $installedSqliteVersion = (& node -e (
+      "const pkg=require(process.argv[1]);process.stdout.write(pkg.version);"
+    ) $installedSqlitePath).Trim()
+  Assert-True -Condition ($LASTEXITCODE -eq 0) -Message "Could not inspect the installed dependency."
+  Assert-True `
+    -Condition ($installedSqliteVersion -eq $expectedSqliteVersion) `
+    -Message (
+      "Installed runtime did not preserve the verified dependency lock. " +
+      "Expected: $expectedSqliteVersion Actual: $installedSqliteVersion"
+    )
 
   $config = Read-Utf8Text -Path $configPath | ConvertFrom-Json
   $auth = Read-Utf8Text -Path $authPath | ConvertFrom-Json
@@ -353,6 +378,9 @@ try {
   Assert-True -Condition ([bool](Get-Process -Id $PID -ErrorAction SilentlyContinue)) -Message "Stop killed the test runner."
   Remove-Item -LiteralPath $runtimePath -Force
 }
+catch {
+  $primaryError = $_
+}
 finally {
   if ($copiedSetup -and (Test-Path -LiteralPath $copiedSetup)) {
     $runtimePath = Join-Path (Split-Path -Parent $copiedSetup) "windows-runtime.json"
@@ -384,8 +412,22 @@ finally {
           [System.StringComparison]::OrdinalIgnoreCase
         )) `
       -Message "Refusing to clean an unexpected integration-test directory."
-    Remove-TestDirectory -Path $resolvedTemporaryRoot
+    try {
+      Remove-TestDirectory -Path $resolvedTemporaryRoot
+    }
+    catch {
+      if ($primaryError) {
+        Write-Warning "Integration cleanup also failed: $($_.Exception.Message)"
+      }
+      else {
+        $primaryError = $_
+      }
+    }
   }
+}
+
+if ($primaryError) {
+  throw $primaryError
 }
 
 Write-Host "setup-windows integration test: pass"

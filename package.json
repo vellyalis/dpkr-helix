@@ -20,6 +20,7 @@
     "devspace": "dist/cli.js"
   },
   "files": [
+    "npm-shrinkwrap.json",
     "dist",
     "docs/*.md",
     "docs/assets",

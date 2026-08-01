@@ -1357,8 +1357,9 @@ remote, command, or package.
 
 The script requires the canonical GitHub origin, clean `main`, External stable
 endpoint, and a fast-forward fetched `origin/main`. It verifies the exact target
-in a temporary worktree before stopping the current process. It packages the
-previous installation, installs and health-checks the candidate, atomically
+in a temporary worktree before stopping the current process. It packages both
+the candidate and previous installation before stop, installs the candidate
+archive without linking the live runtime to its disposable worktree, atomically
 refreshes the managed setup/recovery scripts, then fast-forwards the source. If
 deployment fails, it restores the old package, exact commit, scripts, desired
 state, and health. A bounded local status file records only state, request/time
