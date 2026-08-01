@@ -5,8 +5,9 @@ Last synchronized: 2026-08-02
 ## Current position
 
 - Current work unit: GOAL_08 MWU-08.01 baseline and configuration selection;
-  the fixture freeze and current baseline are complete; candidate comparison
-  remains.
+  the fixture freeze, current baseline, and first medium candidate comparison
+  are complete. The candidate is rejected and the measured current setting is
+  retained; the conditional hard-subset and metadata-audit decisions remain.
 - GOAL_01 through GOAL_07: DONE.
 - GOAL_08 Codex-Parity Coding Quality: `IN_PROGRESS`; P01-P08 manifests,
   deterministic snapshots, metadata prompts, and the result contract are frozen.
@@ -72,7 +73,14 @@ Last synchronized: 2026-08-02
 - The current `gpt-5.5` medium baseline is complete: all 36 used terminal
   records validate, the generated-evidence scan contains no P08 canary
   disclosure, Web plus helix passes 8/8 cases by majority, and local Codex
-  passes 4/8. Candidate execution has not started.
+  passes 4/8.
+- The first `gpt-5.6-sol` medium comparison is complete: all 35 used terminal
+  records validate, tie-break usage is correct, the generated-evidence scan
+  contains no P08 canary disclosure, Web plus helix passes 6/8, and local Codex
+  passes 5/8. Web P05/P07 and local P01/P02/P07 are adoption-blocking regressions.
+- Five delegated Web attempts actually used managed `gpt-5.5` medium beneath
+  the visible `GPT-5.6 Sol` medium controller. The evidence labels them as a
+  mixed configuration. No profile/default/authentication setting changed.
 
 ## Completed before this work unit
 
@@ -84,8 +92,9 @@ Last synchronized: 2026-08-02
   and bounded wait behavior.
 - GOAL_08's active unit is MWU-08.01. P01-P08 and the result template are
   frozen; the current local-Codex versus Web-plus-helix baseline is recorded.
-  Candidate comparison and configuration adoption remain before any product
-  feature or model-default change.
+  The first medium candidate is rejected and the measured current setting is
+  retained. Conditional hard-subset and metadata-audit evidence remain before
+  any product feature or model-default change.
 
 ## GOAL_09 completed release
 
@@ -155,8 +164,9 @@ Last synchronized: 2026-08-02
 5. Confirm GOAL_09 remains `DONE`; do not repeat its one-time clean-root cutover.
 6. Confirm the operational-comfort checkpoint and current local/public health.
 7. Continue GOAL_08 at MWU-08.01 from the generated/frozen suite; do not
-   recreate its manifests or rerun the completed current baseline. WS-UPD-01 is
-   complete on `main` and in the installed runtime.
+   recreate its manifests, rerun the completed current baseline, or rerun the
+   rejected medium candidate. WS-UPD-01 is complete on `main` and in the
+   installed runtime.
 
 Do not recreate GOAL_01 through GOAL_08 documents. Do not start public cutover
 commands merely because the preparation work is complete.
@@ -201,9 +211,16 @@ commands merely because the preparation work is complete.
   disagreement tie-breaks; 36 schema-valid terminal records; clean generated-
   evidence canary scan; Web plus helix 8/8 majority passes versus local Codex
   4/8; no product, model-default, authentication, or publication change
+- 2026-08-02 MWU-08.01 first-candidate proof: 32 required attempts and three
+  disagreement tie-breaks; 35 schema-valid terminal records; valid tie-break
+  use; clean generated-evidence canary scan; Web plus helix 6/8 and local Codex
+  5/8; mixed delegated-provider metadata recorded; mandatory regression-based
+  rejection; no product, profile/default, authentication, or publication change
 
 ## Exact next action
 
-After explicit approval for candidate external model/browser submissions, run
-the frozen `gpt-5.6-sol` medium candidate on identical snapshots. Compare
-mandatory outcomes before considering high on the hard subset.
+Obtain explicit approval before any additional external submission or managed-
+profile change. Then run only the conditional hard subset and the frozen
+metadata audit. Keep delegated Web results in a separate mixed-configuration
+class unless the approved run controls the provider model and effort actually
+used by the managed agent.

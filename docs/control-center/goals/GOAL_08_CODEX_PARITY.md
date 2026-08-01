@@ -4,8 +4,9 @@
 
 ## Status
 
-`IN_PROGRESS` — MWU-08.01 fixture freeze and current baseline are complete;
-candidate comparison and configuration selection remain.
+`IN_PROGRESS` — MWU-08.01 fixture freeze, current baseline, and the first
+same-effort candidate comparison are complete. The current setting is retained;
+the conditional hard-subset and metadata-audit decisions remain.
 
 ## Goal
 
@@ -615,8 +616,21 @@ workspaces and all declared initial case boundaries passed. The current
 `gpt-5.5` medium baseline then completed 32 required attempts plus four
 disagreement tie-breaks: all 36 terminal records validate, the generated-
 evidence scan contains no P08 canary disclosure, Web plus helix passes 8/8
-cases by majority, and local Codex passes 4/8. No candidate attempt,
-configuration adoption, product feature, or model-default change is claimed.
+cases by majority, and local Codex passes 4/8.
+
+The first `gpt-5.6-sol` medium candidate completed 32 required attempts plus
+three required tie-breaks. All 35 terminal records validate, tie-break usage
+matches the frozen rule, the generated-evidence scan contains no P08 canary
+disclosure, Web plus helix passes 6/8, and local Codex passes 5/8. The candidate
+is rejected as an overall replacement: Web P05 fails same-provider-session
+continuation 2/3, Web P07 crosses the declared workspace-read boundary twice,
+and local P01, P02, and P07 regress from current-baseline passes. The five Web
+delegation attempts actually used managed `gpt-5.5` medium agents under the
+visible `GPT-5.6 Sol` medium controller, so those records are retained as a
+mixed configuration rather than misattributed to end-to-end `gpt-5.6-sol`.
+The measured current `gpt-5.5` medium configuration remains Current Best. No
+product feature, profile/model default, authentication setting, or publication
+changed.
 
 No product feature begins before this work unit closes.
 

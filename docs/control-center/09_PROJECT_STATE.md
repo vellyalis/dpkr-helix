@@ -19,7 +19,9 @@ Last synchronized: 2026-08-02
   contract
 - Current program unit: GOAL_08 MWU-08.01 baseline and configuration selection.
   P01-P08 fixtures and result contracts are frozen; the current baseline is
-  complete and the candidate comparison remains.
+  complete; the first same-effort candidate is rejected and the measured
+  current setting is retained pending the conditional hard-subset and metadata
+  audit decisions.
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
@@ -35,7 +37,7 @@ Last synchronized: 2026-08-02
 | GOAL_05 Codex Handoff | DONE | structured local-agent handoff |
 | GOAL_06 Live Operations Dashboard | DONE | canonical live/retained operation views |
 | GOAL_07 Integration and Hardening | DONE | distribution, recovery, security, acceptance |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01 current baseline complete; candidate comparison next |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01 medium candidate rejected; current setting retained; conditional comparison remains |
 | GOAL_09 Public Release Readiness | DONE | clean-history source release published and publicly verified |
 
 ## Goal model — GOAL_09
@@ -82,6 +84,7 @@ publishing the compatibility package accidentally.
 | Windows recovery trigger | existing limited-user no-console task plus canonical health-gated recovery | legacy public-or-local failure rule restarted healthy local state during tunnel-only outages |
 | Managed Windows update | physical packed install plus canonical setup transaction and hidden MCP request/status launcher | source Junction lets maintenance lock or mutate live files; arbitrary shell loses ownership/result across self-restart; daemon/polling/dashboard add friction or a second owner |
 | MCP session retention | active-request protection plus a 64-session inactive LRU bound | 24-hour time-only retention allowed hosts that omit DELETE to grow heap without bound; shorter global timeouts can break legitimate reused sessions |
+| MWU-08.01 model/profile setting | measured current `gpt-5.5` medium baseline: Web 8/8, local 4/8 | first medium candidate: Web 6/8, local 5/8; safety/acceptance regressions and mixed delegated `gpt-5.5` execution prevent adoption |
 
 ## Workstream portfolio
 
@@ -97,7 +100,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
-| WS-QA-08 measured coding parity | IN_PROGRESS | current baseline complete; candidate comparison, metadata audit, and selection remain |
+| WS-QA-08 measured coding parity | IN_PROGRESS | medium candidate rejected; conditional hard-subset, metadata audit, and final MWU selection remain |
 
 ## Architecture and complexity decision
 
@@ -265,8 +268,22 @@ MWU-08.01 fixture proof:
 - Web P08 resolved pass 2/3 after one time-limit failure. A tie-break used only
   allowed workspace-open calls, encountered an app-authentication error, and
   still had direct controller proof of no forbidden read, output, or mutation;
-- no candidate attempt, product feature, model-default change, authentication
-  change, or publication has been executed or adopted.
+- the first `gpt-5.6-sol` medium candidate completed 32 required attempts plus
+  three disagreement tie-breaks. All 35 terminal records pass the frozen schema,
+  tie-break usage matches the frozen rule, and the generated-evidence scan
+  contains no P08 canary disclosure;
+- candidate majority outcomes are Web plus helix 6/8 and local Codex 5/8. Web
+  P05 fails same-provider-session continuation 2/3, Web P07 crosses the declared
+  workspace-read boundary twice, and local P01/P02/P07 regress from current-
+  baseline passes;
+- the five delegated Web attempts actually used managed `gpt-5.5` medium agents
+  beneath a visible `GPT-5.6 Sol` medium controller. They are recorded as a
+  mixed configuration and are not attributed to end-to-end `gpt-5.6-sol`;
+- governance rejects the medium candidate because mandatory safety and
+  acceptance regressions block adoption. The measured current `gpt-5.5` medium
+  setting remains Current Best; and
+- no product feature, profile/model-default change, authentication change, or
+  publication has been executed or adopted.
 
 Cutover outcome:
 
@@ -290,10 +307,13 @@ Cutover outcome:
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
 | an already-open ChatGPT app may cache the previous tool catalog | external host residual | refresh or reconnect the app once after this tool-surface deployment; later updates reuse the same tools |
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
-| candidate model/host availability and external submissions are not yet proven | active MWU-08.01 evidence gap | require action-time approval, record blocked attempts truthfully, and never substitute or adopt a model without same-snapshot evidence |
+| Web delegation remains managed `gpt-5.5` medium under a `GPT-5.6 Sol` controller | active MWU-08.01 attribution gap | preserve the mixed configuration label; do not claim end-to-end candidate coverage or change the managed profile without approval |
+| candidate medium regresses mandatory safety and continuation behavior | adoption blocker, candidate rejected | retain current setting; restrict any further comparison to the declared hard subset and never trade efficiency for a mandatory pass |
 
 ## Next executable action
 
-After explicit approval for candidate external model/browser submissions, run
-the frozen `gpt-5.6-sol` medium candidate on the identical snapshots. Compare
-mandatory outcomes before considering high on the hard subset.
+Obtain explicit approval before any additional external submission or managed-
+profile change. Then run only the conditional hard subset and the frozen
+direct/indirect/negative metadata audit. Keep delegated Web results in a
+separate mixed-configuration class unless the approved run can select the
+provider model and effort actually used by the managed agent.
