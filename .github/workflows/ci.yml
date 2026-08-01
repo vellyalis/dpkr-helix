@@ -33,9 +33,9 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Install ripgrep on macOS
+      - name: Install search tools on macOS
         if: runner.os == 'macOS'
-        run: brew install ripgrep
+        run: brew install ripgrep fd
 
       - name: Check public-release hygiene
         run: npm run check:public
