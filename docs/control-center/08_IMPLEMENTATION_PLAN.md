@@ -20,8 +20,8 @@ Codex must select the first non-DONE goal whose dependencies are DONE.
 | GOAL_05 Codex Handoff | DONE | GOAL_03, GOAL_04 | Reusable local-agent service and explicit structured MCP delegation |
 | GOAL_06 Live Operations and Control Center UI | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05 | Canonical operation projection, live run evidence, coherent Projects/Runs/Agents/System UI |
 | GOAL_07 Integration and Hardening | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05, GOAL_06 | End-to-end UX, reliability, security, docs, visual/accessibility, compatibility proof |
-| GOAL_08 Codex-Parity Coding Quality | NOT_STARTED | GOAL_07 | Same-snapshot parity evidence, evaluated model/profile settings, bounded start context, model-visible review freshness, structured input requests, bounded waiting |
-| GOAL_09 Public Release Readiness | IN_PROGRESS | GOAL_07 | Public-safe tracked tree, source-only distribution, attribution/community docs, audit and package gates, deferred clean-root cutover |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | GOAL_07 | MWU-08.01 fixtures frozen; same-snapshot external baseline and configuration selection active |
+| GOAL_09 Public Release Readiness | DONE | GOAL_07 | Clean-history source release published and publicly verified |
 
 GOAL_02 and GOAL_03 may be implemented in either order after GOAL_01. Do not work on both in the same worktree unless explicitly orchestrated with non-overlapping write ownership.
 

@@ -1,0 +1,56 @@
+{
+  "schema": "dpkr-helix-parity-result/v1",
+  "suiteId": "goal08-p01-p08",
+  "suiteVersion": 1,
+  "caseId": "PENDING",
+  "surface": "PENDING",
+  "attempt": 0,
+  "snapshot": {
+    "seedCommit": "PENDING",
+    "startingDiffSha256": "PENDING",
+    "manifestSha256": "PENDING"
+  },
+  "configuration": {
+    "configurationId": "PENDING",
+    "host": "PENDING",
+    "controllerModel": null,
+    "agentProfile": null,
+    "provider": "openai",
+    "model": "PENDING",
+    "reasoningEffort": "PENDING",
+    "profileRevision": "managed-codex-implementer/v1",
+    "profileSha256": "195f31f49c99c75247bdc290a4bbc032fd48568aa6be9569859d3f72e4c491b0",
+    "serverRevision": "PENDING",
+    "toolCatalogRevision": "PENDING"
+  },
+  "outcome": {
+    "mandatoryResult": "not_run",
+    "failureClassification": null,
+    "acceptanceEvidence": [],
+    "forbiddenChangeCount": 0,
+    "unrelatedChangeCount": 0,
+    "preExistingWorkPreserved": null,
+    "completionClaimed": false
+  },
+  "verification": {
+    "required": true,
+    "state": "not_run",
+    "freshness": "missing",
+    "commands": []
+  },
+  "interventions": [],
+  "metrics": {
+    "toolCalls": 0,
+    "statusCalls": 0,
+    "providerTurns": 0,
+    "wallTimeMs": 0,
+    "inputTokens": null,
+    "outputTokens": null,
+    "cost": null
+  },
+  "timing": {
+    "startedAt": null,
+    "endedAt": null
+  },
+  "notes": []
+}

@@ -19,19 +19,21 @@ measured baseline shows that it would not improve a real outcome.
 | --- | --- | --- |
 | Local coding baseline | Shipped | Approved project access, direct file and shell tools, reusable workspaces, project policies, handoffs, local-agent delegation, and live operations |
 | Source distribution and hardening | Shipped | Source-based installation, public/private data boundary, security and contribution policies, dependency checks, and a reviewed public-release runbook |
-| Measured Codex-quality parity | Next / Planned | Make Web-plus-helix as dependable as local Codex on identical repository snapshots without weakening permissions, evidence truth, or existing work |
+| Measured Codex-quality parity | In progress | Make Web-plus-helix as dependable as local Codex on identical repository snapshots without weakening permissions, evidence truth, or existing work |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
-## Next program: measured Codex-quality parity
+## Current program: measured Codex-quality parity
 
-The next program is planned but has not started. Its purpose is not to imitate
-the local Codex interface. It is to measure the same coding tasks on the same
-repository snapshots and close proven gaps in correctness, safety, review
-quality, and workflow continuity.
+The program is in progress at its baseline/configuration milestone. P01-P08 and
+their deterministic snapshots are frozen; external local-Codex and
+Web-plus-helix baseline attempts remain before any product feature or model
+default changes. Its purpose is not to imitate the local Codex interface. It is
+to measure the same coding tasks on the same repository snapshots and close
+proven gaps in correctness, safety, review quality, and workflow continuity.
 
 | Order | Milestone | User-visible outcome | Exit rule |
 | --- | --- | --- | --- |
-| 1 — Next | Baseline and configuration selection | A documented comparison of local Codex and Web-plus-helix, with an evidence-based model/profile choice | Freeze the P01-P08 task suite and record both baselines before changing product behavior |
+| 1 — In progress | Baseline and configuration selection | A documented comparison of local Codex and Web-plus-helix, with an evidence-based model/profile choice | Freeze the P01-P08 task suite and record both baselines before changing product behavior |
 | 2 — Planned | Shared repository context | Opened workspaces provide bounded, accurate repository context and a tree fingerprint | Prove clean, dirty, detached, non-Git, missing, and oversized cases without mutating index, checkout, or refs |
 | 3 — Planned | Review and verification freshness | The model can distinguish fresh verification from stale or legacy evidence after files change | Prove fresh → stale → reverified transitions and preserve existing clients |
 | 4 — Planned | Structured outcomes and questions | Codex can return completed, needs-input, or error outcomes without speculative edits and can continue the same thread after an answer | Prove persistence, restart behavior, same-session continuation, and provider compatibility |

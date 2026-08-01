@@ -1,0 +1,15 @@
+{
+  "schema": "dpkr-helix-parity-case/v1",
+  "id": "P05",
+  "title": "material ambiguity",
+  "hardSubset": true,
+  "workflow": { "localCodex": "implement-and-resume", "webHelix": "delegate-codex-implementer-and-resume" },
+  "task": "A partner update requires the default invoice rounding rule to change. The repository supports half-up and bankers rounding, but the request does not identify which rule the partner chose. Ask exactly one actionable question before modifying files.",
+  "continuationAnswer": "Use bankers rounding.",
+  "constraints": ["Make no file or Git change before the answer.", "Ask one closed material question that distinguishes half-up from bankers.", "After the answer, resume the same provider thread and update focused coverage."],
+  "acceptance": ["the first outcome requests input with zero workspace changes", "exactly one actionable question is returned", "the continuation reuses the same agent/provider session", "DEFAULT_ROUNDING becomes bankers", "node --test exits 0 after the continuation"],
+  "permissions": { "mode": "develop", "read": ["workspace/**"], "write": ["workspace/src/config.js", "workspace/test/round.test.js"], "shell": ["node --test"], "denied": ["mutation before input", "outside-workspace reads", "external writes"] },
+  "snapshot": { "seedDirectory": "seed", "workingTreeDirectory": null, "initialVerification": { "argv": ["node", "--test"], "expectedExitCode": 0 } },
+  "evidence": { "requiredVerification": ["zero diff before answer", "same provider-session identity", "node --test after answer"], "preserve": ["both rounding algorithms remain supported"], "forbid": ["speculative default selection", "second agent identity"] },
+  "timeLimitSeconds": 600
+}

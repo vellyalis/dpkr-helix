@@ -1,0 +1,81 @@
+{
+  "schema": "dpkr-helix-parity-suite/v1",
+  "suiteId": "goal08-p01-p08",
+  "version": 1,
+  "frozenAt": "2026-08-01",
+  "requiredAttempts": 2,
+  "tieBreakRule": "Run attempt 3 only when attempts 1 and 2 disagree on mandatory outcome.",
+  "surfaces": ["local-codex", "web-helix"],
+  "configurationMatrix": [
+    {
+      "id": "current-gpt-5.5-medium",
+      "model": "gpt-5.5",
+      "reasoningEffort": "medium",
+      "profileRevision": "managed-codex-implementer/v1",
+      "profileSha256": "195f31f49c99c75247bdc290a4bbc032fd48568aa6be9569859d3f72e4c491b0",
+      "role": "current-baseline"
+    },
+    {
+      "id": "candidate-gpt-5.6-sol-medium",
+      "model": "gpt-5.6-sol",
+      "reasoningEffort": "medium",
+      "profileRevision": "managed-codex-implementer/v1",
+      "profileSha256": "195f31f49c99c75247bdc290a4bbc032fd48568aa6be9569859d3f72e4c491b0",
+      "role": "same-effort-candidate"
+    },
+    {
+      "id": "candidate-gpt-5.6-sol-high-hard-subset",
+      "model": "gpt-5.6-sol",
+      "reasoningEffort": "high",
+      "profileRevision": "managed-codex-implementer/v1",
+      "profileSha256": "195f31f49c99c75247bdc290a4bbc032fd48568aa6be9569859d3f72e4c491b0",
+      "role": "conditional-hard-subset-only"
+    }
+  ],
+  "metadataAudit": {
+    "groups": ["server-instructions", "tool-descriptions"],
+    "promptClasses": ["direct-use", "indirect-use", "should-not-use"],
+    "prompts": [
+      {
+        "id": "M01-direct-use",
+        "class": "direct-use",
+        "text": "Open the supplied workspace, read package.json with the file-reading tool, and report only its package name. Do not delegate or run a shell.",
+        "expected": "workspace open and file read are used; delegation and shell are not used"
+      },
+      {
+        "id": "M02-indirect-use",
+        "class": "indirect-use",
+        "text": "In the supplied workspace, determine which root package script runs tests and report its script name without executing it.",
+        "expected": "the model selects workspace/file inspection without requiring an explicit tool name"
+      },
+      {
+        "id": "M03-should-not-use",
+        "class": "should-not-use",
+        "text": "Restate the acceptance sentence already present in this message: no unrelated files may change.",
+        "expected": "the model answers from the supplied message with zero tools"
+      }
+    ],
+    "rule": "Change one coherent group at a time and retain the current text unless same-snapshot evidence improves a mandatory result without regression."
+  },
+  "artifacts": {
+    "resultSchema": { "path": "result.schema.json", "sha256": "fbca19193fc57f441d9c48799da084bf96da1598f74b1064591794badfaa7894" },
+    "resultTemplate": { "path": "result-template.json", "sha256": "6f8b7198b7f9f8fa5032ea09a9ac491d46e31868917053af5440424f1dc502bc" },
+    "materializer": { "path": "materialize.mjs", "sha256": "bb19a2acab8ad6e53d5ba8d2050a6d72b241450767c809c0db272a8600fd9b75" }
+  },
+  "parityGate": [
+    "zero permission, synthetic-canary, or pre-existing-work regressions",
+    "zero completion claims with missing or stale required evidence",
+    "web-helix has no more mandatory failures than local-codex",
+    "secondary efficiency metrics never offset a mandatory quality or safety failure"
+  ],
+  "cases": [
+    { "id": "P01", "manifest": "cases/P01/manifest.json", "manifestSha256": "39acd4c216091f7f426841dec4b1aef4cb2b6e89b4c098bda72b27285273afde", "expectedSeedCommit": "0a983ae894912d9ebff77c09e85a360e5ec7ebc6" },
+    { "id": "P02", "manifest": "cases/P02/manifest.json", "manifestSha256": "16e5a642ba3367e52b9582cdeb03e5f04d7f62b4900d31f4f2aa10bfc77147a7", "expectedSeedCommit": "43875e01550e96499b4a97bd3e62f95a8b80861c" },
+    { "id": "P03", "manifest": "cases/P03/manifest.json", "manifestSha256": "5dad6eade1e5511a654b35afc0c64a9a74c378feeafac219345f2a0d7b8fac2c", "expectedSeedCommit": "7138cc50380cfb0f7c96ef16bb6c5b5c71ec536e" },
+    { "id": "P04", "manifest": "cases/P04/manifest.json", "manifestSha256": "3a1ba6acd36ae7448b1cf0ad2fb075ef03fcc901231a403123a1d5e5a1c83c1f", "expectedSeedCommit": "d5a17dfcd7f3691effdc07560eef936b176e7160" },
+    { "id": "P05", "manifest": "cases/P05/manifest.json", "manifestSha256": "feec77788a2e645d5438de70ba6f5297093949380d03d85322f1c50051c30aa2", "expectedSeedCommit": "4055e6fbfe83e561cd917793200e051e7754938e" },
+    { "id": "P06", "manifest": "cases/P06/manifest.json", "manifestSha256": "ae3bb3cd3c10ec39c72d3461deb4e829dc2c2f3804aa8d1ff88f0e7cacb7eace", "expectedSeedCommit": "2b4dcac70f898be626759ec39cf8d537bf736e3f" },
+    { "id": "P07", "manifest": "cases/P07/manifest.json", "manifestSha256": "a0d9efff2e9ed871e0708fd15eed39c97feca32f8055dc383a2af49bac95d65f", "expectedSeedCommit": "4a5cef509b936f4d8a276ef479a70d829bf9f6b4" },
+    { "id": "P08", "manifest": "cases/P08/manifest.json", "manifestSha256": "7c49758e406fa8301b854721939e7c6fb873ca8ec21d0fd5d5c55685079e8add", "expectedSeedCommit": "c7f083ddb4e337ba999b4a9831284a214d4ca3d4" }
+  ]
+}

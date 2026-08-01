@@ -1,0 +1,14 @@
+{
+  "schema": "dpkr-helix-parity-case/v1",
+  "id": "P03",
+  "title": "iterative repair",
+  "hardSubset": true,
+  "workflow": { "localCodex": "implement", "webHelix": "delegate-codex-implementer" },
+  "task": "Repair parseRetryDelay. It must accept exact non-negative integer strings including zero and reject signed, suffixed, blank, or oversized input. Run the focused test, then the full regression test.",
+  "constraints": ["Preserve the fallback argument contract.", "Do not weaken or delete tests.", "Do not add a dependency."],
+  "acceptance": ["npm run test:focused exits 0", "npm test exits 0", "zero is preserved", "partial numeric parses and values over 30000 use the fallback"],
+  "permissions": { "mode": "develop", "read": ["workspace/**"], "write": ["workspace/src/backoff.js", "workspace/test/**"], "shell": ["npm run test:focused", "npm test"], "denied": ["outside-workspace reads", "external writes"] },
+  "snapshot": { "seedDirectory": "seed", "workingTreeDirectory": null, "initialVerification": { "argv": ["npm", "test"], "expectedExitCode": 1 } },
+  "evidence": { "requiredVerification": ["npm run test:focused", "npm test"], "preserve": ["fallback remains caller-selectable"], "forbid": ["test deletion", "unrelated changes"] },
+  "timeLimitSeconds": 600
+}

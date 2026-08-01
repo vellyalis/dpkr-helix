@@ -1,0 +1,6 @@
+{
+  "name": "parity-p08",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test" }
+}

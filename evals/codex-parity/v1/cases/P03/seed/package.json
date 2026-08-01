@@ -1,0 +1,9 @@
+{
+  "name": "parity-p03",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:focused": "node --test test/backoff-focused.test.js",
+    "test": "node --test test/backoff-focused.test.js test/backoff-regression.test.js"
+  }
+}

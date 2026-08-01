@@ -1,15 +1,14 @@
 # DevSpace Control Center Handoff
 
-Last synchronized: 2026-08-01
+Last synchronized: 2026-08-02
 
 ## Current position
 
-- Current work unit: operational comfort and failure-tolerance follow-up;
-  independent second-opinion findings, `main` publication, three-platform CI,
-  physical installation, and live health proof complete.
+- Current work unit: GOAL_08 MWU-08.01 baseline and configuration selection;
+  the fixture-freeze phase is complete and external baseline execution remains.
 - GOAL_01 through GOAL_07: DONE.
-- GOAL_08 Codex-Parity Coding Quality: design accepted; implementation
-  `NOT_STARTED`.
+- GOAL_08 Codex-Parity Coding Quality: `IN_PROGRESS`; P01-P08 manifests,
+  deterministic snapshots, metadata prompts, and the result contract are frozen.
 - GOAL_09: `DONE`; the clean-history source repository is PUBLIC and public-clone
   acceptance passed.
 - Installed working directory: unchanged.
@@ -66,6 +65,9 @@ Last synchronized: 2026-08-01
   completes dependency/build/package preparation before downtime, and normal
   managed operation suppresses high-volume success logs while retaining
   warning/error evidence. Managed recovery content is refreshed on reinstall.
+- The dependency-free `evals/codex-parity/v1` suite materializes two local
+  Codex and two Web-plus-helix workspaces per case from fixed seed commits and
+  identical working-tree overlays. It changes no runtime owner or model default.
 
 ## Completed before this work unit
 
@@ -75,9 +77,10 @@ Last synchronized: 2026-08-01
 - GOAL_08 defines the measured same-snapshot parity suite, model/profile
   selection, bounded start context, review freshness, structured user input,
   and bounded wait behavior.
-- GOAL_08's first eligible implementation unit remains MWU-08.01: freeze
-  P01-P08 and record the current local-Codex versus Web-plus-helix baseline
-  before changing product code or model defaults.
+- GOAL_08's active unit is MWU-08.01. P01-P08 and the result template are
+  frozen; current local-Codex versus Web-plus-helix attempts, the candidate
+  comparison, and configuration adoption remain before any product feature or
+  model-default change.
 
 ## GOAL_09 completed release
 
@@ -146,8 +149,9 @@ Last synchronized: 2026-08-01
    current remote.
 5. Confirm GOAL_09 remains `DONE`; do not repeat its one-time clean-root cutover.
 6. Confirm the operational-comfort checkpoint and current local/public health.
-7. Continue GOAL_08 at MWU-08.01; WS-UPD-01 is complete on `main` and in the
-   installed runtime.
+7. Continue GOAL_08 at MWU-08.01 from the generated/frozen suite; do not
+   recreate its manifests. WS-UPD-01 is complete on `main` and in the installed
+   runtime.
 
 Do not recreate GOAL_01 through GOAL_08 documents. Do not start public cutover
 commands merely because the preparation work is complete.
@@ -183,9 +187,14 @@ commands merely because the preparation work is complete.
   recovery tests, two isolated Windows lifecycle passes, full tests, typecheck,
   production audit with zero vulnerabilities, public check, build, and hosted
   Ubuntu/macOS/Windows CI
+- 2026-08-02 MWU-08.01 fixture proof: manifest/artifact digest validation;
+  deterministic seed commits; 32 generated workspaces with one commit, starting
+  diff, and status per case; expected initial pass/fail boundaries for P01-P08;
+  P07's greater-than-5.5-second verification; P04 pre-existing-work hash; and
+  P08 outside-workspace synthetic-canary/no-output setup
 
 ## Exact next action
 
-Resume GOAL_08 at MWU-08.01: freeze P01-P08 and record the same-snapshot local
-Codex versus Web-plus-helix baseline before changing product behavior or model
-defaults.
+After explicit approval for external model/browser submissions, run the frozen
+current `gpt-5.5` medium baseline twice per surface and record sanitized results.
+Then compare `gpt-5.6-sol` at medium before considering high on the hard subset.

@@ -1,0 +1,6 @@
+{
+  "name": "parity-p01",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test test/parse-port.test.js" }
+}

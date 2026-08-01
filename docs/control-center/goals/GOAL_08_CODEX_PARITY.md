@@ -4,7 +4,8 @@
 
 ## Status
 
-`NOT_STARTED` — requirements and architecture are ready for implementation.
+`IN_PROGRESS` — MWU-08.01 fixture freeze is complete; external baseline and
+configuration comparison remain.
 
 ## Goal
 
@@ -605,6 +606,14 @@ representative corpus and repeated evidence.
 - compare high only on the hard subset after the same-effort baseline;
 - audit server/tool metadata with direct, indirect, and negative prompts;
 - accept one profile/prompt setting or retain the current setting with evidence.
+
+Progress on 2026-08-02: `evals/codex-parity/v1` freezes P01-P08 deterministic
+seed commits and working-tree overlays, two required attempts per surface, the
+model/profile matrix, direct/indirect/negative metadata prompts, and the
+sanitized result schema/template. Materialization produced 32 matching-start
+workspaces and all declared initial case boundaries passed. No external model
+attempt, configuration adoption, product feature, or model-default change is
+claimed yet.
 
 No product feature begins before this work unit closes.
 

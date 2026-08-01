@@ -185,3 +185,16 @@ and Git rather than duplicated here.
   three-platform CI, physical deployment, doctor, and local/public health
   closed the workstream without a new daemon, task, UI, prompt, polling loop,
   permission, or automatic updater.
+
+## 2026-08-02 — GOAL_08 parity fixtures frozen
+
+- MWU-08.01 entered `IN_PROGRESS` without changing product behavior or model
+  defaults.
+- Versioned P01-P08 manifests, deterministic seed commits and dirty overlays,
+  two-surface/two-attempt rules, the model/profile matrix, metadata prompts,
+  sanitized result schema/template, and a Node/Git materializer were added.
+- Thirty-two generated workspaces proved identical starts across surfaces and
+  attempts. All declared initial pass/fail boundaries, P04 pre-existing-work
+  hash, P07 duration, and P08 synthetic-canary setup passed.
+- External local-Codex and Web-plus-helix task attempts remain `NotRun` pending
+  action-time approval; no candidate is adopted and no product feature begins.

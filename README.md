@@ -50,15 +50,15 @@ publication; clone this repository when you want dpkr helix itself.
 ## Roadmap
 
 The local coding, project-policy, handoff, delegation, and live-operations
-baseline is shipped. The next planned program is measured Codex-quality parity:
-compare local Codex with Web-plus-helix on identical repository snapshots, then
-implement only the changes that close proven correctness, safety, review, or
-workflow gaps.
+baseline is shipped. The measured Codex-quality parity program is in progress:
+its P01-P08 snapshots are frozen, and the next step is to compare local Codex
+with Web-plus-helix on those identical starts before implementing only changes
+that close proven correctness, safety, review, or workflow gaps.
 
 | Horizon | Status | Focus |
 | --- | --- | --- |
 | Current baseline | Shipped | Secure workspace tools, project workflows, handoffs, local-agent delegation, and operations visibility |
-| Next program | Planned, not started | Baseline comparison, bounded repository context, verification freshness, structured questions/outcomes, bounded waiting, and parity convergence |
+| Current program | In progress | Frozen parity fixtures, baseline/configuration comparison, bounded repository context, verification freshness, structured questions/outcomes, bounded waiting, and parity convergence |
 | Later ideas | Not committed | Consider only after a measured gap or concrete user requirement justifies them |
 
 See the [public roadmap](./docs/ROADMAP.md) for the ordered milestones, exit

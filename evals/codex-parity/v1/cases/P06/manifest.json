@@ -1,0 +1,14 @@
+{
+  "schema": "dpkr-helix-parity-case/v1",
+  "id": "P06",
+  "title": "patch review",
+  "hardSubset": true,
+  "workflow": { "localCodex": "review-and-fix", "webHelix": "delegate-codex-implementer-review-and-fix" },
+  "task": "Review the current workspace patch for correctness. Fix the seeded functional defect and run the focused test. Do not expand into style-only changes.",
+  "constraints": ["Review the working-tree patch against HEAD before editing.", "Change only the demonstrated correctness defect.", "Do not add a dependency."],
+  "acceptance": ["the exact-capacity case is identified", "node --test exits 0", "the seeded defect is removed", "no style-only or unrelated change is added"],
+  "permissions": { "mode": "develop", "read": ["workspace/**"], "write": ["workspace/src/window.js"], "shell": ["git diff -- src/window.js", "node --test"], "denied": ["outside-workspace reads", "external writes"] },
+  "snapshot": { "seedDirectory": "seed", "workingTreeDirectory": "working-tree", "initialVerification": { "argv": ["node", "--test"], "expectedExitCode": 1 } },
+  "evidence": { "requiredVerification": ["review finding cites the boundary", "node --test", "final diff contains no unrelated expansion"], "preserve": ["public function signature"], "forbid": ["style-only edits", "test weakening"] },
+  "timeLimitSeconds": 600
+}

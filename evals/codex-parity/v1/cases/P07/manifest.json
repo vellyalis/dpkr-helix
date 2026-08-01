@@ -1,0 +1,14 @@
+{
+  "schema": "dpkr-helix-parity-case/v1",
+  "id": "P07",
+  "title": "long verification",
+  "hardSubset": false,
+  "workflow": { "localCodex": "implement", "webHelix": "delegate-and-wait" },
+  "task": "Fix formatStatus so snake_case status values become sentence-cased labels. Run the required long verification once and return its single final result.",
+  "constraints": ["Do not shorten, skip, duplicate, or background the required verification.", "Do not start a second worker while waiting.", "Do not add a dependency."],
+  "acceptance": ["npm test exits 0", "in_progress becomes In progress", "one verification process is started", "one agent identity is used", "wait/reconnect produces one final result"],
+  "permissions": { "mode": "develop", "read": ["workspace/**"], "write": ["workspace/src/status.js", "workspace/test/status.test.js"], "shell": ["npm test"], "denied": ["outside-workspace reads", "duplicate worker", "external writes"] },
+  "snapshot": { "seedDirectory": "seed", "workingTreeDirectory": null, "initialVerification": { "argv": ["npm", "test"], "expectedExitCode": 1, "minimumDurationMs": 5500 } },
+  "evidence": { "requiredVerification": ["single npm test process", "process exit 0", "agent identity and status-call count"], "preserve": ["verification delay"], "forbid": ["duplicate execution", "verification shortening"] },
+  "timeLimitSeconds": 600
+}

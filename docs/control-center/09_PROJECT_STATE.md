@@ -1,6 +1,6 @@
 # Project State
 
-Last synchronized: 2026-08-01
+Last synchronized: 2026-08-02
 
 ## Current state
 
@@ -17,9 +17,12 @@ Last synchronized: 2026-08-01
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; GOAL_08 remains the canonical next-program
   contract
-- Current maintenance unit: no-focus Codex review, bounded MCP session
-  retention, health-gated Windows recovery, low-downtime reinstall, and
-  ChatGPT-initiated managed update are on `main`, locally deployed, and verified
+- Current program unit: GOAL_08 MWU-08.01 baseline and configuration selection.
+  P01-P08 fixtures and result contracts are frozen; external baseline and
+  candidate attempts are not yet recorded.
+- No-focus Codex review, bounded MCP session retention, health-gated Windows
+  recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
+  on `main`, locally deployed, and verified.
 
 ## Goal status
 
@@ -32,7 +35,7 @@ Last synchronized: 2026-08-01
 | GOAL_05 Codex Handoff | DONE | structured local-agent handoff |
 | GOAL_06 Live Operations Dashboard | DONE | canonical live/retained operation views |
 | GOAL_07 Integration and Hardening | DONE | distribution, recovery, security, acceptance |
-| GOAL_08 Codex-Parity Coding Quality | NOT_STARTED | requirements/design accepted; MWU-08.01 next |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01 fixture freeze complete; external baseline next |
 | GOAL_09 Public Release Readiness | DONE | clean-history source release published and publicly verified |
 
 ## Goal model — GOAL_09
@@ -241,6 +244,21 @@ Completed release proof:
   production audit, and hosted Ubuntu/macOS/Windows CI passed before live
   physical deployment and local/public health verification.
 
+MWU-08.01 fixture proof:
+
+- `evals/codex-parity/v1` freezes the eight case manifests, deterministic seed
+  commits and overlays, two surfaces, two required attempts, model/profile
+  matrix, metadata prompts, and sanitized result schema/template;
+- the Node/Git materializer adds no runtime dependency, service, store, worker,
+  or product configuration and refuses digest, commit, path, or output reuse;
+- 32 generated workspaces had one commit, starting-diff digest, and status per
+  case across both surfaces and attempts;
+- P01-P04, P06, and P07 failed initially as declared; P05 and P08 passed; P07
+  exceeded 5.5 seconds; P04's pre-existing note matched its frozen SHA-256; and
+  P08 created only an outside-workspace synthetic canary with no leak output;
+- no model task, browser message, product feature, or model-default change has
+  yet been executed or adopted. Baseline result proof remains `NotRun`.
+
 Cutover outcome:
 
 - Source publication is complete and GOAL_09 is closed.
@@ -263,9 +281,10 @@ Cutover outcome:
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
 | an already-open ChatGPT app may cache the previous tool catalog | external host residual | refresh or reconnect the app once after this tool-surface deployment; later updates reuse the same tools |
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
+| parity model/host availability and external submissions are not yet proven | active MWU-08.01 evidence gap | require action-time approval, record blocked attempts truthfully, and never substitute or adopt a model without same-snapshot evidence |
 
 ## Next executable action
 
-Resume GOAL_08 at MWU-08.01: freeze P01-P08 and record the same-snapshot local
-Codex versus Web-plus-helix baseline before changing product behavior or model
-defaults.
+After explicit approval for external model/browser submissions, run the frozen
+current `gpt-5.5` medium baseline twice per surface and record sanitized results.
+Then compare `gpt-5.6-sol` at medium before considering high on the hard subset.

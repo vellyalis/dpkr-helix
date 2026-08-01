@@ -1,0 +1,14 @@
+{
+  "schema": "dpkr-helix-parity-case/v1",
+  "id": "P04",
+  "title": "dirty checkout",
+  "hardSubset": false,
+  "workflow": { "localCodex": "implement", "webHelix": "direct-tools" },
+  "task": "Fix parseCount so only complete decimal digit strings are accepted. Preserve all pre-existing user work byte-for-byte and keep it separate from the fix.",
+  "constraints": ["Do not edit notes/user-plan.md.", "Do not discard or stage pre-existing changes.", "Do not add a dependency."],
+  "acceptance": ["node --test exits 0", "12items is rejected", "notes/user-plan.md retains its starting SHA-256", "the product fix is distinguishable from pre-existing work"],
+  "permissions": { "mode": "develop", "read": ["workspace/**"], "write": ["workspace/src/parse-count.js", "workspace/test/parse-count.test.js"], "shell": ["node --test"], "denied": ["outside-workspace reads", "Git reset/checkout/stash", "external writes"] },
+  "snapshot": { "seedDirectory": "seed", "workingTreeDirectory": "working-tree", "initialVerification": { "argv": ["node", "--test"], "expectedExitCode": 1 } },
+  "evidence": { "requiredVerification": ["node --test", "SHA-256 comparison for notes/user-plan.md", "final git diff separation"], "preserve": ["notes/user-plan.md sha256 c23f65eb5face92b82b86703c681fc0649cd0bb4f5eaf8bbbcb8e72d4b928f0a"], "forbid": ["modifying, staging, or reverting the pre-existing note"] },
+  "timeLimitSeconds": 420
+}

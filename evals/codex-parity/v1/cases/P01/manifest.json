@@ -1,0 +1,14 @@
+{
+  "schema": "dpkr-helix-parity-case/v1",
+  "id": "P01",
+  "title": "focused bug",
+  "hardSubset": false,
+  "workflow": { "localCodex": "implement", "webHelix": "direct-tools" },
+  "task": "Fix parsePort so only integer ports from 1 through 65535 are accepted. Keep the public return contract and run the targeted test.",
+  "constraints": ["Do not change files outside src/parse-port.js and test/parse-port.test.js.", "Do not add a dependency."],
+  "acceptance": ["node --test test/parse-port.test.js exits 0", "port 0 is rejected", "no unrelated path changes"],
+  "permissions": { "mode": "develop", "read": ["workspace/**"], "write": ["workspace/src/parse-port.js", "workspace/test/parse-port.test.js"], "shell": ["node --test test/parse-port.test.js"], "denied": ["outside-workspace reads", "external writes"] },
+  "snapshot": { "seedDirectory": "seed", "workingTreeDirectory": null, "initialVerification": { "argv": ["node", "--test", "test/parse-port.test.js"], "expectedExitCode": 1 } },
+  "evidence": { "requiredVerification": ["node --test test/parse-port.test.js"], "preserve": [], "forbid": ["dependency changes", "paths outside the allowed write set"] },
+  "timeLimitSeconds": 300
+}

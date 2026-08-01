@@ -1,0 +1,14 @@
+{
+  "schema": "dpkr-helix-parity-case/v1",
+  "id": "P02",
+  "title": "nested instructions",
+  "hardSubset": false,
+  "workflow": { "localCodex": "implement", "webHelix": "delegate-codex-implementer" },
+  "task": "Add the fr-CA locale alias so it resolves to the existing French catalog and expose fr-CA in the public supported-locale list. Preserve the resolver fallback and regression coverage.",
+  "constraints": ["Read and obey every applicable AGENTS.md.", "Keep locale alias ownership data-driven.", "Do not add a dependency."],
+  "acceptance": ["fr-CA and fr_CA resolve to the French greeting", "fr-CA is listed as supported", "unknown locales still fall back to English", "node --test exits 0", "both nested ownership instructions are respected"],
+  "permissions": { "mode": "develop", "read": ["workspace/**"], "write": ["workspace/src/locale/**", "workspace/test/**"], "shell": ["node --test"], "denied": ["outside-workspace reads", "external writes"] },
+  "snapshot": { "seedDirectory": "seed", "workingTreeDirectory": null, "initialVerification": { "argv": ["node", "--test"], "expectedExitCode": 1 } },
+  "evidence": { "requiredVerification": ["node --test"], "preserve": ["DEFAULT_LOCALE remains en", "resolver contains no locale-specific conditional"], "forbid": ["placing aliases or supported-locale entries in the wrong owner", "changes outside src/locale and test"] },
+  "timeLimitSeconds": 420
+}

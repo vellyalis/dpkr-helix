@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dpkr.dev/evals/codex-parity/v1/result.schema.json",
+  "title": "dpkr helix Codex parity attempt result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "suiteId", "suiteVersion", "caseId", "surface", "attempt", "snapshot", "configuration", "outcome", "verification", "interventions", "metrics", "timing", "notes"],
+  "properties": {
+    "schema": { "const": "dpkr-helix-parity-result/v1" },
+    "suiteId": { "const": "goal08-p01-p08" },
+    "suiteVersion": { "const": 1 },
+    "caseId": { "enum": ["P01", "P02", "P03", "P04", "P05", "P06", "P07", "P08"] },
+    "surface": { "enum": ["local-codex", "web-helix"] },
+    "attempt": { "type": "integer", "minimum": 1, "maximum": 3 },
+    "snapshot": { "$ref": "#/$defs/snapshot" },
+    "configuration": { "$ref": "#/$defs/configuration" },
+    "outcome": { "$ref": "#/$defs/outcome" },
+    "verification": { "$ref": "#/$defs/verification" },
+    "interventions": { "type": "array", "items": { "type": "string", "maxLength": 300 } },
+    "metrics": { "$ref": "#/$defs/metrics" },
+    "timing": { "$ref": "#/$defs/timing" },
+    "notes": { "type": "array", "items": { "type": "string", "maxLength": 500 } }
+  },
+  "$defs": {
+    "nullableString": { "type": ["string", "null"] },
+    "resolvedString": { "type": "string", "minLength": 1, "not": { "const": "PENDING" } },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seedCommit", "startingDiffSha256", "manifestSha256"],
+      "properties": {
+        "seedCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "startingDiffSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "manifestSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["configurationId", "host", "controllerModel", "agentProfile", "provider", "model", "reasoningEffort", "profileRevision", "profileSha256", "serverRevision", "toolCatalogRevision"],
+      "properties": {
+        "configurationId": { "$ref": "#/$defs/resolvedString" },
+        "host": { "$ref": "#/$defs/resolvedString" },
+        "controllerModel": { "$ref": "#/$defs/nullableString" },
+        "agentProfile": { "$ref": "#/$defs/nullableString" },
+        "provider": { "$ref": "#/$defs/resolvedString" },
+        "model": { "$ref": "#/$defs/resolvedString" },
+        "reasoningEffort": { "$ref": "#/$defs/resolvedString" },
+        "profileRevision": { "$ref": "#/$defs/resolvedString" },
+        "profileSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "serverRevision": { "$ref": "#/$defs/resolvedString" },
+        "toolCatalogRevision": { "$ref": "#/$defs/resolvedString" }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mandatoryResult", "failureClassification", "acceptanceEvidence", "forbiddenChangeCount", "unrelatedChangeCount", "preExistingWorkPreserved", "completionClaimed"],
+      "properties": {
+        "mandatoryResult": { "enum": ["pass", "fail", "blocked"] },
+        "failureClassification": { "$ref": "#/$defs/nullableString" },
+        "acceptanceEvidence": { "type": "array", "items": { "type": "string", "maxLength": 500 } },
+        "forbiddenChangeCount": { "type": "integer", "minimum": 0 },
+        "unrelatedChangeCount": { "type": "integer", "minimum": 0 },
+        "preExistingWorkPreserved": { "type": ["boolean", "null"] },
+        "completionClaimed": { "type": "boolean" }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "state", "freshness", "commands"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "state": { "enum": ["passed", "failed", "missing"] },
+        "freshness": { "enum": ["missing", "fresh", "stale", "unknown_legacy", "not_applicable"] },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "exitCode", "durationMs"],
+            "properties": {
+              "label": { "type": "string", "maxLength": 160 },
+              "exitCode": { "type": "integer" },
+              "durationMs": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["toolCalls", "statusCalls", "providerTurns", "wallTimeMs", "inputTokens", "outputTokens", "cost"],
+      "properties": {
+        "toolCalls": { "type": "integer", "minimum": 0 },
+        "statusCalls": { "type": "integer", "minimum": 0 },
+        "providerTurns": { "type": "integer", "minimum": 1 },
+        "wallTimeMs": { "type": "integer", "minimum": 1 },
+        "inputTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "outputTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "cost": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startedAt", "endedAt"],
+      "properties": {
+        "startedAt": { "type": "string", "format": "date-time" },
+        "endedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "parity-p04",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test" }
+}
