@@ -478,11 +478,16 @@ try {
       $unmanagedCheckIndex -lt $playwrightWriteIndex
     ) `
     -Message "Unmanaged Playwright config is not checked before runtime writes."
-  $mainInstallIndex = $sourceText.LastIndexOf("Install-DevSpace -Root `$resolvedSourceRoot")
+  $mainInstallIndex = $sourceText.LastIndexOf("Install-PreparedDevSpace -PackagePath `$preparedInstallation.PackagePath")
   $mainStopIndex = $sourceText.LastIndexOf("Stop-DevSpaceRuntime", $mainInstallIndex)
+  $mainPrepareIndex = $sourceText.LastIndexOf("New-PreparedDevSpacePackage -Root `$resolvedSourceRoot")
   Assert-True `
-    -Condition ($mainStopIndex -ge 0 -and $mainStopIndex -lt $mainInstallIndex) `
-    -Message "Install mode does not stop the managed runtime before replacing dependencies."
+    -Condition (
+      $mainPrepareIndex -ge 0 -and
+      $mainPrepareIndex -lt $mainStopIndex -and
+      $mainStopIndex -lt $mainInstallIndex
+    ) `
+    -Message "Install mode does not finish fallible source preparation before stopping the runtime."
   Assert-True `
     -Condition $sourceText.Contains('"--allow-scripts=@waishnav/devspace"') `
     -Message "Global DevSpace install does not explicitly allow its reviewed postinstall repairs."

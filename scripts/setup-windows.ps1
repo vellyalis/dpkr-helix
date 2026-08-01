@@ -904,7 +904,7 @@ function Ensure-Prerequisites {
   }
 }
 
-function Install-DevSpace {
+function New-PreparedDevSpacePackage {
   param([Parameter(Mandatory = $true)][string] $Root)
   $npm = Get-CommandPath -Name "npm.cmd"
   if (-not $npm) {
@@ -914,27 +914,46 @@ function Install-DevSpace {
     throw "npm was not found after installing Node."
   }
   $packageRoot = New-UpdateTemporaryRoot
-  Write-Step "Installing the verified DevSpace checkout"
+  Write-Step "Preparing the verified DevSpace checkout"
   try {
     Push-Location $Root
     try {
-      Invoke-Checked -FilePath $npm -Arguments @("ci", "--include=dev")
-      Invoke-Checked -FilePath $npm -Arguments @("run", "build")
+      Invoke-Checked -FilePath $npm -Arguments @("ci", "--include=dev") | Out-Host
+      Invoke-Checked -FilePath $npm -Arguments @("run", "build") | Out-Host
     }
     finally {
       Pop-Location
     }
     $devspacePackage = New-DevSpacePackage -Root $Root -Destination $packageRoot
-    Install-BuiltDevSpacePackage -PackagePath $devspacePackage
-    Invoke-Checked -FilePath $npm -Arguments @(
-      "install",
-      "--global",
-      "@openai/codex@$CodexCliVersion"
-    )
+    return [pscustomobject]@{
+      PackagePath = $devspacePackage
+      TemporaryRoot = $packageRoot
+    }
   }
-  finally {
-    Remove-UpdateTemporaryRoot -Path $packageRoot
+  catch {
+    $preparationFailure = $_
+    try {
+      Remove-UpdateTemporaryRoot -Path $packageRoot
+    }
+    catch {
+      Write-Warning "Prepared package cleanup failed: $($_.Exception.Message)"
+    }
+    throw $preparationFailure
   }
+}
+
+function Install-PreparedDevSpace {
+  param([Parameter(Mandatory = $true)][string] $PackagePath)
+  $npm = Get-CommandPath -Name "npm.cmd"
+  if (-not $npm) {
+    $npm = Get-CommandPath -Name "npm"
+  }
+  Install-BuiltDevSpacePackage -PackagePath $PackagePath
+  Invoke-Checked -FilePath $npm -Arguments @(
+    "install",
+    "--global",
+    "@openai/codex@$CodexCliVersion"
+  )
 }
 
 function Get-GlobalNpmRoot {
@@ -2369,13 +2388,11 @@ if ($Mode -eq "Plan") {
 }
 
 $runtimeMutex = Enter-RuntimeOperation
+$preparedInstallation = $null
 try {
 Write-Step "Checking prerequisites"
 Ensure-Prerequisites
-Set-DesiredRuntimeState -State "stopped" | Out-Null
-Stop-DevSpaceRuntime
-Install-DevSpace -Root $resolvedSourceRoot
-Ensure-CodexLogin
+$preparedInstallation = New-PreparedDevSpacePackage -Root $resolvedSourceRoot
 
 Write-Step "Creating per-PC DevSpace configuration"
 $initialOrigin = if ($TunnelMode -eq "External") { $PublicBaseUrl } else { $null }
@@ -2383,12 +2400,6 @@ Ensure-DevSpaceConfig `
   -Roots $resolvedAllowedRoots `
   -LocalPort $Port `
   -InitialPublicBaseUrl $initialOrigin
-Install-AgentProfiles -Model $CodexModel
-
-if (-not $SkipBrowser) {
-  Write-Step "Installing Playwright MCP and the dedicated Edge launcher"
-  Install-PlaywrightMcp
-}
 
 $settings = [ordered]@{
   schema = "devspace-windows-bootstrap/v1"
@@ -2401,6 +2412,16 @@ $settings = [ordered]@{
   codexModel = $CodexModel
   codexCliVersion = $CodexCliVersion
   playwrightMcpVersion = $PlaywrightMcpVersion
+}
+
+Set-DesiredRuntimeState -State "stopped" | Out-Null
+Stop-DevSpaceRuntime
+Install-PreparedDevSpace -PackagePath $preparedInstallation.PackagePath
+Install-AgentProfiles -Model $CodexModel
+Ensure-CodexLogin
+if (-not $SkipBrowser) {
+  Write-Step "Installing Playwright MCP and the dedicated Edge launcher"
+  Install-PlaywrightMcp
 }
 Write-JsonAtomic -Path $script:SettingsPath -Value $settings
 Sync-ManagedSetupScript -SourcePath $PSCommandPath
@@ -2443,5 +2464,13 @@ Write-Host "In ChatGPT Developer mode, create or update the DevSpace app with th
 Write-Host "Quick Tunnel URLs change after tunnel restart. Use -TunnelMode External with a stable HTTPS origin for permanent use."
 }
 finally {
+  if ($preparedInstallation) {
+    try {
+      Remove-UpdateTemporaryRoot -Path $preparedInstallation.TemporaryRoot
+    }
+    catch {
+      Write-Warning "Prepared package cleanup failed: $($_.Exception.Message)"
+    }
+  }
   Exit-RuntimeOperation -Mutex $runtimeMutex
 }
