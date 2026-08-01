@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process";
 import { access, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, win32 } from "node:path";
 
 export const SYSTEM_UPDATE_PHASES = [
   "idle",
@@ -257,7 +257,7 @@ export function createWindowsSystemUpdateController(
       const requestId = dependencies.createRequestId();
       pendingLaunch = { requestId, startedAtMs: dependencies.now() };
       const powershell = dependencies.systemRoot
-        ? join(
+        ? win32.join(
             dependencies.systemRoot,
             "System32",
             "WindowsPowerShell",
