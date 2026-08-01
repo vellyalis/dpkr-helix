@@ -559,6 +559,9 @@ try {
     -Condition ($sourceText.Contains('if (-not $runtime.Reused)')) `
     -Message "Start failure can stop a pre-existing healthy runtime."
   Assert-True `
+    -Condition ($sourceText.Contains('-SourcePath (Join-Path $resolvedSourceRoot "scripts\setup-windows-recovery.ps1")')) `
+    -Message "Install mode does not refresh the managed recovery script."
+  Assert-True `
     -Condition (
       $sourceText.Contains('if ($Mode -eq "LaunchUpdate")') -and
       $sourceText.Contains('-WindowStyle Hidden') -and

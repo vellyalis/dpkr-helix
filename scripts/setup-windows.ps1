@@ -2425,6 +2425,10 @@ if (-not $SkipBrowser) {
 }
 Write-JsonAtomic -Path $script:SettingsPath -Value $settings
 Sync-ManagedSetupScript -SourcePath $PSCommandPath
+if ($TunnelMode -eq "External") {
+  Sync-ManagedRecoveryScript `
+    -SourcePath (Join-Path $resolvedSourceRoot "scripts\setup-windows-recovery.ps1")
+}
 $settingsForStart = Set-DesiredRuntimeState -State "running"
 
 Write-Step "Starting DevSpace"
