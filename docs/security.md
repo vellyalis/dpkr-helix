@@ -123,10 +123,12 @@ The tool accepts no path, branch, remote, command, package, or credential input.
 The managed setup script independently requires the canonical dpkr helix
 `origin`, a clean `main`, a fast-forward `origin/main`, and an External stable
 endpoint. Candidate code is verified in a temporary worktree before the live
-process stops and installed from a package archive, so the running installation
-does not retain a link to the temporary worktree. Update status returns only
-bounded state, timestamps, commit IDs, and reason codes. Local paths, Git/npm
-output, prompts, file contents, and credentials are excluded.
+process stops and installed from a package archive containing the dependency
+tree established by the verified lock, so the running installation neither
+retains a link to the temporary worktree nor re-resolves dependencies after
+preflight. Update status returns only bounded state, timestamps, commit IDs, and
+reason codes. Local paths, Git/npm output, prompts, file contents, and credentials
+are excluded.
 
 This does not make GitHub or the local account a sandbox. A compromised
 canonical repository, Git executable, npm registry/cache, Node runtime, or
