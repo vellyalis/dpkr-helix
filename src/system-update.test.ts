@@ -78,7 +78,6 @@ try {
   assert.equal("sourceRoot" in sanitized, false);
 
   const calls: Array<{ command: string; args: readonly string[]; options: SpawnOptions }> = [];
-  let unrefCalled = false;
   const controller = createWindowsSystemUpdateController({
     platform: "win32",
     userHome: root,
@@ -87,13 +86,8 @@ try {
     isProcessAlive: () => true,
     spawn: (command, args, options) => {
       calls.push({ command, args, options });
-      const child = new EventEmitter() as EventEmitter & {
-        unref(): void;
-      };
-      child.unref = () => {
-        unrefCalled = true;
-      };
-      queueMicrotask(() => child.emit("spawn"));
+      const child = new EventEmitter();
+      queueMicrotask(() => child.emit("close", 0, null));
       return child as unknown as ChildProcess;
     },
   });
@@ -104,15 +98,14 @@ try {
   assert.equal(calls[0]?.command, "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe");
   assert.deepEqual(calls[0]?.args.slice(-4), [
     "-Mode",
-    "Update",
+    "LaunchUpdate",
     "-UpdateRequestId",
     "00000000-0000-4000-8000-000000000002",
   ]);
-  assert.equal(calls[0]?.options.detached, true);
+  assert.equal(calls[0]?.options.detached, undefined);
   assert.equal(calls[0]?.options.windowsHide, true);
   assert.equal(calls[0]?.options.shell, false);
-  assert.equal(calls[0]?.options.stdio, "ignore");
-  assert.equal(unrefCalled, true);
+  assert.deepEqual(calls[0]?.options.stdio, ["ignore", "pipe", "pipe"]);
   const immediateDuplicate = await controller.requestUpdate();
   assert.equal(immediateDuplicate.accepted, false);
   assert.equal(immediateDuplicate.requestId, request.requestId);
@@ -129,6 +122,19 @@ try {
   await assert.rejects(
     () => launchFailure.requestUpdate(),
     (error: Error) => !error.message.includes(root) && error.message.includes("could not be started"),
+  );
+  const launcherFailure = createWindowsSystemUpdateController({
+    platform: "win32",
+    userHome: root,
+    spawn: () => {
+      const child = new EventEmitter();
+      queueMicrotask(() => child.emit("close", 1, null));
+      return child as unknown as ChildProcess;
+    },
+  });
+  await assert.rejects(
+    () => launcherFailure.requestUpdate(),
+    (error: Error) => error.message.includes("could not be started"),
   );
 
   await writeFile(join(devspaceDir, "windows-update.json"), JSON.stringify({

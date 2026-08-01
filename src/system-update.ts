@@ -62,12 +62,6 @@ interface PersistedUpdateStatus {
   updaterPid?: unknown;
 }
 
-interface SpawnedProcess {
-  once(event: "spawn", listener: () => void): ChildProcess;
-  once(event: "error", listener: (error: Error) => void): ChildProcess;
-  unref(): void;
-}
-
 interface SystemUpdateDependencies {
   platform: NodeJS.Platform;
   userHome: string;
@@ -78,7 +72,7 @@ interface SystemUpdateDependencies {
     command: string,
     args: readonly string[],
     options: SpawnOptions,
-  ) => SpawnedProcess;
+  ) => ChildProcess;
   createRequestId: () => string;
   isProcessAlive: (pid: number) => boolean;
   now: () => number;
@@ -266,7 +260,7 @@ export function createWindowsSystemUpdateController(
           )
         : "powershell.exe";
       try {
-        await launchDetached(
+        await launchHiddenUpdater(
           dependencies,
           powershell,
           [
@@ -278,7 +272,7 @@ export function createWindowsSystemUpdateController(
             "-File",
             setupPath,
             "-Mode",
-            "Update",
+            "LaunchUpdate",
             "-UpdateRequestId",
             requestId,
           ],
@@ -306,7 +300,7 @@ export function createWindowsSystemUpdateController(
   };
 }
 
-async function launchDetached(
+async function launchHiddenUpdater(
   dependencies: SystemUpdateDependencies,
   command: string,
   args: readonly string[],
@@ -315,15 +309,23 @@ async function launchDetached(
   await new Promise<void>((resolve, reject) => {
     const child = dependencies.spawn(command, args, {
       cwd,
-      detached: true,
       shell: false,
-      stdio: "ignore",
+      stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,
     });
-    child.once("error", reject);
-    child.once("spawn", () => {
-      child.unref();
-      resolve();
+    child.stdout?.resume();
+    child.stderr?.resume();
+    let settled = false;
+    child.once("error", (error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    });
+    child.once("close", (code) => {
+      if (settled) return;
+      settled = true;
+      if (code === 0) resolve();
+      else reject(new Error(`Update launcher exited with code ${code ?? "unknown"}.`));
     });
   });
 }

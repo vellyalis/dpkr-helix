@@ -497,7 +497,9 @@ try {
     -Condition ($sourceText.Contains("RecoveryStart") -and $sourceText.Contains("-ForceRestart")) `
     -Message "Recovery start recheck or explicit install restart is missing."
   Assert-True `
-    -Condition ($sourceText.Contains('ValidateSet("Install", "Start", "Stop", "Plan", "Update")')) `
+    -Condition (
+      $sourceText.Contains('ValidateSet("Install", "Start", "Stop", "Plan", "Update", "LaunchUpdate")')
+    ) `
     -Message "Portable setup does not expose Update mode."
   $preflightIndex = $sourceText.IndexOf("Invoke-UpdatePreflight -Root `$worktreePath")
   $updateStopIndex = $sourceText.IndexOf("Stop-DevSpaceRuntime", $preflightIndex)
@@ -536,6 +538,14 @@ try {
       -not $sourceText.Contains('Install-BuiltDevSpacePackage -PackagePath $worktreePath')
     ) `
     -Message "Update installation is linked to its disposable candidate worktree."
+  Assert-True `
+    -Condition (
+      $sourceText.Contains('if ($Mode -eq "LaunchUpdate")') -and
+      $sourceText.Contains('-WindowStyle Hidden') -and
+      $sourceText.Contains('windows-update.out.log') -and
+      $sourceText.Contains('windows-update.err.log')
+    ) `
+    -Message "The hidden update launcher or bounded update logs are missing."
 
   $planOutput = & powershell.exe `
     -NoProfile `

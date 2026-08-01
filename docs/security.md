@@ -129,7 +129,9 @@ therefore neither retains a link to the temporary worktree nor keeps
 semver-compatible versions resolved independently during global installation.
 Update status returns only bounded state, timestamps, commit IDs, and reason
 codes. Local paths, Git/npm output, prompts, file contents, and credentials are
-excluded.
+excluded. The hidden launcher redirects updater output to two fixed local log
+files that are replaced on each request; updater output is never returned to an
+MCP caller.
 
 This does not make GitHub or the local account a sandbox. A compromised
 canonical repository, Git executable, npm registry/cache, Node runtime, or

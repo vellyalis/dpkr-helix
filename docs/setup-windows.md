@@ -149,7 +149,8 @@ The updater:
 4. packages both the verified candidate and current installation, avoiding an
    npm link from the live runtime to the disposable worktree;
 5. stops and replaces dpkr helix from the candidate archive only after
-   preflight succeeds, using a hidden one-shot process;
+   preflight succeeds, using a short hidden launcher and a separate hidden
+   one-shot updater whose two local log files are replaced on every request;
 6. checks the CLI, local/public OAuth metadata, and Codex delegation;
 7. fast-forwards the managed source and updates the managed recovery scripts;
 8. restores the previous package, source commit, scripts, desired state, and

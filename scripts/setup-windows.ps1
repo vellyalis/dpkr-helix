@@ -34,7 +34,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup-windows.ps1 `
 
 [CmdletBinding()]
 param(
-  [ValidateSet("Install", "Start", "Stop", "Plan", "Update")]
+  [ValidateSet("Install", "Start", "Stop", "Plan", "Update", "LaunchUpdate")]
   [string] $Mode = "Install",
 
   [string] $SourceRoot,
@@ -2217,6 +2217,47 @@ function Invoke-UpdateMode {
   }
 }
 
+function Invoke-UpdateLaunchMode {
+  if (-not $UpdateRequestId) {
+    throw "-UpdateRequestId is required for the internal update launcher."
+  }
+  $settings = Read-JsonFile -Path $script:SettingsPath
+  if (-not $settings -or -not [string] $settings.sourceRoot) {
+    throw "Portable setup settings are missing."
+  }
+  $powershell = Join-Path $env:SystemRoot "System32\WindowsPowerShell\v1.0\powershell.exe"
+  if (-not (Test-Path -LiteralPath $powershell -PathType Leaf)) {
+    throw "Windows PowerShell is not available."
+  }
+  $workingDirectory = [System.IO.Path]::GetFullPath([string] $settings.sourceRoot)
+  if (-not (Test-Path -LiteralPath $workingDirectory -PathType Container)) {
+    throw "The managed source checkout is unavailable."
+  }
+  New-Item -ItemType Directory -Path $script:LogDir -Force | Out-Null
+  $stdoutPath = Join-Path $script:LogDir "windows-update.out.log"
+  $stderrPath = Join-Path $script:LogDir "windows-update.err.log"
+  $argumentLine = @(
+    "-NoLogo",
+    "-NoProfile",
+    "-NonInteractive",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    "`"$PSCommandPath`"",
+    "-Mode",
+    "Update",
+    "-UpdateRequestId",
+    $UpdateRequestId
+  ) -join " "
+  Start-Process `
+    -FilePath $powershell `
+    -ArgumentList $argumentLine `
+    -WorkingDirectory $workingDirectory `
+    -WindowStyle Hidden `
+    -RedirectStandardOutput $stdoutPath `
+    -RedirectStandardError $stderrPath | Out-Null
+}
+
 if ($Mode -eq "Stop") {
   $runtimeMutex = Enter-RuntimeOperation
   try {
@@ -2246,6 +2287,11 @@ if ($Mode -eq "Start") {
 
 if ($Mode -eq "Update") {
   Invoke-UpdateMode
+  exit 0
+}
+
+if ($Mode -eq "LaunchUpdate") {
+  Invoke-UpdateLaunchMode
   exit 0
 }
 
