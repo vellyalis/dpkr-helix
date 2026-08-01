@@ -25,11 +25,12 @@ measured baseline shows that it would not improve a real outcome.
 ## Current program: measured Codex-quality parity
 
 The program is in progress at its baseline/configuration milestone. P01-P08 and
-their deterministic snapshots are frozen; external local-Codex and
-Web-plus-helix baseline attempts remain before any product feature or model
-default changes. Its purpose is not to imitate the local Codex interface. It is
-to measure the same coding tasks on the same repository snapshots and close
-proven gaps in correctness, safety, review quality, and workflow continuity.
+their deterministic snapshots are frozen, and the current local-Codex versus
+Web-plus-helix baseline is recorded. Candidate comparison and configuration
+selection remain before any product feature or model-default change. Its
+purpose is not to imitate the local Codex interface. It is to measure the same
+coding tasks on the same repository snapshots and close proven gaps in
+correctness, safety, review quality, and workflow continuity.
 
 | Order | Milestone | User-visible outcome | Exit rule |
 | --- | --- | --- | --- |

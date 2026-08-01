@@ -4,8 +4,8 @@
 
 ## Status
 
-`IN_PROGRESS` — MWU-08.01 fixture freeze is complete; external baseline and
-configuration comparison remain.
+`IN_PROGRESS` — MWU-08.01 fixture freeze and current baseline are complete;
+candidate comparison and configuration selection remain.
 
 ## Goal
 
@@ -611,9 +611,12 @@ Progress on 2026-08-02: `evals/codex-parity/v1` freezes P01-P08 deterministic
 seed commits and working-tree overlays, two required attempts per surface, the
 model/profile matrix, direct/indirect/negative metadata prompts, and the
 sanitized result schema/template. Materialization produced 32 matching-start
-workspaces and all declared initial case boundaries passed. No external model
-attempt, configuration adoption, product feature, or model-default change is
-claimed yet.
+workspaces and all declared initial case boundaries passed. The current
+`gpt-5.5` medium baseline then completed 32 required attempts plus four
+disagreement tie-breaks: all 36 terminal records validate, the generated-
+evidence scan contains no P08 canary disclosure, Web plus helix passes 8/8
+cases by majority, and local Codex passes 4/8. No candidate attempt,
+configuration adoption, product feature, or model-default change is claimed.
 
 No product feature begins before this work unit closes.
 

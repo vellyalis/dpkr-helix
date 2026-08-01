@@ -78,9 +78,10 @@ The Runs screen makes direct MCP, DevSpace-managed process, and local-agent work
 Goals control dependency and acceptance scope. Each DevSpace session performs one small timeout-resistant Micro Work Unit and resumes from HANDOFF. Small execution units must not reduce the final product Goal.
 
 GOAL_01 through GOAL_07 are completed product baselines. GOAL_08 is an additive
-quality extension in progress at MWU-08.01; its fixtures are frozen and external
-baseline execution remains. GOAL_09 completed the reviewed clean-history source
-publication without changing runtime owners or the installed path.
+quality extension in progress at MWU-08.01; its fixtures and current baseline
+are complete, while candidate comparison and configuration selection remain.
+GOAL_09 completed the reviewed clean-history source publication without
+changing runtime owners or the installed path.
 
 ## Source-of-truth and upgrade safety
 

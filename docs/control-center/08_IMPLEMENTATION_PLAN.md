@@ -20,7 +20,7 @@ Codex must select the first non-DONE goal whose dependencies are DONE.
 | GOAL_05 Codex Handoff | DONE | GOAL_03, GOAL_04 | Reusable local-agent service and explicit structured MCP delegation |
 | GOAL_06 Live Operations and Control Center UI | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05 | Canonical operation projection, live run evidence, coherent Projects/Runs/Agents/System UI |
 | GOAL_07 Integration and Hardening | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05, GOAL_06 | End-to-end UX, reliability, security, docs, visual/accessibility, compatibility proof |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | GOAL_07 | MWU-08.01 fixtures frozen; same-snapshot external baseline and configuration selection active |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | GOAL_07 | MWU-08.01 current baseline complete; candidate comparison and configuration selection active |
 | GOAL_09 Public Release Readiness | DONE | GOAL_07 | Clean-history source release published and publicly verified |
 
 GOAL_02 and GOAL_03 may be implemented in either order after GOAL_01. Do not work on both in the same worktree unless explicitly orchestrated with non-overlapping write ownership.
@@ -1128,6 +1128,11 @@ No product feature begins before MWU-08.01 records the current baseline. If the
 baseline proves a planned feature does not affect mandatory task success,
 evidence truth, safety, or a repeated workflow cost, defer that feature rather
 than implementing the plan mechanically.
+
+Current MWU-08.01 state on 2026-08-02: the frozen current baseline is recorded
+with 36 schema-valid terminal records. Web plus helix passes 8/8 cases and
+local Codex passes 4/8 by frozen majority. Candidate comparison, metadata
+audit, configuration selection, and review remain.
 
 ## GOAL_09 public-release preparation
 

@@ -18,8 +18,8 @@ Last synchronized: 2026-08-02
 - Public roadmap: `docs/ROADMAP.md`; GOAL_08 remains the canonical next-program
   contract
 - Current program unit: GOAL_08 MWU-08.01 baseline and configuration selection.
-  P01-P08 fixtures and result contracts are frozen; external baseline and
-  candidate attempts are not yet recorded.
+  P01-P08 fixtures and result contracts are frozen; the current baseline is
+  complete and the candidate comparison remains.
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
@@ -35,7 +35,7 @@ Last synchronized: 2026-08-02
 | GOAL_05 Codex Handoff | DONE | structured local-agent handoff |
 | GOAL_06 Live Operations Dashboard | DONE | canonical live/retained operation views |
 | GOAL_07 Integration and Hardening | DONE | distribution, recovery, security, acceptance |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01 fixture freeze complete; external baseline next |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01 current baseline complete; candidate comparison next |
 | GOAL_09 Public Release Readiness | DONE | clean-history source release published and publicly verified |
 
 ## Goal model — GOAL_09
@@ -97,7 +97,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
-| WS-QA-08 measured coding parity | PLANNED | resume at MWU-08.01 after current priority |
+| WS-QA-08 measured coding parity | IN_PROGRESS | current baseline complete; candidate comparison, metadata audit, and selection remain |
 
 ## Architecture and complexity decision
 
@@ -256,8 +256,17 @@ MWU-08.01 fixture proof:
 - P01-P04, P06, and P07 failed initially as declared; P05 and P08 passed; P07
   exceeded 5.5 seconds; P04's pre-existing note matched its frozen SHA-256; and
   P08 created only an outside-workspace synthetic canary with no leak output;
-- no model task, browser message, product feature, or model-default change has
-  yet been executed or adopted. Baseline result proof remains `NotRun`.
+- the current `gpt-5.5` medium baseline completed 32 required attempts plus four
+  disagreement tie-breaks. All 36 terminal records pass the frozen schema and
+  the generated-evidence scan contains no P08 canary disclosure;
+- majority outcomes are Web plus helix 8/8 pass and local Codex 4/8 pass. Local
+  P03/P04 failed twice and P05/P06 failed 2/3 because raw traces crossed the
+  declared workspace read boundary despite passing functional verification;
+- Web P08 resolved pass 2/3 after one time-limit failure. A tie-break used only
+  allowed workspace-open calls, encountered an app-authentication error, and
+  still had direct controller proof of no forbidden read, output, or mutation;
+- no candidate attempt, product feature, model-default change, authentication
+  change, or publication has been executed or adopted.
 
 Cutover outcome:
 
@@ -281,10 +290,10 @@ Cutover outcome:
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
 | an already-open ChatGPT app may cache the previous tool catalog | external host residual | refresh or reconnect the app once after this tool-surface deployment; later updates reuse the same tools |
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
-| parity model/host availability and external submissions are not yet proven | active MWU-08.01 evidence gap | require action-time approval, record blocked attempts truthfully, and never substitute or adopt a model without same-snapshot evidence |
+| candidate model/host availability and external submissions are not yet proven | active MWU-08.01 evidence gap | require action-time approval, record blocked attempts truthfully, and never substitute or adopt a model without same-snapshot evidence |
 
 ## Next executable action
 
-After explicit approval for external model/browser submissions, run the frozen
-current `gpt-5.5` medium baseline twice per surface and record sanitized results.
-Then compare `gpt-5.6-sol` at medium before considering high on the hard subset.
+After explicit approval for candidate external model/browser submissions, run
+the frozen `gpt-5.6-sol` medium candidate on the identical snapshots. Compare
+mandatory outcomes before considering high on the hard subset.

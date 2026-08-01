@@ -58,7 +58,7 @@ until the corresponding Micro Work Units execute.
 
 | Requirement IDs | Planned owner / implementation surface | Required evidence | Status |
 | --- | --- | --- | --- |
-| FR-PAR-001, FR-PAR-002, FR-PAR-003, FR-PAR-004, NFR-PAR-008, NFR-PAR-010 | `evals/codex-parity/v1`; explicit local-agent profiles; server/tool metadata | frozen P01-P08 manifests/snapshots/result contract; current baseline and candidate attempts remain | In progress |
+| FR-PAR-001, FR-PAR-002, FR-PAR-003, FR-PAR-004, NFR-PAR-008, NFR-PAR-010 | `evals/codex-parity/v1`; explicit local-agent profiles; server/tool metadata | frozen P01-P08 manifests/snapshots/result contract; current baseline complete; candidate attempts and configuration selection remain | In progress |
 | FR-PAR-005, FR-PAR-006, FR-PAR-007, NFR-PAR-002, NFR-PAR-004, NFR-PAR-005 | workspace result serialization; repository-diff/review fingerprint helper; bounded root manifest reader | clean/dirty/detached/non-Git/missing/oversized fixtures and no-mutation proof | Planned |
 | FR-PAR-008, FR-PAR-009, FR-PAR-010, FR-PAR-011, FR-PAR-012, NFR-PAR-003, NFR-PAR-006, NFR-PAR-007, NFR-PAR-009 | review checkpoints, `show_changes`, process verification projector, operation evidence/store | model-visible bounds, same-workspace rejection, legacy unknown, fresh/edit/stale/reverify/fresh | Planned |
 | FR-PAR-013, FR-PAR-014, FR-PAR-015, NFR-PAR-005, NFR-PAR-006, NFR-PAR-009 | Codex SDK runtime, LocalAgentService/store, local-agent operation/MCP/dashboard projections | structured completed/question/error, persistence, restart, same-thread continuation, provider compatibility | Planned |

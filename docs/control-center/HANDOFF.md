@@ -5,7 +5,8 @@ Last synchronized: 2026-08-02
 ## Current position
 
 - Current work unit: GOAL_08 MWU-08.01 baseline and configuration selection;
-  the fixture-freeze phase is complete and external baseline execution remains.
+  the fixture freeze and current baseline are complete; candidate comparison
+  remains.
 - GOAL_01 through GOAL_07: DONE.
 - GOAL_08 Codex-Parity Coding Quality: `IN_PROGRESS`; P01-P08 manifests,
   deterministic snapshots, metadata prompts, and the result contract are frozen.
@@ -68,6 +69,10 @@ Last synchronized: 2026-08-02
 - The dependency-free `evals/codex-parity/v1` suite materializes two local
   Codex and two Web-plus-helix workspaces per case from fixed seed commits and
   identical working-tree overlays. It changes no runtime owner or model default.
+- The current `gpt-5.5` medium baseline is complete: all 36 used terminal
+  records validate, the generated-evidence scan contains no P08 canary
+  disclosure, Web plus helix passes 8/8 cases by majority, and local Codex
+  passes 4/8. Candidate execution has not started.
 
 ## Completed before this work unit
 
@@ -78,9 +83,9 @@ Last synchronized: 2026-08-02
   selection, bounded start context, review freshness, structured user input,
   and bounded wait behavior.
 - GOAL_08's active unit is MWU-08.01. P01-P08 and the result template are
-  frozen; current local-Codex versus Web-plus-helix attempts, the candidate
-  comparison, and configuration adoption remain before any product feature or
-  model-default change.
+  frozen; the current local-Codex versus Web-plus-helix baseline is recorded.
+  Candidate comparison and configuration adoption remain before any product
+  feature or model-default change.
 
 ## GOAL_09 completed release
 
@@ -150,8 +155,8 @@ Last synchronized: 2026-08-02
 5. Confirm GOAL_09 remains `DONE`; do not repeat its one-time clean-root cutover.
 6. Confirm the operational-comfort checkpoint and current local/public health.
 7. Continue GOAL_08 at MWU-08.01 from the generated/frozen suite; do not
-   recreate its manifests. WS-UPD-01 is complete on `main` and in the installed
-   runtime.
+   recreate its manifests or rerun the completed current baseline. WS-UPD-01 is
+   complete on `main` and in the installed runtime.
 
 Do not recreate GOAL_01 through GOAL_08 documents. Do not start public cutover
 commands merely because the preparation work is complete.
@@ -192,9 +197,13 @@ commands merely because the preparation work is complete.
   diff, and status per case; expected initial pass/fail boundaries for P01-P08;
   P07's greater-than-5.5-second verification; P04 pre-existing-work hash; and
   P08 outside-workspace synthetic-canary/no-output setup
+- 2026-08-02 MWU-08.01 current-baseline proof: 32 required attempts and four
+  disagreement tie-breaks; 36 schema-valid terminal records; clean generated-
+  evidence canary scan; Web plus helix 8/8 majority passes versus local Codex
+  4/8; no product, model-default, authentication, or publication change
 
 ## Exact next action
 
-After explicit approval for external model/browser submissions, run the frozen
-current `gpt-5.5` medium baseline twice per surface and record sanitized results.
-Then compare `gpt-5.6-sol` at medium before considering high on the hard subset.
+After explicit approval for candidate external model/browser submissions, run
+the frozen `gpt-5.6-sol` medium candidate on identical snapshots. Compare
+mandatory outcomes before considering high on the hard subset.
