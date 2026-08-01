@@ -17,9 +17,9 @@ Last synchronized: 2026-08-01
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; GOAL_08 remains the canonical next-program
   contract
-- Current maintenance unit: no-focus Codex review launch, health-gated Windows
-  recovery, and ChatGPT-initiated managed update are on `main`, locally
-  deployed, and verified
+- Current maintenance unit: no-focus Codex review, bounded MCP session
+  retention, health-gated Windows recovery, low-downtime reinstall, and
+  ChatGPT-initiated managed update are on `main`, locally deployed, and verified
 
 ## Goal status
 
@@ -78,6 +78,7 @@ publishing the compatibility package accidentally.
 | Windows Codex child launch | install-time verified single `windowsHide: true` option | dependency update alone still omits the no-console option; SDK fork creates a second owner |
 | Windows recovery trigger | existing limited-user no-console task plus canonical health-gated recovery | legacy public-or-local failure rule restarted healthy local state during tunnel-only outages |
 | Managed Windows update | physical packed install plus canonical setup transaction and hidden MCP request/status launcher | source Junction lets maintenance lock or mutate live files; arbitrary shell loses ownership/result across self-restart; daemon/polling/dashboard add friction or a second owner |
+| MCP session retention | active-request protection plus a 64-session inactive LRU bound | 24-hour time-only retention allowed hosts that omit DELETE to grow heap without bound; shorter global timeouts can break legitimate reused sessions |
 
 ## Workstream portfolio
 
@@ -91,6 +92,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-01 no-focus Codex review | VERIFIED | real reviewer launch/continuation causes no console foreground transition |
 | WS-OPS-02 health-gated recovery | VERIFIED | public-only failure preserves local state; local failure restarts once; installed task passes |
 | WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
+| WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
 | WS-QA-08 measured coding parity | PLANNED | resume at MWU-08.01 after current priority |
 
@@ -147,6 +149,21 @@ coupling between repository maintenance and the running native module. MCP uses
 a short hidden launcher whose output is drained; the launcher delegates to a
 hidden worker with two overwritten local logs. This closes the Windows process
 launch failure without adding a persistent process or user-facing console.
+
+Connection retention remains in the existing MCP session registry. Active
+requests cannot be evicted; inactive sessions are touched on reuse and the
+oldest abandoned entries close above 64. This directly bounds the measured
+per-session heap cost without shortening valid sessions or adding polling,
+client prompts, persistence, or another transport owner.
+
+Windows lifecycle hardening also stays in the canonical setup owner. Rollback
+packages are packed from the exact physical runtime, Stop terminates the
+verified process tree, public metadata waits are bounded, and live-but-stale
+updaters remain active rather than advertising an unsafe retry. Reinstall does
+its expensive source preparation while the service remains available and
+refreshes managed recovery content. High-volume successful request/tool logs
+are disabled for the managed service; warnings, errors, and operation evidence
+remain available.
 
 ## Verification surface
 
@@ -208,6 +225,21 @@ Completed release proof:
 - the installed controller accepted a hidden update request, matched its
   persisted request ID, and completed inactive with `UP_TO_DATE` at the current
   `main` commit.
+- sanitized live logs showed 203 unclosed MCP sessions in about 20 minutes and
+  a production benchmark measured about 0.83 MiB heap per retained session;
+  after the inactive LRU bound, heap stayed near 110 MiB from 64 through 200
+  created sessions;
+- an independent second-opinion review identified recovery-wrapper waiting,
+  stale rollback artifacts, descendant workers, unbounded metadata waits,
+  healthy-runtime teardown, reinstall outage exposure, and success-log growth;
+  accepted findings were closed inside existing owners;
+- focused Windows tests proved bounded probes, exact installed rollback source,
+  process identity/tree stop policy, wrapper-only recovery wait, safe retry
+  status, and install ordering; isolated lifecycle integration passed initial
+  install and running reinstall; and
+- full tests, typecheck, build, public-release check, zero-vulnerability
+  production audit, and hosted Ubuntu/macOS/Windows CI passed before live
+  physical deployment and local/public health verification.
 
 Cutover outcome:
 

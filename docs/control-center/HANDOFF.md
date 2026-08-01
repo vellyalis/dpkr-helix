@@ -4,9 +4,9 @@ Last synchronized: 2026-08-01
 
 ## Current position
 
-- Current work unit: ChatGPT-initiated Windows update; `main` publication,
-  three-platform CI, physical installation, and live request/status proof
-  complete.
+- Current work unit: operational comfort and failure-tolerance follow-up;
+  independent second-opinion findings, `main` publication, three-platform CI,
+  physical installation, and live health proof complete.
 - GOAL_01 through GOAL_07: DONE.
 - GOAL_08 Codex-Parity Coding Quality: design accepted; implementation
   `NOT_STARTED`.
@@ -53,6 +53,19 @@ Last synchronized: 2026-08-01
   exits. It uses two bounded local log files, creates no scheduled updater,
   daemon, UI, prompt, or automatic update, and passed a live `UP_TO_DATE`
   request through the installed controller.
+- Abandoned MCP transports are capped at 64 inactive least-recently-used
+  sessions while active requests remain protected. The observed host pattern
+  created 203 sessions in about 20 minutes and consumed about 0.83 MiB of heap
+  per retained session; the bounded build plateaued near 110 MiB through 200
+  creations instead of reaching about 222 MiB.
+- Update rollback now captures the exact physical package that was running,
+  managed Stop terminates its verified process tree, metadata probes have a
+  ten-second bound, stale-but-live updater state forbids unsafe retries, and a
+  failed no-op Start preserves the pre-existing healthy runtime.
+- Scheduled recovery waits only for the immediate setup wrapper, reinstall
+  completes dependency/build/package preparation before downtime, and normal
+  managed operation suppresses high-volume success logs while retaining
+  warning/error evidence. Managed recovery content is refreshed on reinstall.
 
 ## Completed before this work unit
 
@@ -132,7 +145,7 @@ Last synchronized: 2026-08-01
 4. Reconcile `git status --short --branch`, `git log -5 --oneline`, and the
    current remote.
 5. Confirm GOAL_09 remains `DONE`; do not repeat its one-time clean-root cutover.
-6. Confirm the operational-stability checkpoint and current local/public health.
+6. Confirm the operational-comfort checkpoint and current local/public health.
 7. Continue GOAL_08 at MWU-08.01; WS-UPD-01 is complete on `main` and in the
    installed runtime.
 
@@ -164,6 +177,12 @@ commands merely because the preparation work is complete.
 - live physical package and exact dependency proof; managed script equality;
   doctor exit `0`; desired-running state; local/public health; and an installed
   controller request that ended `UP_TO_DATE` with the same request ID
+- 2026-08-01 comfort/failure-tolerance proof: sanitized runtime-log analysis,
+  before/after retained-session heap measurement, independent ultra-reasoning
+  review, exact rollback-archive and process-tree probes, focused setup/update/
+  recovery tests, two isolated Windows lifecycle passes, full tests, typecheck,
+  production audit with zero vulnerabilities, public check, build, and hosted
+  Ubuntu/macOS/Windows CI
 
 ## Exact next action
 

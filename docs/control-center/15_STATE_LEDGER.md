@@ -164,3 +164,24 @@ and Git rather than duplicated here.
   and an installed-controller request that ended `UP_TO_DATE` with matching
   persisted identity.
 - WS-UPD-01 is `DONE`; the next executable unit returns to GOAL_08 MWU-08.01.
+
+## 2026-08-01 — Operational comfort second opinion closed
+
+- Sanitized live logs exposed a host pattern that created 203 MCP sessions in
+  about 20 minutes without closing them. Production measurement showed about
+  0.83 MiB of heap per retained session.
+- The existing session registry now protects active requests and retains at
+  most 64 inactive least-recently-used sessions. A 200-creation benchmark
+  plateaued near 110 MiB instead of continuing to about 222 MiB.
+- Independent second-opinion review found material update/recovery gaps. The
+  accepted fixes capture the exact running package for rollback, stop verified
+  descendant processes, bound public probes, preserve healthy reused runtime,
+  keep stale-live updates non-retryable, and wait only for the recovery wrapper.
+- Windows reinstall now completes expensive source preparation before service
+  downtime, refreshes managed recovery content, and suppresses high-volume
+  successful request/tool logs while retaining warning/error evidence.
+- Focused and full tests, two isolated Windows lifecycle passes, typecheck,
+  build, public-release checks, zero-vulnerability production audit, hosted
+  three-platform CI, physical deployment, doctor, and local/public health
+  closed the workstream without a new daemon, task, UI, prompt, polling loop,
+  permission, or automatic updater.
