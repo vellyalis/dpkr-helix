@@ -54,6 +54,7 @@ function Get-RecoveryFunctionSource {
         "Normalize-StableOrigin",
         "Get-RecoverySettings",
         "Test-HttpEndpoint",
+        "Test-RuntimeOperationInProgress",
         "Invoke-ManagedStart",
         "Invoke-Recovery",
         "Get-HiddenLauncherContent",
@@ -81,6 +82,7 @@ $script:TaskDescription = "$($script:ManagedMarker): Health-gated no-console rec
 $script:TaskUserId = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 $script:WscriptPath = Join-Path $env:SystemRoot "System32\wscript.exe"
 $script:SourceRecoveryPath = [System.IO.Path]::GetFullPath($recoveryPath)
+$script:RuntimeMutexName = "Local\dpkr-helix-recovery-test-" + [Guid]::NewGuid().ToString("N")
 
 New-Item -ItemType Directory -Path $script:DevSpaceDir | Out-Null
 
@@ -95,6 +97,7 @@ try {
   Assert-True `
     -Condition ($settings.PublicBaseUrl -eq "https://mcp.example.com") `
     -Message "Recovery origin did not load."
+  Assert-True -Condition ($settings.DesiredState -eq "stopped") -Message "Missing runtime was not treated as stopped."
 
   $quickSettings = '{"tunnelMode":"QuickTunnel","port":17676,"publicBaseUrl":"https://example.com"}'
   Write-Utf8NoBom -Path $script:SettingsPath -Content $quickSettings
@@ -126,7 +129,7 @@ try {
     $script:startCount += 1
   }
   function Test-HttpEndpoint {
-    param([string] $Uri)
+    param([string] $Uri, [int] $TimeoutSeconds)
     return $true
   }
   Invoke-Recovery
@@ -134,9 +137,32 @@ try {
     -Condition ($script:startCount -eq 0) `
     -Message "Recovery restarted after an intentional Stop state."
 
+  Write-Utf8NoBom -Path $script:SettingsPath -Content (
+    '{"tunnelMode":"External","port":17676,"publicBaseUrl":"https://mcp.example.com","desiredState":"running"}'
+  )
+  function Test-RuntimeOperationInProgress { return $true }
+  Invoke-Recovery
+  Assert-True -Condition ($script:startCount -eq 0) -Message "Recovery raced an active managed operation."
+  function Test-RuntimeOperationInProgress { return $false }
+  $script:healthAfterStart = $false
+  $script:unhealthyLocalProbeCount = 0
+  function Test-HttpEndpoint {
+    param([string] $Uri, [int] $TimeoutSeconds)
+    if (-not $script:healthAfterStart) { $script:unhealthyLocalProbeCount += 1 }
+    return $script:healthAfterStart
+  }
+  function Invoke-ManagedStart {
+    $script:startCount += 1
+    $script:healthAfterStart = $true
+  }
+  Invoke-Recovery
+  Assert-True -Condition ($script:startCount -eq 1) -Message "Desired running state did not recover without a runtime record."
+  Assert-True -Condition ($script:unhealthyLocalProbeCount -eq 2) -Message "Local failure was not confirmed before restart."
+  $script:startCount = 0
+
   Write-Utf8NoBom -Path $script:RuntimeStatePath -Content '{"schema":"fixture"}'
   function Test-HttpEndpoint {
-    param([string] $Uri)
+    param([string] $Uri, [int] $TimeoutSeconds)
     return $Uri.StartsWith("http://127.0.0.1:")
   }
   $publicOnlyRejected = $false
@@ -155,7 +181,7 @@ try {
 
   $script:healthAfterStart = $false
   function Test-HttpEndpoint {
-    param([string] $Uri)
+    param([string] $Uri, [int] $TimeoutSeconds)
     return $script:healthAfterStart
   }
   function Invoke-ManagedStart {

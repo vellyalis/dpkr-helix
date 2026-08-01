@@ -52,6 +52,11 @@ function Get-SetupFunctionSource {
         "Read-Utf8Text",
         "Read-Utf8TextShared",
         "Read-JsonFile",
+        "Enter-RuntimeOperation",
+        "Exit-RuntimeOperation",
+        "Get-DesiredRuntimeState",
+        "Set-DesiredRuntimeState",
+        "Rotate-LogFile",
         "Get-PropertyValue",
         "Normalize-HttpsOrigin",
         "Sync-ManagedSetupScript",
@@ -59,6 +64,7 @@ function Get-SetupFunctionSource {
         "New-OwnerToken",
         "ConvertTo-TomlBasicString",
         "Get-ProcessRecord",
+        "Get-TrackedProcessIdentity",
         "Stop-TrackedProcess",
         "Stop-DevSpaceRuntime",
         "Start-QuickTunnel"
@@ -91,6 +97,25 @@ try {
   Assert-True -Condition ($roundTrip.allowedRoots.Count -eq 2) -Message "JSON roots did not round-trip."
   Assert-True -Condition ($roundTrip.nested.preserved -eq $true) -Message "Nested JSON did not round-trip."
   Assert-True -Condition ($roundTrip.unicode -eq $unicodeText) -Message "UTF-8 JSON did not round-trip."
+
+  $script:SettingsPath = Join-Path $temporaryRoot "desired-state.json"
+  $script:RuntimeStatePath = Join-Path $temporaryRoot "runtime.json"
+  Write-JsonAtomic -Path $script:SettingsPath -Value ([ordered]@{ schema = "fixture" })
+  Set-DesiredRuntimeState -State "running" | Out-Null
+  Assert-True `
+    -Condition ((Read-JsonFile -Path $script:SettingsPath).desiredState -eq "running") `
+    -Message "Desired running state was not persisted."
+
+  $script:RuntimeMutexName = "Local\dpkr-helix-setup-test-" + [Guid]::NewGuid().ToString("N")
+  $runtimeMutex = Enter-RuntimeOperation -TimeoutMilliseconds 0
+  Exit-RuntimeOperation -Mutex $runtimeMutex
+
+  $activeLog = Join-Path $temporaryRoot "active.log"
+  [System.IO.File]::WriteAllText($activeLog, "current failure evidence")
+  Rotate-LogFile -Path $activeLog
+  Assert-True `
+    -Condition ((Get-Content -LiteralPath "$activeLog.previous" -Raw) -eq "current failure evidence") `
+    -Message "Restart log rotation did not retain the previous session."
 
   $managedSourcePath = Join-Path $temporaryRoot "setup-source.ps1"
   $script:ManagedScriptPath = Join-Path $temporaryRoot "managed\setup-windows.ps1"
@@ -259,6 +284,9 @@ try {
   Assert-True `
     -Condition $sourceText.Contains('"--allow-scripts=@waishnav/devspace"') `
     -Message "Global DevSpace install does not explicitly allow its reviewed postinstall repairs."
+  Assert-True `
+    -Condition ($sourceText.Contains("RecoveryStart") -and $sourceText.Contains("-ForceRestart")) `
+    -Message "Recovery start recheck or explicit install restart is missing."
 
   $planOutput = & powershell.exe `
     -NoProfile `
@@ -292,7 +320,6 @@ try {
     -Condition ($invalidOutput.Contains("-PublicBaseUrl is required")) `
     -Message "External mode returned an unclear missing-URL error."
 
-  $script:RuntimeStatePath = Join-Path $temporaryRoot "runtime.json"
   $ownedProcess = Start-Process `
     -FilePath "powershell.exe" `
     -ArgumentList @("-NoProfile", "-Command", "Start-Sleep -Seconds 60") `

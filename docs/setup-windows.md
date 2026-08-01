@@ -208,13 +208,24 @@ Task registration is transactional with respect to its managed helper files.
 If Windows rejects the Task Scheduler update, the prior helper contents are
 restored and a first-time failed install leaves no managed helper behind.
 
-Recovery reads only the saved External origin, port, and installer-owned runtime
-record. If the runtime record is absent after an intentional
-`setup-windows.ps1 -Mode Stop`, it stays stopped. If local health passes but
-public health fails, it preserves the healthy DevSpace process and reports the
-external tunnel boundary. It invokes the existing managed installer Start mode
-only when local health is bad, then requires both local and public health to
-recover.
+Recovery reads only the saved External origin, port, desired state, and
+installer-owned runtime record. `Start` and `Stop` persist the desired state in
+the existing bootstrap settings, so an intentional stop stays stopped while a
+failed recovery start remains eligible for the next scheduled attempt. Legacy
+settings without this field retain their previous runtime-record behavior.
+
+A local failure is confirmed by a second short probe before restart. Public
+health is checked only after local health passes, so a dead local service is not
+held behind a public timeout. If local health passes but public health fails,
+recovery preserves the healthy DevSpace process and reports the external tunnel
+boundary. It invokes the existing managed installer Start mode only after both
+local probes fail, then requires local and public health to recover.
+
+Start, Stop, and Install share one current-session operation lock. A scheduled
+check skips immediately while one is active, and its internal Start rechecks
+the desired state after acquiring the lock. Start is idempotent: a matching,
+healthy managed process is reused without invalidating MCP sessions. Restart
+keeps one bounded previous generation of stdout/stderr logs for diagnosis.
 
 Remove the exact managed task and helper files with:
 
@@ -237,6 +248,8 @@ does not match its managed markers.
   installer is opt-in, External-mode-only, previewable, and removable.
 - An occupied DevSpace port is rejected before a tunnel starts. Setup and
   verification failures automatically stop processes started by that attempt.
+- Recovery does not shorten the five-minute interval, probe workspace files,
+  add generic mutation retries, or create another service/process owner.
 - The managed Codex TOML block is replaced atomically and checked with the
   installed Codex CLI; the prior file is restored if validation fails.
 - DevSpace's Codex SDK child is installed with the Windows no-console spawn

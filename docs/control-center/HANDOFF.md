@@ -33,6 +33,12 @@ Last synchronized: 2026-08-01
   outage. The current installation reuses its existing limited-user,
   no-console task through the managed health-gated recovery script because the
   present execution context could not register a replacement task.
+- Bootstrap desired state now distinguishes intentional Stop from failed Start,
+  so failed recovery remains retryable without undoing a user stop. Lifecycle
+  operations serialize, local failure requires confirmation, and healthy Start
+  preserves the existing PID and MCP sessions.
+- No shorter polling, generic file retry, workspace probe write, additional
+  daemon, service, prompt, notification, UI, or permission was introduced.
 
 ## Completed before this work unit
 
@@ -131,6 +137,7 @@ commands merely because the preparation work is complete.
 - hosted Ubuntu, macOS, and Windows CI run `30570280066`
 - 2026-08-01 operational maintenance: real no-focus Codex review probe,
   focused reviewer approval after one accepted finding, recovery fault tests,
+  desired-state and operation-race fault injection, live idempotent Start,
   typecheck, full tests, production audit, build, and fresh local/public health
 
 ## Exact next action

@@ -130,3 +130,18 @@ and Git rather than duplicated here.
   and scheduled health checks.
 - Typecheck, full tests including file write/edit/patch paths, Windows setup and
   recovery fault tests, build, and production audit passed.
+
+## 2026-08-01 — Additional lifecycle faults closed without UX expansion
+
+- Existing bootstrap state now records desired running/stopped intent, so a
+  failed recovery Start remains retryable and an explicit Stop remains stopped.
+- Recovery confirms local failure twice, avoids public timeout before local
+  repair, skips concurrent lifecycle work, and rechecks intent before Start.
+- Start reuses a matching healthy runtime and preserves active MCP sessions;
+  Install alone forces replacement. One previous log generation is retained.
+- Generic write retries, workspace probe writes, shorter polling, additional
+  watchdogs/services, privilege elevation, UI, prompts, and notifications were
+  explicitly rejected as unproven or usability-degrading.
+- Fault tests and live deployment proved missing-runtime retry, false-failure
+  confirmation, mutex skip, same-PID Start, direct health, and scheduled result
+  `0`.

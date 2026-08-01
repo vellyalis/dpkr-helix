@@ -89,6 +89,7 @@ publishing the compatibility package accidentally.
 | WS-PUB-05 public cutover | DONE | approved old-run deletion, clean-root push, public security controls, and public-clone acceptance complete |
 | WS-OPS-01 no-focus Codex review | VERIFIED | real reviewer launch/continuation causes no console foreground transition |
 | WS-OPS-02 health-gated recovery | VERIFIED | public-only failure preserves local state; local failure restarts once; installed task passes |
+| WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
 | WS-QA-08 measured coding parity | PLANNED | resume at MWU-08.01 after current priority |
 
 ## Architecture and complexity decision
@@ -118,6 +119,15 @@ Windows recovery keeps the existing setup/runtime record as the sole DevSpace
 owner. A public-only outage never restarts a healthy local process, while the
 existing Cloudflared Windows service remains responsible for tunnel restart.
 Managed helper writes roll back if Task Scheduler registration fails.
+
+Lifecycle resilience stays inside the same setup/recovery owner. Bootstrap
+settings now distinguish desired running from intentional Stop, a named mutex
+serializes existing lifecycle commands, local failure is confirmed before
+restart, and healthy Start is idempotent. One previous log generation is kept.
+Shorter polling, workspace probe writes, generic file retries, persistent MCP
+transport recreation, another watchdog, and privilege elevation were rejected
+because they worsen interaction or ownership without evidence of the relevant
+failure mechanism.
 
 ## Verification surface
 
@@ -156,9 +166,16 @@ Completed release proof:
   reported no blocking defect;
 - recovery fault tests proved intentional-stop preservation, public-only
   preservation, one local restart, no-console task action, registration
-  rollback, and exact removal; and
+  rollback, and exact removal;
 - typecheck, the full suite including write/edit/apply-patch paths, build, and a
-  zero-vulnerability production audit passed.
+  zero-vulnerability production audit passed;
+- a desired-running state recovered with no runtime record, two failed local
+  probes were required, and an active lifecycle mutex caused immediate recovery
+  skip;
+- a live managed Start preserved the same DevSpace PID and MCP sessions while
+  persisting desired state; and
+- the deployed direct and scheduled recovery paths passed local/public health,
+  with Scheduled Task result `0`.
 
 Cutover outcome:
 
@@ -179,6 +196,7 @@ Cutover outcome:
 | filesystem aliases differ across operating systems | resolved | canonical comparison at security and query boundaries; logical workspace identity remains unchanged; Ubuntu/macOS/Windows CI passed |
 | Codex SDK compiled spawn shape may change | controlled | postinstall and production audit fail closed until the scoped repair is reviewed against the new shape |
 | this execution context could not register a replacement current-user task | accepted local deployment constraint | reuse the existing limited-user no-console task through canonical recovery; preserve helper-only rollback |
+| in-flight MCP requests cannot survive an actual process/OS loss | external protocol/platform residual | prevent avoidable restarts, persist workspace identity, recover the service, and let the client establish a new MCP transport |
 
 ## Next executable action
 

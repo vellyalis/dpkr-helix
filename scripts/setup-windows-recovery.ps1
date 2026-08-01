@@ -37,6 +37,7 @@ $script:TaskDescription = "$($script:ManagedMarker): Health-gated no-console rec
 $script:TaskUserId = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 $script:WscriptPath = Join-Path $env:SystemRoot "System32\wscript.exe"
 $script:SourceRecoveryPath = [System.IO.Path]::GetFullPath($PSCommandPath)
+$script:RuntimeMutexName = "Local\dpkr-helix-windows-runtime"
 
 function Write-Utf8NoBom {
   param(
@@ -116,14 +117,27 @@ function Get-RecoverySettings {
   if (-not (Test-Path -LiteralPath $script:ManagedSetupPath -PathType Leaf)) {
     throw "Managed DevSpace setup is missing: $script:ManagedSetupPath"
   }
+  $desiredState = [string](Get-PropertyValue -InputObject $settings -Name "desiredState")
+  if (-not $desiredState) {
+    $desiredState = if (Test-Path -LiteralPath $script:RuntimeStatePath -PathType Leaf) {
+      "running"
+    } else { "stopped" }
+  }
+  if ($desiredState -notin @("running", "stopped")) {
+    throw "Saved desiredState must be running or stopped."
+  }
   return [pscustomobject]@{
     Port = $port
     PublicBaseUrl = $origin
+    DesiredState = $desiredState
   }
 }
 
 function Test-HttpEndpoint {
-  param([Parameter(Mandatory = $true)][string] $Uri)
+  param(
+    [Parameter(Mandatory = $true)][string] $Uri,
+    [int] $TimeoutSeconds = 10
+  )
   try {
     $response = Invoke-WebRequest `
       -UseBasicParsing `
@@ -132,11 +146,31 @@ function Test-HttpEndpoint {
         Accept = "application/json"
         "User-Agent" = "dpkr-helix-windows-recovery/1.0"
       } `
-      -TimeoutSec 10
+      -TimeoutSec $TimeoutSeconds
     return [int]$response.StatusCode -eq 200
   }
   catch {
     return $false
+  }
+}
+
+function Test-RuntimeOperationInProgress {
+  $mutex = New-Object System.Threading.Mutex($false, $script:RuntimeMutexName)
+  $acquired = $false
+  try {
+    try {
+      $acquired = $mutex.WaitOne(0)
+    }
+    catch [System.Threading.AbandonedMutexException] {
+      $acquired = $true
+    }
+    return -not $acquired
+  }
+  finally {
+    if ($acquired) {
+      $mutex.ReleaseMutex()
+    }
+    $mutex.Dispose()
   }
 }
 
@@ -151,6 +185,7 @@ function Invoke-ManagedStart {
       "-WindowStyle", "Hidden",
       "-File", $quotedSetupPath,
       "-Mode", "Start",
+      "-RecoveryStart",
       "-SkipVerification",
       "-SkipBrowserLaunch"
     ) `
@@ -164,26 +199,33 @@ function Invoke-ManagedStart {
 
 function Invoke-Recovery {
   $settings = Get-RecoverySettings
-  if (-not (Test-Path -LiteralPath $script:RuntimeStatePath -PathType Leaf)) {
+  if ($settings.DesiredState -ne "running") {
     Write-Host "Recovery skipped: DevSpace was intentionally stopped."
+    return
+  }
+  if (Test-RuntimeOperationInProgress) {
+    Write-Host "Recovery skipped: another managed start, stop, or install is active."
     return
   }
 
   $localHealth = "http://127.0.0.1:$($settings.Port)/healthz"
   $publicHealth = "$($settings.PublicBaseUrl)/healthz"
-  $localHealthy = Test-HttpEndpoint -Uri $localHealth
-  $publicHealthy = Test-HttpEndpoint -Uri $publicHealth
-  if ($localHealthy -and $publicHealthy) {
-    Write-Host "Recovery check: local and public health pass."
-    return
+  $localHealthy = Test-HttpEndpoint -Uri $localHealth -TimeoutSeconds 3
+  if (-not $localHealthy) {
+    Start-Sleep -Seconds 1
+    $localHealthy = Test-HttpEndpoint -Uri $localHealth -TimeoutSeconds 3
   }
-  if ($localHealthy -and -not $publicHealthy) {
+  if ($localHealthy) {
+    if (Test-HttpEndpoint -Uri $publicHealth) {
+      Write-Host "Recovery check: local and public health pass."
+      return
+    }
     throw "Public endpoint is unhealthy while local DevSpace is healthy; preserve the local process and recover the external tunnel owner."
   }
 
   Invoke-ManagedStart
   if (
-    -not (Test-HttpEndpoint -Uri $localHealth) -or
+    -not (Test-HttpEndpoint -Uri $localHealth -TimeoutSeconds 3) -or
     -not (Test-HttpEndpoint -Uri $publicHealth)
   ) {
     throw "DevSpace health did not recover on both local and public endpoints."

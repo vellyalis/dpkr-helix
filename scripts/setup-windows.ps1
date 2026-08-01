@@ -60,7 +60,9 @@ param(
 
   [switch] $SkipBrowserLaunch,
 
-  [switch] $SkipVerification
+  [switch] $SkipVerification,
+
+  [switch] $RecoveryStart
 )
 
 $ErrorActionPreference = "Stop"
@@ -77,6 +79,7 @@ $script:DevSpaceConfigPath = Join-Path $script:DevSpaceDir "config.json"
 $script:DevSpaceAuthPath = Join-Path $script:DevSpaceDir "auth.json"
 $script:ManagedScriptPath = Join-Path $script:DevSpaceDir "setup-windows.ps1"
 $script:LogDir = Join-Path $script:DevSpaceDir "logs"
+$script:RuntimeMutexName = "Local\dpkr-helix-windows-runtime"
 
 function Write-Step {
   param([string] $Message)
@@ -165,6 +168,79 @@ function Read-JsonFile {
     return $null
   }
   return Read-Utf8Text -Path $Path | ConvertFrom-Json
+}
+
+function Enter-RuntimeOperation {
+  param([int] $TimeoutMilliseconds = 15000)
+  $mutex = New-Object System.Threading.Mutex($false, $script:RuntimeMutexName)
+  try {
+    $acquired = $false
+    try {
+      $acquired = $mutex.WaitOne($TimeoutMilliseconds)
+    }
+    catch [System.Threading.AbandonedMutexException] {
+      $acquired = $true
+    }
+    if (-not $acquired) {
+      throw "Another dpkr helix start, stop, or install operation is still running. Try again shortly."
+    }
+    return $mutex
+  }
+  catch {
+    $mutex.Dispose()
+    throw
+  }
+}
+
+function Exit-RuntimeOperation {
+  param([Parameter(Mandatory = $true)] $Mutex)
+  try {
+    $Mutex.ReleaseMutex()
+  }
+  finally {
+    $Mutex.Dispose()
+  }
+}
+
+function Get-DesiredRuntimeState {
+  param([Parameter(Mandatory = $true)] $Settings)
+  $saved = [string](Get-PropertyValue -InputObject $Settings -Name "desiredState")
+  if (-not $saved) {
+    if (Test-Path -LiteralPath $script:RuntimeStatePath -PathType Leaf) {
+      return "running"
+    }
+    return "stopped"
+  }
+  if ($saved -notin @("running", "stopped")) {
+    throw "Saved desiredState must be running or stopped."
+  }
+  return $saved
+}
+
+function Set-DesiredRuntimeState {
+  param([Parameter(Mandatory = $true)][ValidateSet("running", "stopped")][string] $State)
+  $settings = Read-JsonFile -Path $script:SettingsPath
+  if (-not $settings) {
+    if ($State -eq "stopped") {
+      return $null
+    }
+    throw "Portable setup settings are missing. Run this script in Install mode first."
+  }
+  $settings | Add-Member -NotePropertyName "desiredState" -NotePropertyValue $State -Force
+  Write-JsonAtomic -Path $script:SettingsPath -Value $settings
+  return $settings
+}
+
+function Rotate-LogFile {
+  param([Parameter(Mandatory = $true)][string] $Path)
+  if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+    return
+  }
+  $previous = "$Path.previous"
+  if (Test-Path -LiteralPath $previous -PathType Leaf) {
+    Remove-Item -LiteralPath $previous -Force
+  }
+  Move-Item -LiteralPath $Path -Destination $previous -Force
 }
 
 function Get-PropertyValue {
@@ -860,7 +936,7 @@ function Get-ProcessRecord {
   return Get-CimInstance Win32_Process -Filter "ProcessId = $ProcessId" -ErrorAction SilentlyContinue
 }
 
-function Stop-TrackedProcess {
+function Get-TrackedProcessIdentity {
   param(
     [int] $ProcessId,
     [Parameter(Mandatory = $true)][string] $ExpectedCommandFragment,
@@ -869,7 +945,13 @@ function Stop-TrackedProcess {
   )
   $record = Get-ProcessRecord -ProcessId $ProcessId
   if (-not $record) {
-    return $true
+    return [pscustomobject]@{
+      Exists = $false
+      Matches = $false
+      CommandMatches = $false
+      ExecutableMatches = $false
+      StartTimeMatches = $false
+    }
   }
   $commandLine = [string] $record.CommandLine
   $executablePath = [string] $record.ExecutablePath
@@ -885,12 +967,36 @@ function Stop-TrackedProcess {
   $executableMatches =
     $executablePath.Equals($ExpectedExecutablePath, [System.StringComparison]::OrdinalIgnoreCase)
   $startTimeMatches = $actualStartTimeFileTimeUtc -eq $ExpectedStartTimeFileTimeUtc
-  $identityMatches = $commandMatches -and $executableMatches -and $startTimeMatches
+  return [pscustomobject]@{
+    Exists = $true
+    Matches = $commandMatches -and $executableMatches -and $startTimeMatches
+    CommandMatches = $commandMatches
+    ExecutableMatches = $executableMatches
+    StartTimeMatches = $startTimeMatches
+  }
+}
 
-  if (-not $identityMatches) {
+function Stop-TrackedProcess {
+  param(
+    [int] $ProcessId,
+    [Parameter(Mandatory = $true)][string] $ExpectedCommandFragment,
+    [Parameter(Mandatory = $true)][string] $ExpectedExecutablePath,
+    [Parameter(Mandatory = $true)][long] $ExpectedStartTimeFileTimeUtc
+  )
+  $identity = Get-TrackedProcessIdentity `
+    -ProcessId $ProcessId `
+    -ExpectedCommandFragment $ExpectedCommandFragment `
+    -ExpectedExecutablePath $ExpectedExecutablePath `
+    -ExpectedStartTimeFileTimeUtc $ExpectedStartTimeFileTimeUtc
+  if (-not $identity.Exists) {
+    return $true
+  }
+
+  if (-not $identity.Matches) {
     Write-Warning (
       "Refusing to stop PID $ProcessId because its recorded process identity no longer matches " +
-      "(command=$commandMatches, executable=$executableMatches, startTime=$startTimeMatches)."
+      "(command=$($identity.CommandMatches), executable=$($identity.ExecutableMatches), " +
+      "startTime=$($identity.StartTimeMatches))."
     )
     return $false
   }
@@ -907,6 +1013,52 @@ function Stop-TrackedProcess {
     Write-Warning "PID $ProcessId still exists after the stop timeout; runtime state will be preserved."
   }
   return $stopped
+}
+
+function Test-LocalDevSpaceHealth {
+  param([Parameter(Mandatory = $true)][int] $Port)
+  try {
+    $response = Invoke-WebRequest `
+      -UseBasicParsing `
+      -Uri "http://127.0.0.1:$Port/healthz" `
+      -Headers @{
+        Accept = "application/json"
+        "User-Agent" = "DevSpace-Windows-Setup/1.0"
+      } `
+      -TimeoutSec 3
+    return [int]$response.StatusCode -eq 200
+  }
+  catch {
+    return $false
+  }
+}
+
+function Get-HealthyManagedRuntime {
+  param([Parameter(Mandatory = $true)] $Settings)
+  $runtime = Read-JsonFile -Path $script:RuntimeStatePath
+  if (-not $runtime) {
+    return $null
+  }
+  $identity = Get-TrackedProcessIdentity `
+    -ProcessId ([int](Get-PropertyValue -InputObject $runtime -Name "devspacePid")) `
+    -ExpectedCommandFragment ([string](Get-PropertyValue -InputObject $runtime -Name "devspaceCommandFragment")) `
+    -ExpectedExecutablePath ([string](Get-PropertyValue -InputObject $runtime -Name "devspaceExecutablePath")) `
+    -ExpectedStartTimeFileTimeUtc ([long](Get-PropertyValue -InputObject $runtime -Name "devspaceStartTimeFileTimeUtc"))
+  if (-not $identity.Exists -or -not $identity.Matches) {
+    return $null
+  }
+  if (-not (Test-LocalDevSpaceHealth -Port ([int] $Settings.port))) {
+    return $null
+  }
+  $origin = [string](Get-PropertyValue -InputObject $runtime -Name "publicBaseUrl")
+  if (-not $origin) {
+    $origin = [string](Get-PropertyValue -InputObject $Settings -Name "publicBaseUrl")
+  }
+  return [pscustomobject]@{
+    PublicBaseUrl = $origin
+    DevSpacePid = [int](Get-PropertyValue -InputObject $runtime -Name "devspacePid")
+    CloudflaredPid = Get-PropertyValue -InputObject $runtime -Name "cloudflaredPid"
+  }
 }
 
 function Stop-DevSpaceRuntime {
@@ -1030,9 +1182,7 @@ function Start-QuickTunnel {
   $stdoutPath = Join-Path $script:LogDir "cloudflared.out.log"
   $stderrPath = Join-Path $script:LogDir "cloudflared.err.log"
   foreach ($path in @($stdoutPath, $stderrPath)) {
-    if (Test-Path -LiteralPath $path) {
-      Remove-Item -LiteralPath $path -Force
-    }
+    Rotate-LogFile -Path $path
   }
   $process = Start-Process `
     -FilePath $cloudflared `
@@ -1083,7 +1233,17 @@ function Start-QuickTunnel {
 }
 
 function Start-DevSpaceRuntime {
-  param([Parameter(Mandatory = $true)] $Settings)
+  param(
+    [Parameter(Mandatory = $true)] $Settings,
+    [switch] $ForceRestart
+  )
+  if (-not $ForceRestart) {
+    $existing = Get-HealthyManagedRuntime -Settings $Settings
+    if ($existing) {
+      Write-Host "DevSpace is already healthy; preserving the current MCP sessions."
+      return $existing
+    }
+  }
   Stop-DevSpaceRuntime
   $localPort = [int] $Settings.port
   Assert-TcpPortAvailable -LocalPort $localPort
@@ -1099,9 +1259,7 @@ function Start-DevSpaceRuntime {
   $stdoutPath = Join-Path $script:LogDir "devspace.out.log"
   $stderrPath = Join-Path $script:LogDir "devspace.err.log"
   foreach ($path in @($stdoutPath, $stderrPath)) {
-    if (Test-Path -LiteralPath $path) {
-      Remove-Item -LiteralPath $path -Force
-    }
+    Rotate-LogFile -Path $path
   }
 
   try {
@@ -1310,16 +1468,21 @@ function Show-Plan {
   } | Format-List
 }
 
-if ($Mode -eq "Stop") {
-  Stop-DevSpaceRuntime
-  exit 0
-}
-
-if ($Mode -eq "Start") {
+function Invoke-StartMode {
   $savedSettings = Read-JsonFile -Path $script:SettingsPath
   if (-not $savedSettings) {
     throw "Portable setup settings are missing. Run this script in Install mode first."
   }
+  if ($RecoveryStart) {
+    if ((Get-DesiredRuntimeState -Settings $savedSettings) -ne "running") {
+      Write-Host "Recovery start skipped: DevSpace is intentionally stopped."
+      return $null
+    }
+  }
+  else {
+    $savedSettings = Set-DesiredRuntimeState -State "running"
+  }
+
   $runtime = Start-DevSpaceRuntime -Settings $savedSettings
   try {
     if (-not $SkipVerification) {
@@ -1339,8 +1502,33 @@ if ($Mode -eq "Start") {
     }
     throw $startFailure
   }
-  Write-Host ""
-  Write-Host "DevSpace MCP: $($runtime.PublicBaseUrl)/mcp" -ForegroundColor Green
+  return $runtime
+}
+
+if ($Mode -eq "Stop") {
+  $runtimeMutex = Enter-RuntimeOperation
+  try {
+    Set-DesiredRuntimeState -State "stopped" | Out-Null
+    Stop-DevSpaceRuntime
+  }
+  finally {
+    Exit-RuntimeOperation -Mutex $runtimeMutex
+  }
+  exit 0
+}
+
+if ($Mode -eq "Start") {
+  $runtimeMutex = Enter-RuntimeOperation
+  try {
+    $runtime = Invoke-StartMode
+  }
+  finally {
+    Exit-RuntimeOperation -Mutex $runtimeMutex
+  }
+  if ($runtime) {
+    Write-Host ""
+    Write-Host "DevSpace MCP: $($runtime.PublicBaseUrl)/mcp" -ForegroundColor Green
+  }
   exit 0
 }
 
@@ -1359,8 +1547,11 @@ if ($Mode -eq "Plan") {
   exit 0
 }
 
+$runtimeMutex = Enter-RuntimeOperation
+try {
 Write-Step "Checking prerequisites"
 Ensure-Prerequisites
+Set-DesiredRuntimeState -State "stopped" | Out-Null
 Stop-DevSpaceRuntime
 Install-DevSpace -Root $resolvedSourceRoot
 Ensure-CodexLogin
@@ -1385,18 +1576,20 @@ $settings = [ordered]@{
   port = $Port
   tunnelMode = $TunnelMode
   publicBaseUrl = $initialOrigin
+  desiredState = "stopped"
   codexModel = $CodexModel
   codexCliVersion = $CodexCliVersion
   playwrightMcpVersion = $PlaywrightMcpVersion
 }
 Write-JsonAtomic -Path $script:SettingsPath -Value $settings
 Sync-ManagedSetupScript -SourcePath $PSCommandPath
+$settingsForStart = Set-DesiredRuntimeState -State "running"
 
 Write-Step "Starting DevSpace"
-$runtime = Start-DevSpaceRuntime -Settings ([pscustomobject] $settings)
+$runtime = Start-DevSpaceRuntime -Settings $settingsForStart -ForceRestart
 try {
   if (-not $SkipVerification) {
-    Invoke-SetupVerification -Settings ([pscustomobject] $settings) -Origin $runtime.PublicBaseUrl
+    Invoke-SetupVerification -Settings $settingsForStart -Origin $runtime.PublicBaseUrl
   }
   if (-not $SkipBrowser -and -not $SkipBrowserLaunch) {
     Start-ManagedBrowser
@@ -1406,6 +1599,7 @@ catch {
   $installFailure = $_
   try {
     Stop-DevSpaceRuntime
+    Set-DesiredRuntimeState -State "stopped" | Out-Null
   }
   catch {
     Write-Warning "Automatic rollback could not stop every recorded process: $($_.Exception.Message)"
@@ -1426,3 +1620,7 @@ if ($TunnelMode -eq "External") {
 Write-Host ""
 Write-Host "In ChatGPT Developer mode, create or update the DevSpace app with the MCP URL above."
 Write-Host "Quick Tunnel URLs change after tunnel restart. Use -TunnelMode External with a stable HTTPS origin for permanent use."
+}
+finally {
+  Exit-RuntimeOperation -Mutex $runtimeMutex
+}

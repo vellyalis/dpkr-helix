@@ -1288,3 +1288,49 @@ recovery script; no task deletion or privilege increase is required.
 Windows spawn option, the existing task can be replaced under normal user
 permissions, or fresh evidence identifies a different connection-interruption
 mechanism.
+
+## ADR-041: Preserve recovery intent and serialize Windows lifecycle operations
+
+**Date:** 2026-08-01
+
+**Status:** Accepted and locally verified
+
+**Context:** Runtime-record absence previously meant both intentional Stop and a
+failed Start. A failed recovery attempt could therefore remove its own retry
+eligibility. Recovery also evaluated public health before repairing a failed
+local service, trusted one local probe, and could race a manual lifecycle
+operation. Start always replaced a healthy process, invalidating live MCP
+sessions, and restart deleted the prior failure log.
+
+**Decision:** Persist `running` or `stopped` intent in the existing bootstrap
+settings, with runtime-record inference for legacy settings. Confirm local
+failure twice with short probes and defer public probing until local health is
+available. Serialize Start, Stop, and Install with a current-session named
+mutex; recovery skips an active operation and its Start rechecks intent after
+lock acquisition. Reuse a matching healthy managed runtime, force replacement
+only from Install, and retain one previous log generation.
+
+**Alternatives rejected:** Shorter polling, generic file-write retries,
+workspace probe writes, persistent MCP-transport recreation, a second watchdog,
+and privilege elevation. They add user-visible latency, background activity,
+content mutation, protocol risk, another lifecycle owner, or approval friction
+without evidence that they address the observed failure boundary.
+
+**Complexity receipt:** Accepted at existing-mechanism adaptation. One field is
+added to the existing bootstrap owner, one current-session named mutex
+serializes the existing commands, and bounded log rotation uses the existing
+log directory. No dependency, service, daemon, worker, store, UI, prompt,
+notification, or monitoring interval is added.
+
+**Failure and recovery:** An abandoned mutex is acquired safely by the next
+operation. A persistent Start failure keeps `running` intent for another
+scheduled attempt; an explicit Stop changes intent before stopping. Install
+keeps intent stopped while replacing/configuring files, enables it only at the
+Start boundary, and returns to stopped after verification rollback. Revert this
+decision and reinstall the preceding checkpoint to restore the old
+runtime-record-only behavior.
+
+**Reconsider when:** A platform service becomes the accepted sole owner of both
+DevSpace and tunnel lifecycle, the MCP protocol/client supplies session recovery
+that survives server replacement, or fresh mutation errors demonstrate a
+separate filesystem mechanism.
