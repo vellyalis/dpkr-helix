@@ -190,8 +190,8 @@ function Invoke-ManagedStart {
       "-SkipBrowserLaunch"
     ) `
     -WindowStyle Hidden `
-    -Wait `
     -PassThru
+  $process.WaitForExit()
   if ($process.ExitCode -ne 0) {
     throw "Managed DevSpace restart failed with exit code $($process.ExitCode)."
   }

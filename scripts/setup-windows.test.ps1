@@ -396,7 +396,7 @@ try {
     Remove-Item function:Start-Process -ErrorAction SilentlyContinue
     Remove-Item function:Get-CommandPath -ErrorAction SilentlyContinue
     . ([ScriptBlock]::Create(
-        (Get-SetupFunctionSource -Names @("Read-Utf8TextShared"))
+        (Get-SetupFunctionSource -Names @("Get-CommandPath", "Read-Utf8TextShared"))
       ))
   }
 
@@ -421,13 +421,16 @@ try {
   Assert-True -Condition $httpRejected -Message "HTTP public origin was not rejected."
 
   $script:capturedOAuthHeaders = $null
+  $script:capturedOAuthTimeout = $null
   function Invoke-WebRequest {
     param(
       [switch] $UseBasicParsing,
       [string] $Uri,
-      [hashtable] $Headers
+      [hashtable] $Headers,
+      [int] $TimeoutSec
     )
     $script:capturedOAuthHeaders = $Headers
+    $script:capturedOAuthTimeout = $TimeoutSec
     return [pscustomobject]@{
       StatusCode = 200
       Content = '{"authorization_endpoint":"https://example.com/authorize","token_endpoint":"https://example.com/token"}'
@@ -442,6 +445,9 @@ try {
   Assert-True `
     -Condition ($script:capturedOAuthHeaders["User-Agent"] -eq "DevSpace-Windows-Setup/1.0") `
     -Message "Public metadata verification did not use the setup API user agent."
+  Assert-True `
+    -Condition ($script:capturedOAuthTimeout -eq 10) `
+    -Message "Public metadata verification is not bounded."
 
   $toml = ConvertTo-TomlBasicString -Value "C:\Program Files\node.exe"
   Assert-True `
@@ -538,6 +544,15 @@ try {
       -not $sourceText.Contains('Install-BuiltDevSpacePackage -PackagePath $worktreePath')
     ) `
     -Message "Update installation is linked to its disposable candidate worktree."
+  Assert-True `
+    -Condition ($sourceText.Contains('New-InstalledDevSpaceRollbackPackage -Destination $backupPath')) `
+    -Message "Update rollback does not capture the exact installed runtime."
+  Assert-True `
+    -Condition ($sourceText.Contains('& $taskkill /PID $ProcessId /T /F')) `
+    -Message "Managed Stop does not terminate owned descendant processes."
+  Assert-True `
+    -Condition ($sourceText.Contains('if (-not $runtime.Reused)')) `
+    -Message "Start failure can stop a pre-existing healthy runtime."
   Assert-True `
     -Condition (
       $sourceText.Contains('if ($Mode -eq "LaunchUpdate")') -and

@@ -2725,7 +2725,7 @@ export function createServer(
               activeSessionId = newSessionId;
               trimMcpSessions();
             }
-            logEvent(config.logging, "info", "mcp_session_created", {
+            logEvent(config.logging, "debug", "mcp_session_created", {
               requestId,
               sessionIdPrefix: sessionIdPrefix(newSessionId),
               ...requestLogFields(req, config),

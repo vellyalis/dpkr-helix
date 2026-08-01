@@ -701,6 +701,47 @@ function New-DevSpacePackage {
   return $packages[0].FullName
 }
 
+function New-InstalledDevSpaceRollbackPackage {
+  param([Parameter(Mandatory = $true)][string] $Destination)
+  $npm = Get-CommandPath -Name "npm.cmd"
+  if (-not $npm) {
+    $npm = Get-CommandPath -Name "npm"
+  }
+  if (-not $npm) {
+    Throw-UpdateFailure -Code "NPM_MISSING" -Message "npm is required for rollback packaging."
+  }
+  $installedRoot = Join-Path (Get-GlobalNpmRoot) "@waishnav\devspace"
+  $installedItem = Get-Item -LiteralPath $installedRoot -Force -ErrorAction Stop
+  if ($installedItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+    Throw-UpdateFailure -Code "ROLLBACK_SOURCE_INVALID" -Message (
+      "The installed runtime is linked to mutable source and cannot be captured safely."
+    )
+  }
+  foreach ($relativePath in @("package.json", "npm-shrinkwrap.json", "dist\cli.js")) {
+    if (-not (Test-Path -LiteralPath (Join-Path $installedRoot $relativePath) -PathType Leaf)) {
+      Throw-UpdateFailure -Code "ROLLBACK_SOURCE_INVALID" -Message (
+        "The installed runtime is incomplete and cannot be captured safely."
+      )
+    }
+  }
+  Push-Location $installedRoot
+  try {
+    Invoke-Checked -FilePath $npm -Arguments @(
+      "pack", "--silent", "--pack-destination", $Destination
+    ) | Out-Null
+  }
+  finally {
+    Pop-Location
+  }
+  $packages = @(Get-ChildItem -LiteralPath $Destination -Filter "*.tgz" -File)
+  if ($packages.Count -ne 1) {
+    Throw-UpdateFailure -Code "PACKAGE_FAILED" -Message (
+      "The running installation could not be captured for rollback."
+    )
+  }
+  return $packages[0].FullName
+}
+
 function Install-BuiltDevSpacePackage {
   param([Parameter(Mandatory = $true)][string] $PackagePath)
   $npm = Get-CommandPath -Name "npm.cmd"
@@ -1390,7 +1431,11 @@ function Stop-TrackedProcess {
     )
     return $false
   }
-  Stop-Process -Id $ProcessId -ErrorAction Stop
+  $taskkill = Get-CommandPath -Name "taskkill.exe"
+  if (-not $taskkill) {
+    throw "Windows process-tree termination is unavailable."
+  }
+  & $taskkill /PID $ProcessId /T /F 2>&1 | Out-Null
   $stopDeadline = [DateTime]::UtcNow.AddSeconds(10)
   while (
     [DateTime]::UtcNow -lt $stopDeadline -and
@@ -1448,6 +1493,7 @@ function Get-HealthyManagedRuntime {
     PublicBaseUrl = $origin
     DevSpacePid = [int](Get-PropertyValue -InputObject $runtime -Name "devspacePid")
     CloudflaredPid = Get-PropertyValue -InputObject $runtime -Name "cloudflaredPid"
+    Reused = $true
   }
 }
 
@@ -1665,7 +1711,9 @@ function Start-DevSpaceRuntime {
     Update-PublicBaseUrl -Origin $origin
 
     $previousTrustProxy = $env:DEVSPACE_TRUST_PROXY
+    $previousRequestLogging = $env:DEVSPACE_LOG_REQUESTS
     $env:DEVSPACE_TRUST_PROXY = "1"
+    $env:DEVSPACE_LOG_REQUESTS = "0"
     try {
       $quotedCli = '"' + $devspaceCli.Replace('"', '\"') + '"'
       $devspaceProcess = Start-Process `
@@ -1679,6 +1727,7 @@ function Start-DevSpaceRuntime {
     }
     finally {
       $env:DEVSPACE_TRUST_PROXY = $previousTrustProxy
+      $env:DEVSPACE_LOG_REQUESTS = $previousRequestLogging
     }
 
     if (-not (Wait-ForOwnedTcpPort `
@@ -1720,6 +1769,7 @@ function Start-DevSpaceRuntime {
       PublicBaseUrl = $origin
       DevSpacePid = $devspaceProcess.Id
       CloudflaredPid = if ($cloudflaredProcess) { $cloudflaredProcess.Id } else { $null }
+      Reused = $false
     }
   }
   catch {
@@ -1736,12 +1786,15 @@ function Start-DevSpaceRuntime {
 }
 
 function Test-OAuthMetadata {
-  param([Parameter(Mandatory = $true)][string] $Origin)
+  param(
+    [Parameter(Mandatory = $true)][string] $Origin,
+    [int] $TimeoutSeconds = 10
+  )
   $uri = $Origin.TrimEnd("/") + "/.well-known/oauth-authorization-server"
   $response = Invoke-WebRequest -UseBasicParsing -Uri $uri -Headers @{
     Accept = "application/json"
     "User-Agent" = "DevSpace-Windows-Setup/1.0"
-  }
+  } -TimeoutSec $TimeoutSeconds
   if ([int] $response.StatusCode -ne 200) {
     throw "OAuth metadata returned HTTP $($response.StatusCode): $uri"
   }
@@ -1884,11 +1937,16 @@ function Invoke-StartMode {
   }
   catch {
     $startFailure = $_
-    try {
-      Stop-DevSpaceRuntime
+    if (-not $runtime.Reused) {
+      try {
+        Stop-DevSpaceRuntime
+      }
+      catch {
+        Write-Warning "Automatic rollback could not stop every recorded process: $($_.Exception.Message)"
+      }
     }
-    catch {
-      Write-Warning "Automatic rollback could not stop every recorded process: $($_.Exception.Message)"
+    else {
+      Write-Warning "Start verification failed; preserving the pre-existing healthy runtime."
     }
     throw $startFailure
   }
@@ -2067,7 +2125,7 @@ function Invoke-UpdateMode {
     $candidatePackage = New-DevSpacePackage `
       -Root $worktreePath `
       -Destination $candidatePackagePath
-    $rollbackPackage = New-DevSpacePackage -Root $root -Destination $backupPath
+    $rollbackPackage = New-InstalledDevSpaceRollbackPackage -Destination $backupPath
     $setupBackup = Join-Path $backupPath "setup-windows.previous.ps1"
     Copy-FileAtomic -SourcePath $script:ManagedScriptPath -DestinationPath $setupBackup
     $hadRecovery = Test-Path -LiteralPath $script:ManagedRecoveryPath -PathType Leaf

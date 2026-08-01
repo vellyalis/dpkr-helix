@@ -237,7 +237,12 @@ export function createWindowsSystemUpdateController(
         };
       }
       if (!installation.status.available || !installation.sourceRoot) {
-        throw new Error(installation.status.message);
+        return {
+          accepted: false,
+          requestId: "unavailable",
+          status: installation.status,
+          message: installation.status.message,
+        };
       }
       if (installation.status.active) {
         return {
@@ -357,8 +362,10 @@ function sanitizePersistedStatus(
     && (
       updaterPid === undefined
       || !isProcessAlive(updaterPid)
-      || isActiveStatusStale(status, nowMs)
     );
+  const stale = !interrupted
+    && ACTIVE_PHASES.has(persistedPhase)
+    && isActiveStatusStale(status, nowMs);
   const phase: SystemUpdatePhase = interrupted ? "failed" : persistedPhase;
   return {
     available: true,
@@ -366,6 +373,8 @@ function sanitizePersistedStatus(
     active: ACTIVE_PHASES.has(phase),
     message: interrupted
       ? "The previous updater stopped before recording a terminal result; a new explicit update request may retry safely."
+      : stale
+        ? "The updater process is still running but has not reported progress; do not retry while it remains active."
       : STATUS_MESSAGES[phase],
     ...optionalValidatedString("requestId", status.requestId, REQUEST_ID_PATTERN),
     ...optionalValidatedString("fromCommit", status.fromCommit, COMMIT_PATTERN),
@@ -375,19 +384,11 @@ function sanitizePersistedStatus(
     ...optionalDate("completedAt", status.completedAt),
     ...(interrupted
       ? { code: "UPDATE_INTERRUPTED" }
+      : stale
+        ? { code: "UPDATE_STATUS_STALE" }
       : typeof status.code === "string" && /^[A-Z0-9_]{1,64}$/.test(status.code)
         ? { code: status.code }
         : {}),
-  };
-}
-
-function invalidStatus(): SystemUpdateStatus {
-  return {
-    available: true,
-    phase: "failed",
-    active: false,
-    code: "UPDATE_STATUS_INVALID",
-    message: "The previous update status is invalid; a new explicit update request may retry safely.",
   };
 }
 
@@ -398,6 +399,16 @@ function isActiveStatusStale(status: PersistedUpdateStatus, nowMs: number): bool
       ? Date.parse(status.startedAt)
       : Number.NaN;
   return Number.isFinite(timestamp) && nowMs - timestamp > ACTIVE_STATUS_TTL_MS;
+}
+
+function invalidStatus(): SystemUpdateStatus {
+  return {
+    available: true,
+    phase: "failed",
+    active: false,
+    code: "UPDATE_STATUS_INVALID",
+    message: "The previous update status is invalid; a new explicit update request may retry safely.",
+  };
 }
 
 function unavailableStatus(code: string, message: string): SystemUpdateStatus {

@@ -124,6 +124,11 @@ try {
     -Condition (-not $launcher.Contains("C:\Users\")) `
     -Message "Hidden launcher contains a machine-specific user path."
 
+  $managedStartSource = Get-RecoveryFunctionSource -Names @("Invoke-ManagedStart")
+  Assert-True `
+    -Condition ($managedStartSource.Contains('$process.WaitForExit()') -and $managedStartSource -notmatch '(?m)^\s*-Wait') `
+    -Message "Recovery waits for the descendant server instead of only the setup wrapper."
+
   $script:startCount = 0
   function Invoke-ManagedStart {
     $script:startCount += 1

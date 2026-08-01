@@ -41,6 +41,10 @@ try {
     userHome: root,
   });
   assert.equal((await quickTunnel.getStatus()).code, "STABLE_ENDPOINT_REQUIRED");
+  const unavailableRequest = await quickTunnel.requestUpdate();
+  assert.equal(unavailableRequest.accepted, false);
+  assert.equal(unavailableRequest.status.code, "STABLE_ENDPOINT_REQUIRED");
+  assert.match(unavailableRequest.message, /stable endpoint/i);
 
   await writeFile(join(devspaceDir, "windows-bootstrap.json"), JSON.stringify({
     schema: "devspace-windows-bootstrap/v1",
@@ -170,8 +174,10 @@ try {
     isProcessAlive: () => true,
     now: () => Date.parse("2026-08-01T00:00:01.000Z"),
   }).getStatus();
-  assert.equal(stale.phase, "failed");
-  assert.equal(stale.code, "UPDATE_INTERRUPTED");
+  assert.equal(stale.phase, "preflight");
+  assert.equal(stale.active, true);
+  assert.equal(stale.code, "UPDATE_STATUS_STALE");
+  assert.match(stale.message, /do not retry/i);
 
   let mcpUpdateRequests = 0;
   const mcpController: SystemUpdateController = {
