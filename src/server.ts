@@ -135,6 +135,10 @@ type Transport = StreamableHTTPServerTransport;
 // session retention so abandoned MCP servers do not accumulate for the life of the process.
 const MCP_SESSION_IDLE_TIMEOUT_MS = 24 * 60 * 60 * 1_000;
 const MCP_SESSION_CLEANUP_INTERVAL_MS = 5 * 60 * 1_000;
+// Some MCP hosts initialize a fresh transport for each tool call and never send
+// DELETE. Each transport owns a full MCP server, so retain ample concurrency but
+// bound abandoned transports before they can exhaust the runtime heap.
+const MCP_SESSION_MAX_RETAINED = 64;
 const WORKSPACE_APP_URI = "ui://devspace/workspace-app.html";
 const WORKSPACE_APP_MANIFEST_ENTRY = "workspace-app.html";
 const WRITE_TOOL_ANNOTATIONS = {
@@ -2560,7 +2564,7 @@ export function createServer(
   );
 
   const logSessionCloseResults = (
-    reason: "idle_timeout" | "server_shutdown",
+    reason: "capacity" | "idle_timeout" | "server_shutdown",
     results: McpSessionCloseResult[],
   ) => {
     for (const result of results) {
@@ -2576,11 +2580,22 @@ export function createServer(
         continue;
       }
 
-      logEvent(config.logging, "info", "mcp_session_closed", {
-        reason,
-        sessionIdPrefix: sessionIdPrefix(result.sessionId),
-      });
+      logEvent(
+        config.logging,
+        reason === "capacity" ? "debug" : "info",
+        "mcp_session_closed",
+        {
+          reason,
+          sessionIdPrefix: sessionIdPrefix(result.sessionId),
+        },
+      );
     }
+  };
+
+  const trimMcpSessions = () => {
+    void transports
+      .closeExcess(MCP_SESSION_MAX_RETAINED)
+      .then((results) => logSessionCloseResults("capacity", results));
   };
 
   const sessionCleanupTimer = setInterval(() => {
@@ -2688,21 +2703,28 @@ export function createServer(
       isInitialize: initializeRequest,
     });
 
+    let activeSessionId: string | undefined;
     try {
       let transport: Transport | undefined;
       let mcpToolProjector: McpToolOperationProjector | undefined;
 
       if (sessionId) {
-        transport = transports.get(sessionId);
+        transport = transports.beginRequest(sessionId);
         if (!transport) {
           sendJsonRpcError(res, 404, -32000, "Unknown MCP session");
           return;
         }
+        activeSessionId = sessionId;
       } else if (initializeRequest) {
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           onsessioninitialized: (newSessionId) => {
-            if (transport) transports.register(newSessionId, transport);
+            if (transport) {
+              transports.register(newSessionId, transport);
+              transports.beginRequest(newSessionId);
+              activeSessionId = newSessionId;
+              trimMcpSessions();
+            }
             logEvent(config.logging, "info", "mcp_session_created", {
               requestId,
               sessionIdPrefix: sessionIdPrefix(newSessionId),
@@ -2762,6 +2784,11 @@ export function createServer(
       });
       if (!res.headersSent) {
         sendJsonRpcError(res, 500, -32603, "Internal server error");
+      }
+    } finally {
+      if (activeSessionId) {
+        transports.endRequest(activeSessionId);
+        trimMcpSessions();
       }
     }
   });

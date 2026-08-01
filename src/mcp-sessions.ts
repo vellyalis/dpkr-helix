@@ -10,6 +10,7 @@ export interface McpSessionCloseResult {
 interface McpSessionEntry<TTransport> {
   transport: TTransport;
   lastActivityAt: number;
+  activeRequests: number;
 }
 
 export interface McpSessionRegistryOptions {
@@ -36,6 +37,7 @@ export class McpSessionRegistry<TTransport extends ClosableMcpTransport> {
     this.sessions.set(sessionId, {
       transport,
       lastActivityAt: this.now(),
+      activeRequests: 0,
     });
   }
 
@@ -47,6 +49,21 @@ export class McpSessionRegistry<TTransport extends ClosableMcpTransport> {
     return entry.transport;
   }
 
+  beginRequest(sessionId: string): TTransport | undefined {
+    const entry = this.sessions.get(sessionId);
+    if (!entry) return undefined;
+
+    entry.lastActivityAt = this.now();
+    entry.activeRequests += 1;
+    return entry.transport;
+  }
+
+  endRequest(sessionId: string): void {
+    const entry = this.sessions.get(sessionId);
+    if (!entry) return;
+    entry.activeRequests = Math.max(0, entry.activeRequests - 1);
+  }
+
   remove(sessionId: string): boolean {
     return this.sessions.delete(sessionId);
   }
@@ -56,13 +73,35 @@ export class McpSessionRegistry<TTransport extends ClosableMcpTransport> {
     const idleSessions: Array<{ sessionId: string; transport: TTransport }> = [];
 
     for (const [sessionId, entry] of this.sessions) {
-      if (entry.lastActivityAt > cutoff) continue;
+      if (entry.activeRequests > 0 || entry.lastActivityAt > cutoff) continue;
 
       this.sessions.delete(sessionId);
       idleSessions.push({ sessionId, transport: entry.transport });
     }
 
     return closeSessions(idleSessions);
+  }
+
+  async closeExcess(maxSessions: number): Promise<McpSessionCloseResult[]> {
+    if (!Number.isInteger(maxSessions) || maxSessions < 1) {
+      throw new Error("MCP session capacity must be a positive integer.");
+    }
+
+    const excess = this.sessions.size - maxSessions;
+    if (excess <= 0) return [];
+
+    const oldestInactive = Array.from(this.sessions, ([sessionId, entry]) => ({
+      sessionId,
+      transport: entry.transport,
+      lastActivityAt: entry.lastActivityAt,
+      activeRequests: entry.activeRequests,
+    }))
+      .filter((entry) => entry.activeRequests === 0)
+      .sort((left, right) => left.lastActivityAt - right.lastActivityAt)
+      .slice(0, excess);
+
+    for (const entry of oldestInactive) this.sessions.delete(entry.sessionId);
+    return closeSessions(oldestInactive);
   }
 
   async closeAll(): Promise<McpSessionCloseResult[]> {

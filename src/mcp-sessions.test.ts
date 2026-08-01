@@ -87,3 +87,26 @@ finishDelayedClose?.();
 await delayedClose;
 assert.equal(delayedCloseResolved, true);
 assert.equal(registry.size, 0);
+
+const oldest = createTransport();
+const active = createTransport();
+const newest = createTransport();
+registry.register("oldest", oldest);
+now += 1;
+registry.register("active", active);
+assert.equal(registry.beginRequest("active"), active);
+now += 1;
+registry.register("newest", newest);
+
+const capacityResults = await registry.closeExcess(2);
+assert.deepEqual(capacityResults, [{ sessionId: "oldest" }]);
+assert.equal(oldest.closeCalls, 1);
+assert.equal(active.closeCalls, 0);
+assert.equal(registry.size, 2);
+
+registry.endRequest("active");
+now += 1;
+registry.register("replacement", createTransport());
+const releasedResults = await registry.closeExcess(2);
+assert.deepEqual(releasedResults, [{ sessionId: "active" }]);
+assert.equal(active.closeCalls, 1);
