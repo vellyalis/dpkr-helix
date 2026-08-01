@@ -27,11 +27,14 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup-windows.ps1 `
 
 .EXAMPLE
 & "$env:USERPROFILE\.devspace\setup-windows.ps1" -Mode Stop
+
+.EXAMPLE
+& "$env:USERPROFILE\.devspace\setup-windows.ps1" -Mode Update
 #>
 
 [CmdletBinding()]
 param(
-  [ValidateSet("Install", "Start", "Stop", "Plan")]
+  [ValidateSet("Install", "Start", "Stop", "Plan", "Update")]
   [string] $Mode = "Install",
 
   [string] $SourceRoot,
@@ -62,7 +65,10 @@ param(
 
   [switch] $SkipVerification,
 
-  [switch] $RecoveryStart
+  [switch] $RecoveryStart,
+
+  [ValidatePattern("^[0-9a-fA-F-]{16,64}$")]
+  [string] $UpdateRequestId
 )
 
 $ErrorActionPreference = "Stop"
@@ -78,8 +84,13 @@ $script:RuntimeStatePath = Join-Path $script:DevSpaceDir "windows-runtime.json"
 $script:DevSpaceConfigPath = Join-Path $script:DevSpaceDir "config.json"
 $script:DevSpaceAuthPath = Join-Path $script:DevSpaceDir "auth.json"
 $script:ManagedScriptPath = Join-Path $script:DevSpaceDir "setup-windows.ps1"
+$script:ManagedRecoveryPath = Join-Path $script:DevSpaceDir "setup-windows-recovery.ps1"
+$script:UpdateStatusPath = Join-Path $script:DevSpaceDir "windows-update.json"
 $script:LogDir = Join-Path $script:DevSpaceDir "logs"
 $script:RuntimeMutexName = "Local\dpkr-helix-windows-runtime"
+$script:UpdateMutexName = "Local\dpkr-helix-windows-update"
+$script:ManagedRecoveryMarker = "managed-by-dpkr-helix-windows-recovery"
+$script:CanonicalOriginUrl = "https://github.com/vellyalis/dpkr-helix.git"
 
 function Write-Step {
   param([string] $Message)
@@ -87,10 +98,13 @@ function Write-Step {
   Write-Host "==> $Message" -ForegroundColor Cyan
 }
 
-function Sync-ManagedSetupScript {
-  param([Parameter(Mandatory = $true)][string] $SourcePath)
+function Copy-FileAtomic {
+  param(
+    [Parameter(Mandatory = $true)][string] $SourcePath,
+    [Parameter(Mandatory = $true)][string] $DestinationPath
+  )
   $resolvedSource = [System.IO.Path]::GetFullPath($SourcePath)
-  $resolvedDestination = [System.IO.Path]::GetFullPath($script:ManagedScriptPath)
+  $resolvedDestination = [System.IO.Path]::GetFullPath($DestinationPath)
   if (
     [string]::Equals(
       $resolvedSource,
@@ -100,7 +114,43 @@ function Sync-ManagedSetupScript {
   ) {
     return
   }
-  Copy-Item -LiteralPath $resolvedSource -Destination $resolvedDestination -Force
+  $destinationDirectory = Split-Path -Parent $resolvedDestination
+  if (-not (Test-Path -LiteralPath $destinationDirectory -PathType Container)) {
+    New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
+  }
+  $temporaryPath = Join-Path $destinationDirectory (
+    ".tmp-" + [Guid]::NewGuid().ToString("N") + ".copy"
+  )
+  try {
+    Copy-Item -LiteralPath $resolvedSource -Destination $temporaryPath -Force
+    Move-Item -LiteralPath $temporaryPath -Destination $resolvedDestination -Force
+  }
+  finally {
+    if (Test-Path -LiteralPath $temporaryPath -PathType Leaf) {
+      Remove-Item -LiteralPath $temporaryPath -Force
+    }
+  }
+}
+
+function Sync-ManagedSetupScript {
+  param([Parameter(Mandatory = $true)][string] $SourcePath)
+  Copy-FileAtomic -SourcePath $SourcePath -DestinationPath $script:ManagedScriptPath
+}
+
+function Sync-ManagedRecoveryScript {
+  param([Parameter(Mandatory = $true)][string] $SourcePath)
+  if (-not (Test-Path -LiteralPath $script:ManagedRecoveryPath -PathType Leaf)) {
+    return
+  }
+  $managedContent = Read-Utf8Text -Path $script:ManagedRecoveryPath
+  $sourceContent = Read-Utf8Text -Path $SourcePath
+  if (-not $managedContent.Contains($script:ManagedRecoveryMarker)) {
+    throw "Refusing to replace an unmanaged recovery script."
+  }
+  if (-not $sourceContent.Contains($script:ManagedRecoveryMarker)) {
+    throw "The candidate recovery script is missing its managed marker."
+  }
+  Copy-FileAtomic -SourcePath $SourcePath -DestinationPath $script:ManagedRecoveryPath
 }
 
 function Write-Utf8NoBom {
@@ -200,6 +250,75 @@ function Exit-RuntimeOperation {
   finally {
     $Mutex.Dispose()
   }
+}
+
+function Enter-UpdateOperation {
+  $mutex = New-Object System.Threading.Mutex($false, $script:UpdateMutexName)
+  try {
+    $acquired = $false
+    try {
+      $acquired = $mutex.WaitOne(0)
+    }
+    catch [System.Threading.AbandonedMutexException] {
+      $acquired = $true
+    }
+    if (-not $acquired) {
+      throw "DPKR_UPDATE[UPDATE_IN_PROGRESS] Another dpkr helix update is already running."
+    }
+    return $mutex
+  }
+  catch {
+    $mutex.Dispose()
+    throw
+  }
+}
+
+function Write-UpdateStatus {
+  param(
+    [Parameter(Mandatory = $true)]
+    [ValidateSet("preflight", "applying", "up_to_date", "succeeded", "rolled_back", "rejected", "failed")]
+    [string] $State,
+    [Parameter(Mandatory = $true)][string] $RequestId,
+    [string] $FromCommit,
+    [string] $TargetCommit,
+    [string] $StartedAt,
+    [string] $Code
+  )
+  $now = [DateTime]::UtcNow.ToString("o")
+  if (-not $StartedAt) {
+    $StartedAt = $now
+  }
+  $terminal = $State -in @("up_to_date", "succeeded", "rolled_back", "rejected", "failed")
+  Write-JsonAtomic -Path $script:UpdateStatusPath -Value ([ordered]@{
+      schema = "dpkr-helix-windows-update/v1"
+      state = $State
+      requestId = $RequestId
+      fromCommit = $FromCommit
+      targetCommit = $TargetCommit
+      startedAt = $StartedAt
+      updatedAt = $now
+      completedAt = if ($terminal) { $now } else { $null }
+      code = $Code
+      updaterPid = $PID
+    })
+}
+
+function Throw-UpdateFailure {
+  param(
+    [Parameter(Mandatory = $true)][string] $Code,
+    [Parameter(Mandatory = $true)][string] $Message
+  )
+  throw "DPKR_UPDATE[$Code] $Message"
+}
+
+function Get-UpdateFailureCode {
+  param([Parameter(Mandatory = $true)] $ErrorRecord)
+  $message = [string] $ErrorRecord.Exception.Message
+  $match = [regex]::Match($message, "^DPKR_UPDATE\[([A-Z0-9_]+)\]")
+  if ($match.Success) {
+    return $match.Groups[1].Value
+  }
+  return $null
 }
 
 function Get-DesiredRuntimeState {
@@ -348,6 +467,235 @@ function Invoke-Checked {
   if ($LASTEXITCODE -ne 0) {
     throw "Command failed with exit code $LASTEXITCODE`: $FilePath $($Arguments -join ' ')"
   }
+}
+
+function Invoke-CapturedChecked {
+  param(
+    [Parameter(Mandatory = $true)][string] $FilePath,
+    [string[]] $Arguments = @()
+  )
+  $output = & $FilePath @Arguments 2>&1 | Out-String
+  $exitCode = $LASTEXITCODE
+  if ($exitCode -ne 0) {
+    throw "Command failed with exit code $exitCode`: $FilePath $($Arguments -join ' ')"
+  }
+  return $output.Trim()
+}
+
+function Get-SourceUpdatePlan {
+  param([Parameter(Mandatory = $true)][string] $Root)
+  $git = Get-CommandPath -Name "git.exe"
+  if (-not $git) {
+    $git = Get-CommandPath -Name "git"
+  }
+  if (-not $git) {
+    Throw-UpdateFailure -Code "GIT_MISSING" -Message "Git is required for updates."
+  }
+
+  try {
+    $topLevel = Invoke-CapturedChecked -FilePath $git -Arguments @(
+      "-C", $Root, "rev-parse", "--show-toplevel"
+    )
+  }
+  catch {
+    Throw-UpdateFailure -Code "SOURCE_NOT_GIT" -Message "The managed source is not a Git checkout."
+  }
+  $resolvedTopLevel = [System.IO.Path]::GetFullPath($topLevel)
+  $resolvedRoot = [System.IO.Path]::GetFullPath($Root)
+  if (-not [string]::Equals(
+      $resolvedTopLevel,
+      $resolvedRoot,
+      [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    Throw-UpdateFailure -Code "SOURCE_ROOT_MISMATCH" -Message (
+      "The managed source must be the Git worktree root."
+    )
+  }
+
+  $branch = Invoke-CapturedChecked -FilePath $git -Arguments @(
+    "-C", $Root, "branch", "--show-current"
+  )
+  if ($branch -ne "main") {
+    Throw-UpdateFailure -Code "WRONG_BRANCH" -Message (
+      "Updates require the managed checkout to be on main."
+    )
+  }
+  $dirty = Invoke-CapturedChecked -FilePath $git -Arguments @(
+    "-C", $Root, "status", "--porcelain", "--untracked-files=normal"
+  )
+  if ($dirty) {
+    Throw-UpdateFailure -Code "DIRTY_WORKTREE" -Message (
+      "The managed main checkout has local changes. Commit or move them before updating."
+    )
+  }
+  $originUrl = Invoke-CapturedChecked -FilePath $git -Arguments @(
+    "-C", $Root, "remote", "get-url", "origin"
+  )
+  if (-not [string]::Equals(
+      $originUrl.TrimEnd("/"),
+      $script:CanonicalOriginUrl.TrimEnd("/"),
+      [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    Throw-UpdateFailure -Code "UNTRUSTED_ORIGIN" -Message (
+      "The managed origin is not the canonical dpkr helix repository."
+    )
+  }
+
+  $fromCommit = Invoke-CapturedChecked -FilePath $git -Arguments @(
+    "-C", $Root, "rev-parse", "HEAD^{commit}"
+  )
+  try {
+    Invoke-Checked -FilePath $git -Arguments @("-C", $Root, "fetch", "origin", "main")
+  }
+  catch {
+    Throw-UpdateFailure -Code "FETCH_FAILED" -Message "origin/main could not be fetched."
+  }
+  $targetCommit = Invoke-CapturedChecked -FilePath $git -Arguments @(
+    "-C", $Root, "rev-parse", "refs/remotes/origin/main^{commit}"
+  )
+  & $git -C $Root merge-base --is-ancestor $fromCommit $targetCommit
+  $isFastForward = $LASTEXITCODE -eq 0
+  if (-not $isFastForward) {
+    Throw-UpdateFailure -Code "NON_FAST_FORWARD" -Message (
+      "The managed main checkout has diverged from origin/main; it was not changed."
+    )
+  }
+  return [pscustomobject]@{
+    Git = $git
+    Root = $resolvedRoot
+    FromCommit = $fromCommit
+    TargetCommit = $targetCommit
+  }
+}
+
+function New-UpdateTemporaryRoot {
+  $temporaryParent = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
+  $root = Join-Path $temporaryParent (
+    "dpkr-helix-update-" + [Guid]::NewGuid().ToString("N")
+  )
+  New-Item -ItemType Directory -Path $root | Out-Null
+  return [System.IO.Path]::GetFullPath($root)
+}
+
+function Remove-UpdateTemporaryRoot {
+  param([Parameter(Mandatory = $true)][string] $Path)
+  $resolved = [System.IO.Path]::GetFullPath($Path)
+  $temporaryParent = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
+  $parent = [System.IO.Path]::GetFullPath((Split-Path -Parent $resolved))
+  $leaf = Split-Path -Leaf $resolved
+  if (
+    -not [string]::Equals($parent, $temporaryParent, [System.StringComparison]::OrdinalIgnoreCase) -or
+    -not $leaf.StartsWith("dpkr-helix-update-", [System.StringComparison]::Ordinal)
+  ) {
+    throw "Refusing to remove an unexpected update temporary path."
+  }
+  if (Test-Path -LiteralPath $resolved -PathType Container) {
+    Remove-Item -LiteralPath $resolved -Recurse -Force
+  }
+}
+
+function Add-UpdateWorktree {
+  param(
+    [Parameter(Mandatory = $true)] $Plan,
+    [Parameter(Mandatory = $true)][string] $Path
+  )
+  Invoke-Checked -FilePath ([string] $Plan.Git) -Arguments @(
+    "-C", ([string] $Plan.Root),
+    "worktree", "add", "--detach", $Path, ([string] $Plan.TargetCommit)
+  )
+}
+
+function Remove-UpdateWorktree {
+  param(
+    [Parameter(Mandatory = $true)] $Plan,
+    [Parameter(Mandatory = $true)][string] $Path
+  )
+  if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
+    return
+  }
+  Invoke-Checked -FilePath ([string] $Plan.Git) -Arguments @(
+    "-C", ([string] $Plan.Root), "worktree", "remove", "--force", $Path
+  )
+}
+
+function Invoke-UpdatePreflight {
+  param([Parameter(Mandatory = $true)][string] $Root)
+  $npm = Get-CommandPath -Name "npm.cmd"
+  if (-not $npm) {
+    $npm = Get-CommandPath -Name "npm"
+  }
+  if (-not $npm) {
+    Throw-UpdateFailure -Code "NPM_MISSING" -Message "npm is required for updates."
+  }
+  Write-Step "Verifying the update candidate before stopping dpkr helix"
+  Push-Location $Root
+  try {
+    Invoke-Checked -FilePath $npm -Arguments @("ci", "--include=dev", "--no-audit")
+    Invoke-Checked -FilePath $npm -Arguments @("run", "audit:production")
+    Invoke-Checked -FilePath $npm -Arguments @("run", "typecheck")
+    Invoke-Checked -FilePath $npm -Arguments @("test")
+    Invoke-Checked -FilePath $npm -Arguments @("run", "build")
+    Invoke-Checked -FilePath $npm -Arguments @("run", "check:public")
+  }
+  catch {
+    Throw-UpdateFailure -Code "PREFLIGHT_FAILED" -Message (
+      "The candidate failed local install, audit, tests, build, or public checks."
+    )
+  }
+  finally {
+    Pop-Location
+  }
+}
+
+function New-RollbackPackage {
+  param(
+    [Parameter(Mandatory = $true)][string] $Root,
+    [Parameter(Mandatory = $true)][string] $Destination
+  )
+  $npm = Get-CommandPath -Name "npm.cmd"
+  if (-not $npm) {
+    $npm = Get-CommandPath -Name "npm"
+  }
+  if (-not $npm) {
+    Throw-UpdateFailure -Code "NPM_MISSING" -Message "npm is required for rollback packaging."
+  }
+  Push-Location $Root
+  try {
+    if (-not (Test-Path -LiteralPath (Join-Path $Root "dist\cli.js") -PathType Leaf)) {
+      Invoke-Checked -FilePath $npm -Arguments @("run", "build")
+    }
+    Invoke-Checked -FilePath $npm -Arguments @(
+      "pack", "--silent", "--pack-destination", $Destination
+    )
+  }
+  finally {
+    Pop-Location
+  }
+  $packages = @(Get-ChildItem -LiteralPath $Destination -Filter "*.tgz" -File)
+  if ($packages.Count -ne 1) {
+    Throw-UpdateFailure -Code "ROLLBACK_PACKAGE_FAILED" -Message (
+      "The previous installation could not be packaged for rollback."
+    )
+  }
+  return $packages[0].FullName
+}
+
+function Install-BuiltDevSpacePackage {
+  param([Parameter(Mandatory = $true)][string] $PackagePath)
+  $npm = Get-CommandPath -Name "npm.cmd"
+  if (-not $npm) {
+    $npm = Get-CommandPath -Name "npm"
+  }
+  if (-not $npm) {
+    throw "npm is not available."
+  }
+  Invoke-Checked -FilePath $npm -Arguments @(
+    "install",
+    "--global",
+    "--prefer-offline",
+    "--allow-scripts=@waishnav/devspace",
+    $PackagePath
+  )
 }
 
 function Ensure-WingetPackage {
@@ -1505,6 +1853,323 @@ function Invoke-StartMode {
   return $runtime
 }
 
+function Assert-UpdatePlanStillCurrent {
+  param([Parameter(Mandatory = $true)] $Plan)
+  $currentPlan = Get-SourceUpdatePlanWithoutFetch -Plan $Plan
+  if (
+    $currentPlan.FromCommit -ne $Plan.FromCommit -or
+    $currentPlan.TargetCommit -ne $Plan.TargetCommit
+  ) {
+    Throw-UpdateFailure -Code "SOURCE_CHANGED_DURING_PREFLIGHT" -Message (
+      "The managed source changed while the candidate was being verified."
+    )
+  }
+}
+
+function Get-SourceUpdatePlanWithoutFetch {
+  param([Parameter(Mandatory = $true)] $Plan)
+  $git = [string] $Plan.Git
+  $root = [string] $Plan.Root
+  $branch = Invoke-CapturedChecked -FilePath $git -Arguments @(
+    "-C", $root, "branch", "--show-current"
+  )
+  $dirty = Invoke-CapturedChecked -FilePath $git -Arguments @(
+    "-C", $root, "status", "--porcelain", "--untracked-files=normal"
+  )
+  if ($branch -ne "main" -or $dirty) {
+    Throw-UpdateFailure -Code "SOURCE_CHANGED_DURING_PREFLIGHT" -Message (
+      "The managed main checkout changed while the candidate was being verified."
+    )
+  }
+  $originUrl = Invoke-CapturedChecked -FilePath $git -Arguments @(
+    "-C", $root, "remote", "get-url", "origin"
+  )
+  if (-not [string]::Equals(
+      $originUrl.TrimEnd("/"),
+      $script:CanonicalOriginUrl.TrimEnd("/"),
+      [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    Throw-UpdateFailure -Code "SOURCE_CHANGED_DURING_PREFLIGHT" -Message (
+      "The managed origin changed while the candidate was being verified."
+    )
+  }
+  return [pscustomobject]@{
+    FromCommit = Invoke-CapturedChecked -FilePath $git -Arguments @(
+      "-C", $root, "rev-parse", "HEAD^{commit}"
+    )
+    TargetCommit = Invoke-CapturedChecked -FilePath $git -Arguments @(
+      "-C", $root, "rev-parse", "refs/remotes/origin/main^{commit}"
+    )
+  }
+}
+
+function Invoke-UpdateRuntimeVerification {
+  param(
+    [Parameter(Mandatory = $true)] $Settings,
+    [Parameter(Mandatory = $true)][string] $Origin,
+    [Parameter(Mandatory = $true)][string] $CandidateRoot
+  )
+  $node = Get-CommandPath -Name "node.exe"
+  Invoke-Checked -FilePath $node -Arguments @((Get-DevSpaceCliPath), "doctor")
+  Test-OAuthMetadata -Origin "http://127.0.0.1:$($Settings.port)"
+  Test-OAuthMetadata -Origin $Origin
+  if (-not $SkipVerification) {
+    Test-CodexDelegation `
+      -Root $CandidateRoot `
+      -Model ([string] $Settings.codexModel)
+  }
+}
+
+function Restore-UpdateDeployment {
+  param(
+    [Parameter(Mandatory = $true)] $Plan,
+    [Parameter(Mandatory = $true)][string] $PreviousDesiredState,
+    [Parameter(Mandatory = $true)][string] $RollbackPackage,
+    [Parameter(Mandatory = $true)][string] $SetupBackup,
+    [string] $RecoveryBackup,
+    [Parameter(Mandatory = $true)][bool] $HadRecovery
+  )
+  try {
+    Stop-DevSpaceRuntime
+  }
+  catch {
+    Write-Warning "Rollback could not stop the candidate runtime: $($_.Exception.Message)"
+  }
+
+  $git = [string] $Plan.Git
+  $root = [string] $Plan.Root
+  $head = Invoke-CapturedChecked -FilePath $git -Arguments @(
+    "-C", $root, "rev-parse", "HEAD^{commit}"
+  )
+  if ($head -ne [string] $Plan.FromCommit) {
+    Invoke-Checked -FilePath $git -Arguments @(
+      "-C", $root, "reset", "--hard", ([string] $Plan.FromCommit)
+    )
+  }
+
+  Install-BuiltDevSpacePackage -PackagePath $RollbackPackage
+  Copy-FileAtomic -SourcePath $SetupBackup -DestinationPath $script:ManagedScriptPath
+  if ($HadRecovery) {
+    Copy-FileAtomic -SourcePath $RecoveryBackup -DestinationPath $script:ManagedRecoveryPath
+  }
+
+  if ($PreviousDesiredState -eq "running") {
+    $restoredSettings = Read-JsonFile -Path $script:SettingsPath
+    $runtime = Start-DevSpaceRuntime -Settings $restoredSettings -ForceRestart
+    $node = Get-CommandPath -Name "node.exe"
+    Invoke-Checked -FilePath $node -Arguments @((Get-DevSpaceCliPath), "doctor")
+    Test-OAuthMetadata -Origin "http://127.0.0.1:$($restoredSettings.port)"
+    Test-OAuthMetadata -Origin $runtime.PublicBaseUrl
+  }
+  else {
+    Set-DesiredRuntimeState -State "stopped" | Out-Null
+  }
+}
+
+function Invoke-UpdateMode {
+  $requestId = $UpdateRequestId
+  if (-not $requestId) {
+    $requestId = [Guid]::NewGuid().ToString()
+  }
+  $startedAt = [DateTime]::UtcNow.ToString("o")
+  $updateMutex = Enter-UpdateOperation
+  $temporaryRoot = $null
+  $worktreePath = $null
+  $plan = $null
+  $runtimeMutex = $null
+  $deploymentStarted = $false
+  try {
+    Write-UpdateStatus `
+      -State "preflight" `
+      -RequestId $requestId `
+      -StartedAt $startedAt
+    $settings = Read-JsonFile -Path $script:SettingsPath
+    if (-not $settings) {
+      Throw-UpdateFailure -Code "PORTABLE_SETTINGS_MISSING" -Message (
+        "Portable setup settings are missing."
+      )
+    }
+    if ([string] $settings.tunnelMode -ne "External") {
+      Throw-UpdateFailure -Code "STABLE_ENDPOINT_REQUIRED" -Message (
+        "ChatGPT-initiated updates require an External stable endpoint."
+      )
+    }
+    $root = Resolve-SourceRoot -RequestedRoot ([string] $settings.sourceRoot)
+    $plan = Get-SourceUpdatePlan -Root $root
+    Write-UpdateStatus `
+      -State "preflight" `
+      -RequestId $requestId `
+      -FromCommit ([string] $plan.FromCommit) `
+      -TargetCommit ([string] $plan.TargetCommit) `
+      -StartedAt $startedAt
+    if ($plan.FromCommit -eq $plan.TargetCommit) {
+      Write-UpdateStatus `
+        -State "up_to_date" `
+        -RequestId $requestId `
+        -FromCommit ([string] $plan.FromCommit) `
+        -TargetCommit ([string] $plan.TargetCommit) `
+        -StartedAt $startedAt `
+        -Code "UP_TO_DATE"
+      return
+    }
+
+    $temporaryRoot = New-UpdateTemporaryRoot
+    $worktreePath = Join-Path $temporaryRoot "candidate"
+    $backupPath = Join-Path $temporaryRoot "rollback"
+    New-Item -ItemType Directory -Path $backupPath | Out-Null
+    Add-UpdateWorktree -Plan $plan -Path $worktreePath
+    Invoke-UpdatePreflight -Root $worktreePath
+
+    $rollbackPackage = New-RollbackPackage -Root $root -Destination $backupPath
+    $setupBackup = Join-Path $backupPath "setup-windows.previous.ps1"
+    Copy-FileAtomic -SourcePath $script:ManagedScriptPath -DestinationPath $setupBackup
+    $hadRecovery = Test-Path -LiteralPath $script:ManagedRecoveryPath -PathType Leaf
+    $recoveryBackup = $null
+    if ($hadRecovery) {
+      $recoveryBackup = Join-Path $backupPath "setup-windows-recovery.previous.ps1"
+      Copy-FileAtomic -SourcePath $script:ManagedRecoveryPath -DestinationPath $recoveryBackup
+    }
+
+    $runtimeMutex = Enter-RuntimeOperation
+    Assert-UpdatePlanStillCurrent -Plan $plan
+    $settings = Read-JsonFile -Path $script:SettingsPath
+    if (
+      -not $settings -or
+      [string] $settings.tunnelMode -ne "External" -or
+      -not [string]::Equals(
+        [System.IO.Path]::GetFullPath([string] $settings.sourceRoot),
+        [string] $plan.Root,
+        [System.StringComparison]::OrdinalIgnoreCase
+      )
+    ) {
+      Throw-UpdateFailure -Code "SETTINGS_CHANGED_DURING_PREFLIGHT" -Message (
+        "Portable setup settings changed while the candidate was being verified."
+      )
+    }
+    $previousDesiredState = Get-DesiredRuntimeState -Settings $settings
+    Write-UpdateStatus `
+      -State "applying" `
+      -RequestId $requestId `
+      -FromCommit ([string] $plan.FromCommit) `
+      -TargetCommit ([string] $plan.TargetCommit) `
+      -StartedAt $startedAt
+    $deploymentStarted = $true
+    try {
+      Stop-DevSpaceRuntime
+      Install-BuiltDevSpacePackage -PackagePath $worktreePath
+
+      if ($previousDesiredState -eq "running") {
+        $runtime = Start-DevSpaceRuntime -Settings $settings -ForceRestart
+        Invoke-UpdateRuntimeVerification `
+          -Settings $settings `
+          -Origin $runtime.PublicBaseUrl `
+          -CandidateRoot $worktreePath
+      }
+      else {
+        $node = Get-CommandPath -Name "node.exe"
+        Invoke-Checked -FilePath $node -Arguments @((Get-DevSpaceCliPath), "doctor")
+      }
+
+      Sync-ManagedSetupScript -SourcePath (Join-Path $worktreePath "scripts\setup-windows.ps1")
+      Sync-ManagedRecoveryScript `
+        -SourcePath (Join-Path $worktreePath "scripts\setup-windows-recovery.ps1")
+      Invoke-Checked -FilePath ([string] $plan.Git) -Arguments @(
+        "-C", ([string] $plan.Root),
+        "merge", "--ff-only", ([string] $plan.TargetCommit)
+      )
+      $updatedHead = Invoke-CapturedChecked -FilePath ([string] $plan.Git) -Arguments @(
+        "-C", ([string] $plan.Root), "rev-parse", "HEAD^{commit}"
+      )
+      if ($updatedHead -ne [string] $plan.TargetCommit) {
+        throw "The managed source did not reach the verified target commit."
+      }
+    }
+    catch {
+      $applyFailure = $_
+      try {
+        Restore-UpdateDeployment `
+          -Plan $plan `
+          -PreviousDesiredState $previousDesiredState `
+          -RollbackPackage $rollbackPackage `
+          -SetupBackup $setupBackup `
+          -RecoveryBackup $recoveryBackup `
+          -HadRecovery $hadRecovery
+        Write-UpdateStatus `
+          -State "rolled_back" `
+          -RequestId $requestId `
+          -FromCommit ([string] $plan.FromCommit) `
+          -TargetCommit ([string] $plan.TargetCommit) `
+          -StartedAt $startedAt `
+          -Code "APPLY_FAILED_ROLLED_BACK"
+        Throw-UpdateFailure -Code "APPLY_FAILED_ROLLED_BACK" -Message (
+          "The candidate failed during deployment and the previous installation was restored."
+        )
+      }
+      catch {
+        $rollbackFailure = $_
+        if ((Get-UpdateFailureCode -ErrorRecord $rollbackFailure) -eq "APPLY_FAILED_ROLLED_BACK") {
+          throw $rollbackFailure
+        }
+        Write-UpdateStatus `
+          -State "failed" `
+          -RequestId $requestId `
+          -FromCommit ([string] $plan.FromCommit) `
+          -TargetCommit ([string] $plan.TargetCommit) `
+          -StartedAt $startedAt `
+          -Code "ROLLBACK_FAILED"
+        throw "Update failed: $($applyFailure.Exception.Message); rollback failed: $($rollbackFailure.Exception.Message)"
+      }
+    }
+
+    Write-UpdateStatus `
+      -State "succeeded" `
+      -RequestId $requestId `
+      -FromCommit ([string] $plan.FromCommit) `
+      -TargetCommit ([string] $plan.TargetCommit) `
+      -StartedAt $startedAt `
+      -Code "SUCCEEDED"
+  }
+  catch {
+    $failure = $_
+    $code = Get-UpdateFailureCode -ErrorRecord $failure
+    if (-not $deploymentStarted) {
+      if (-not $code) {
+        $code = "PREFLIGHT_FAILED"
+      }
+      Write-UpdateStatus `
+        -State "rejected" `
+        -RequestId $requestId `
+        -FromCommit $(if ($plan) { [string] $plan.FromCommit } else { $null }) `
+        -TargetCommit $(if ($plan) { [string] $plan.TargetCommit } else { $null }) `
+        -StartedAt $startedAt `
+        -Code $code
+    }
+    throw
+  }
+  finally {
+    if ($runtimeMutex) {
+      Exit-RuntimeOperation -Mutex $runtimeMutex
+    }
+    if ($worktreePath -and $plan) {
+      try {
+        Remove-UpdateWorktree -Plan $plan -Path $worktreePath
+      }
+      catch {
+        Write-Warning "Update worktree cleanup failed: $($_.Exception.Message)"
+      }
+    }
+    if ($temporaryRoot) {
+      try {
+        Remove-UpdateTemporaryRoot -Path $temporaryRoot
+      }
+      catch {
+        Write-Warning "Update temporary cleanup failed: $($_.Exception.Message)"
+      }
+    }
+    Exit-RuntimeOperation -Mutex $updateMutex
+  }
+}
+
 if ($Mode -eq "Stop") {
   $runtimeMutex = Enter-RuntimeOperation
   try {
@@ -1529,6 +2194,11 @@ if ($Mode -eq "Start") {
     Write-Host ""
     Write-Host "DevSpace MCP: $($runtime.PublicBaseUrl)/mcp" -ForegroundColor Green
   }
+  exit 0
+}
+
+if ($Mode -eq "Update") {
+  Invoke-UpdateMode
   exit 0
 }
 

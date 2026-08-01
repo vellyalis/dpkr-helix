@@ -45,6 +45,7 @@ publication; clone this repository when you want dpkr helix itself.
 - project permission presets for inspect, design, and development work
 - persistent handoffs so work can resume across sessions on one installation
 - support for project instructions in `AGENTS.md` and `CLAUDE.md`
+- explicit ChatGPT-initiated updates with local verification and rollback on the portable Windows installation
 
 ## Roadmap
 
@@ -88,7 +89,7 @@ ChatGPT, Cloudflare, and OpenAI authorization remains interactive on each PC.
 From a Codex session in this clone, invoke `$onboard-dpkr-helix` for the guided
 stable-endpoint, ChatGPT app, OAuth, and optional no-console recovery workflow.
 See the [portable Windows setup guide](./docs/setup-windows.md) for the same
-human-readable start, stop, recovery, and rollback contract.
+human-readable start, stop, update, recovery, and rollback contract.
 
 ## Manual install
 

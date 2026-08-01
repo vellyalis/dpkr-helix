@@ -128,6 +128,17 @@ DevSpace exposes these tool names:
 - `edit`
 - `bash`
 
+On a managed portable Windows installation it also exposes two system-scoped
+tools independent of the workspace tool mode:
+
+- `get_dpkr_helix_update_status`
+- `update_dpkr_helix`
+
+Use the mutating update tool only after the user explicitly asks to update dpkr
+helix. It verifies `origin/main` before replacing the current service. After the
+expected reconnect, use the read-only status tool to report success, rejection,
+or rollback without exposing machine-local paths.
+
 By default, DevSpace also runs in `DEVSPACE_TOOL_MODE=minimal`, so dedicated
 `grep`, `glob`, and `ls` tools are hidden. Use `bash` with command-line tools
 such as `rg`, `find`, and `ls` for search and directory inspection.

@@ -112,6 +112,28 @@ Filesystem path containment applies to DevSpace file tools. Shell commands run
 as local commands and can do what your user account can do. This is why the MCP
 client must be trusted and the Owner password must stay private.
 
+## Managed Self-Update
+
+The portable Windows installation can expose `update_dpkr_helix` to an OAuth-
+approved MCP client. Treat it as a privileged software-update action. Its tool
+metadata is mutating, destructive-capable, and open-world because it fetches
+and installs source from GitHub; clients may require approval before calling it.
+
+The tool accepts no path, branch, remote, command, package, or credential input.
+The managed setup script independently requires the canonical dpkr helix
+`origin`, a clean `main`, a fast-forward `origin/main`, and an External stable
+endpoint. Candidate code is verified in a temporary worktree before the live
+process stops. Update status returns only bounded state, timestamps, commit IDs,
+and reason codes. Local paths, Git/npm output, prompts, file contents, and
+credentials are excluded.
+
+This does not make GitHub or the local account a sandbox. A compromised
+canonical repository, Git executable, npm registry/cache, Node runtime, or
+Windows user can still affect the installation. Branch protection, pinned
+workflow actions, production audit, postinstall integrity checks, and local
+preflight reduce that supply-chain risk; rollback preserves the previous local
+package when candidate deployment itself fails.
+
 ## Worktrees
 
 Managed worktrees reduce accidental edits to your active checkout, but they are

@@ -135,6 +135,12 @@ database with a newer one.
 On Windows, rerun the portable setup preview before installation. It reports
 conflicting packages and services without changing the machine.
 
+Portable Windows installations with a stable External endpoint can update from
+ChatGPT after the update tools have been discovered once. The managed updater
+accepts only a clean fast-forward `main`, verifies `origin/main` in a temporary
+worktree before stopping the service, and restores the previous installation if
+deployment fails. See [Portable Windows Setup](./setup-windows.md#update-from-chatgpt).
+
 ## Running From A Local Checkout
 
 If you are developing DevSpace itself instead of using the published package:

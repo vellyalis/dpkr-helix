@@ -1334,3 +1334,61 @@ runtime-record-only behavior.
 DevSpace and tunnel lifecycle, the MCP protocol/client supplies session recovery
 that survives server replacement, or fresh mutation errors demonstrate a
 separate filesystem mechanism.
+
+## ADR-042: Keep self-update inside the Windows setup owner and expose only request/status over MCP
+
+**Date:** 2026-08-01
+
+**Status:** Accepted; automated verification complete, main/live proof pending
+
+**Context:** Publishing source to Git does not update the globally installed
+dpkr helix process. Asking ChatGPT to compose Git, npm, stop, restart, and
+rollback commands through a workspace shell is error-prone, and the tool call
+transport disappears when the server replaces itself. A dashboard-only action
+would not satisfy the ChatGPT workflow. Automatic polling, a daemon, or a
+second updater would add background behavior and another lifecycle owner.
+
+**Decision:** Extend `scripts/setup-windows.ps1`, the existing installation and
+runtime owner, with one explicit `Update` transaction. Expose a read-only MCP
+status tool and an explicitly mutating update-request tool through a small
+dependency-injected controller. The controller starts the canonical script as
+a detached `windowsHide` process and accepts no caller-selected source, branch,
+remote, command, or package.
+
+The script requires the canonical GitHub origin, clean `main`, External stable
+endpoint, and a fast-forward fetched `origin/main`. It verifies the exact target
+in a temporary worktree before stopping the current process. It packages the
+previous installation, installs and health-checks the candidate, atomically
+refreshes the managed setup/recovery scripts, then fast-forwards the source. If
+deployment fails, it restores the old package, exact commit, scripts, desired
+state, and health. A bounded local status file records only state, request/time
+fields, commit IDs, and reason codes for the reconnecting client.
+
+**Alternatives rejected:** Arbitrary shell orchestration, because it cannot
+provide one owner or a durable result across self-restart; dashboard-only
+mutation, because ChatGPT cannot use it; package auto-update or polling, because
+it changes software without an explicit request; and a daemon/service/queue,
+because the existing setup and recovery lifecycle already provide the needed
+owners.
+
+**Complexity receipt:** Accepted at existing-owner adaptation. One PowerShell
+mode, one focused TypeScript controller, two MCP tools, and one bounded status
+file are required by the self-restart and result-observation boundary. No
+dependency, service, daemon, scheduler, queue, cache, dashboard UI, credential,
+permission, or automatic update policy is added. Remove the MCP adapter and
+Update mode together if the host/platform later supplies a verified atomic
+self-update contract.
+
+**Failure and recovery:** Preflight rejection leaves the current process and
+source untouched. Only verified apply stops it. Concurrent duplicate requests
+are refused. Deployment rollback uses a package created before stop
+and an exact prior commit. If both apply and rollback fail, status is `failed`
+with `ROLLBACK_FAILED`; the existing hidden recovery task can attempt normal
+Start, and the local operator retains the prior package/source evidence for
+manual repair. In-flight MCP requests cannot survive replacement; the stable
+endpoint and status tool make the single reconnect explicit.
+
+**Reconsider when:** MCP provides server-replacement continuity and durable
+task results, dpkr helix adopts a signed package/release channel that is safer
+than canonical `origin/main`, or a cross-platform managed installer becomes a
+current requirement with equivalent rollback proof.

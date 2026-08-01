@@ -126,6 +126,17 @@ Requirement IDs are stable. Tests, implementation goals, and completion evidence
 - **FR-CLI-005** `devspace init` creates a separate dashboard bootstrap token when missing.
 - **FR-CLI-006** Existing `serve`, `init`, `doctor`, `config`, and `agents` commands retain their current behavior.
 
+### Managed Windows update
+
+- **FR-UPD-001** A managed portable Windows installation exposes one read-only update-status MCP tool and one explicitly mutating update-request MCP tool.
+- **FR-UPD-002** Candidate deployment proceeds only for an External stable endpoint and a clean `main` checkout whose current commit is an ancestor of fetched `origin/main`.
+- **FR-UPD-003** Candidate dependency install, production audit, typecheck, full tests, build, and public-release check run in a temporary detached worktree before the current service is stopped.
+- **FR-UPD-004** A successful update globally installs the exact verified target, verifies CLI/local/public/Codex behavior, fast-forwards the managed source, and atomically refreshes managed setup/recovery scripts.
+- **FR-UPD-005** A deployment failure restores the previous package, exact source commit, managed scripts, desired running/stopped state, and local/public health where previously running.
+- **FR-UPD-006** The update process is detached and hidden, duplicate requests do not start duplicate update processes, and no automatic polling or scheduled upgrade is added.
+- **FR-UPD-007** Update status survives the expected MCP reconnect and exposes only bounded state, request/time fields, commit IDs, and reason codes; it excludes paths, credentials, command output, prompts, and file contents.
+- **FR-UPD-008** Unsupported, dirty, non-main, diverged, preflight-failed, rolled-back, and unrecoverable outcomes are explicit and never reported as a successful update.
+
 ### Codex parity and coding quality
 
 - **FR-PAR-001** A versioned parity case manifest compares local Codex and ChatGPT Web plus dpkr helix from the same immutable repository snapshot, task goal, constraints, acceptance criteria, and allowed permissions.
@@ -163,6 +174,7 @@ Requirement IDs are stable. Tests, implementation goals, and completion evidence
 - **NFR-REL-004** Operation event publication, persistence, projection, and browser delivery are failure-isolated from the underlying canonical work.
 - **NFR-REL-005** SSE reconnect and process restart reconciliation do not repeat side effects.
 - **NFR-REL-006** Slow consumers are bounded and may be disconnected with a recoverable cursor.
+- **NFR-REL-007** Self-update keeps the old service available through preflight and has a verified rollback point before process replacement.
 - **NFR-PERF-001** `list_projects` does not run full Git status for every project synchronously.
 - **NFR-PERF-002** Typical registry listing of 100 projects completes from SQLite without filesystem traversal.
 - **NFR-PERF-003** Sustained process/provider output remains within configured memory, event, payload, and retention bounds and does not make the dashboard or MCP server unresponsive.
@@ -173,6 +185,7 @@ Requirement IDs are stable. Tests, implementation goals, and completion evidence
 - **NFR-UX-004** `Result available — verification pending` is visibly and semantically distinct from `Verified`.
 - **NFR-UX-005** Color is never the only carrier of operational state.
 - **NFR-UX-006** Dense desktop layouts remain scannable at 1280px and degrade intentionally at compact widths.
+- **NFR-UX-007** A user can request a managed update from ChatGPT without supplying shell commands; the only unavoidable interruption is the bounded reconnect caused by replacing the MCP server itself.
 - **NFR-A11Y-001** The local dashboard targets WCAG 2.2 AA, visible focus, semantic landmarks/headings, labeled controls, and correct dialog/tab keyboard behavior.
 - **NFR-A11Y-002** The dashboard honors `prefers-reduced-motion` and does not use fake progress or continuously decorative motion.
 - **NFR-SEC-007** Operation streams, event stores, terminal/diff/agent output, fixtures, and screenshots exclude hidden reasoning, prompts, chat transcripts, secrets, raw environment values, and unnecessary file contents.

@@ -59,7 +59,19 @@ function Get-SetupFunctionSource {
         "Rotate-LogFile",
         "Get-PropertyValue",
         "Normalize-HttpsOrigin",
+        "Copy-FileAtomic",
         "Sync-ManagedSetupScript",
+        "Sync-ManagedRecoveryScript",
+        "Write-UpdateStatus",
+        "Get-CommandPath",
+        "Invoke-Checked",
+        "Invoke-CapturedChecked",
+        "Throw-UpdateFailure",
+        "Get-UpdateFailureCode",
+        "Get-SourceUpdatePlan",
+        "Get-SourceUpdatePlanWithoutFetch",
+        "Assert-UpdatePlanStillCurrent",
+        "Restore-UpdateDeployment",
         "Test-OAuthMetadata",
         "New-OwnerToken",
         "ConvertTo-TomlBasicString",
@@ -129,6 +141,179 @@ try {
   Assert-True `
     -Condition ((Get-Content -LiteralPath $script:ManagedScriptPath -Raw) -eq "managed setup content") `
     -Message "Managed setup self-sync changed its own content."
+
+  $script:ManagedRecoveryMarker = "managed-by-dpkr-helix-windows-recovery"
+  $recoverySourcePath = Join-Path $temporaryRoot "setup-recovery-source.ps1"
+  $script:ManagedRecoveryPath = Join-Path $temporaryRoot "managed\setup-windows-recovery.ps1"
+  [System.IO.File]::WriteAllText(
+    $recoverySourcePath,
+    "# managed-by-dpkr-helix-windows-recovery`r`nnew recovery content"
+  )
+  [System.IO.File]::WriteAllText(
+    $script:ManagedRecoveryPath,
+    "# managed-by-dpkr-helix-windows-recovery`r`nold recovery content"
+  )
+  Sync-ManagedRecoveryScript -SourcePath $recoverySourcePath
+  Assert-True `
+    -Condition ((Get-Content -LiteralPath $script:ManagedRecoveryPath -Raw).Contains("new recovery content")) `
+    -Message "Managed recovery script was not updated atomically."
+  [System.IO.File]::WriteAllText($script:ManagedRecoveryPath, "unmanaged recovery content")
+  $unmanagedRecoveryRejected = $false
+  try {
+    Sync-ManagedRecoveryScript -SourcePath $recoverySourcePath
+  }
+  catch {
+    $unmanagedRecoveryRejected = $true
+  }
+  Assert-True `
+    -Condition $unmanagedRecoveryRejected `
+    -Message "An unmanaged recovery script was replaced by update sync."
+
+  $script:UpdateStatusPath = Join-Path $temporaryRoot "windows-update.json"
+  Write-UpdateStatus `
+    -State "preflight" `
+    -RequestId "00000000-0000-4000-8000-000000000005" `
+    -FromCommit (("a" * 40) -join "") `
+    -TargetCommit (("b" * 40) -join "") `
+    -StartedAt "2026-08-01T00:00:00.000Z"
+  $updateStatus = Read-JsonFile -Path $script:UpdateStatusPath
+  Assert-True -Condition ($updateStatus.state -eq "preflight") -Message "Update status state was not persisted."
+  Assert-True -Condition ($updateStatus.completedAt -eq $null) -Message "Active update status was marked complete."
+
+  $gitFixture = Join-Path $temporaryRoot "git-update"
+  $gitOrigin = Join-Path $gitFixture "origin.git"
+  $gitSeed = Join-Path $gitFixture "seed"
+  $gitManaged = Join-Path $gitFixture "managed"
+  New-Item -ItemType Directory -Path $gitFixture | Out-Null
+  Invoke-Checked -FilePath "git.exe" -Arguments @("init", "--bare", "--initial-branch=main", $gitOrigin)
+  Invoke-Checked -FilePath "git.exe" -Arguments @("init", "--initial-branch=main", $gitSeed)
+  Invoke-Checked -FilePath "git.exe" -Arguments @("-C", $gitSeed, "config", "user.email", "update-test@example.com")
+  Invoke-Checked -FilePath "git.exe" -Arguments @("-C", $gitSeed, "config", "user.name", "Update Test")
+  [System.IO.File]::WriteAllText((Join-Path $gitSeed "version.txt"), "one")
+  Invoke-Checked -FilePath "git.exe" -Arguments @("-C", $gitSeed, "add", "version.txt")
+  Invoke-Checked -FilePath "git.exe" -Arguments @("-C", $gitSeed, "-c", "commit.gpgsign=false", "commit", "-m", "one")
+  Invoke-Checked -FilePath "git.exe" -Arguments @("-C", $gitSeed, "remote", "add", "origin", $gitOrigin)
+  Invoke-Checked -FilePath "git.exe" -Arguments @("-C", $gitSeed, "push", "-u", "origin", "main")
+  Invoke-Checked -FilePath "git.exe" -Arguments @("clone", "--branch", "main", $gitOrigin, $gitManaged)
+  $script:CanonicalOriginUrl = $gitOrigin
+  $samePlan = Get-SourceUpdatePlan -Root $gitManaged
+  Assert-True `
+    -Condition ($samePlan.FromCommit -eq $samePlan.TargetCommit) `
+    -Message "An up-to-date managed main checkout was not recognized."
+
+  [System.IO.File]::WriteAllText((Join-Path $gitSeed "version.txt"), "two")
+  Invoke-Checked -FilePath "git.exe" -Arguments @("-C", $gitSeed, "add", "version.txt")
+  Invoke-Checked -FilePath "git.exe" -Arguments @("-C", $gitSeed, "-c", "commit.gpgsign=false", "commit", "-m", "two")
+  Invoke-Checked -FilePath "git.exe" -Arguments @("-C", $gitSeed, "push", "origin", "main")
+  $advancePlan = Get-SourceUpdatePlan -Root $gitManaged
+  Assert-True `
+    -Condition ($advancePlan.FromCommit -ne $advancePlan.TargetCommit) `
+    -Message "A fast-forward origin/main update was not discovered."
+
+  Invoke-Checked -FilePath "git.exe" -Arguments @(
+    "-C", $gitManaged, "remote", "set-url", "origin", "https://example.com/replaced.git"
+  )
+  $changedOriginCode = $null
+  try {
+    Assert-UpdatePlanStillCurrent -Plan $advancePlan
+  }
+  catch {
+    $changedOriginCode = Get-UpdateFailureCode -ErrorRecord $_
+  }
+  finally {
+    Invoke-Checked -FilePath "git.exe" -Arguments @(
+      "-C", $gitManaged, "remote", "set-url", "origin", $gitOrigin
+    )
+  }
+  Assert-True `
+    -Condition ($changedOriginCode -eq "SOURCE_CHANGED_DURING_PREFLIGHT") `
+    -Message "An origin replacement during preflight was not rejected."
+
+  [System.IO.File]::WriteAllText((Join-Path $gitManaged "untracked.txt"), "local")
+  $dirtyCode = $null
+  try {
+    Get-SourceUpdatePlan -Root $gitManaged | Out-Null
+  }
+  catch {
+    $dirtyCode = Get-UpdateFailureCode -ErrorRecord $_
+  }
+  Assert-True -Condition ($dirtyCode -eq "DIRTY_WORKTREE") -Message "A dirty update source was not rejected."
+  Remove-Item -LiteralPath (Join-Path $gitManaged "untracked.txt") -Force
+
+  $script:CanonicalOriginUrl = "https://example.com/untrusted.git"
+  $originCode = $null
+  try {
+    Get-SourceUpdatePlan -Root $gitManaged | Out-Null
+  }
+  catch {
+    $originCode = Get-UpdateFailureCode -ErrorRecord $_
+  }
+  Assert-True -Condition ($originCode -eq "UNTRUSTED_ORIGIN") -Message "A noncanonical update origin was accepted."
+  $script:CanonicalOriginUrl = $gitOrigin
+
+  Invoke-Checked -FilePath "git.exe" -Arguments @("-C", $gitManaged, "switch", "-c", "feature")
+  $branchCode = $null
+  try {
+    Get-SourceUpdatePlan -Root $gitManaged | Out-Null
+  }
+  catch {
+    $branchCode = Get-UpdateFailureCode -ErrorRecord $_
+  }
+  Assert-True -Condition ($branchCode -eq "WRONG_BRANCH") -Message "A non-main update source was not rejected."
+
+  Invoke-Checked -FilePath "git.exe" -Arguments @(
+    "-C", $gitManaged, "merge", "--ff-only", ([string] $advancePlan.TargetCommit)
+  )
+  $rollbackSetupBackup = Join-Path $temporaryRoot "rollback-setup.ps1"
+  $rollbackRecoveryBackup = Join-Path $temporaryRoot "rollback-recovery.ps1"
+  $script:ManagedScriptPath = Join-Path $temporaryRoot "managed-restore\setup-windows.ps1"
+  $script:ManagedRecoveryPath = Join-Path $temporaryRoot "managed-restore\setup-windows-recovery.ps1"
+  $script:SettingsPath = Join-Path $temporaryRoot "restore-settings.json"
+  [System.IO.File]::WriteAllText($rollbackSetupBackup, "previous setup")
+  [System.IO.File]::WriteAllText($rollbackRecoveryBackup, "previous recovery")
+  Write-JsonAtomic -Path $script:SettingsPath -Value ([ordered]@{ desiredState = "running" })
+  $script:rollbackPackageSeen = $null
+  $script:rollbackStopSeen = $false
+  function Stop-DevSpaceRuntime {
+    $script:rollbackStopSeen = $true
+  }
+  function Install-BuiltDevSpacePackage {
+    param([string] $PackagePath)
+    $script:rollbackPackageSeen = $PackagePath
+  }
+  try {
+    Restore-UpdateDeployment `
+      -Plan $advancePlan `
+      -PreviousDesiredState "stopped" `
+      -RollbackPackage "previous-package.tgz" `
+      -SetupBackup $rollbackSetupBackup `
+      -RecoveryBackup $rollbackRecoveryBackup `
+      -HadRecovery $true
+  }
+  finally {
+    Remove-Item function:Install-BuiltDevSpacePackage -ErrorAction SilentlyContinue
+    Remove-Item function:Stop-DevSpaceRuntime -ErrorAction SilentlyContinue
+    . ([ScriptBlock]::Create((Get-SetupFunctionSource -Names @("Stop-DevSpaceRuntime"))))
+  }
+  $rolledBackHead = Invoke-CapturedChecked -FilePath "git.exe" -Arguments @(
+    "-C", $gitManaged, "rev-parse", "HEAD^{commit}"
+  )
+  Assert-True `
+    -Condition ($rolledBackHead -eq [string] $advancePlan.FromCommit) `
+    -Message "Injected deployment rollback did not restore the previous Git commit."
+  Assert-True -Condition $script:rollbackStopSeen -Message "Rollback did not stop the candidate runtime."
+  Assert-True `
+    -Condition ($script:rollbackPackageSeen -eq "previous-package.tgz") `
+    -Message "Rollback did not reinstall the previous package."
+  Assert-True `
+    -Condition ((Get-Content -LiteralPath $script:ManagedScriptPath -Raw) -eq "previous setup") `
+    -Message "Rollback did not restore the previous managed setup script."
+  Assert-True `
+    -Condition ((Get-Content -LiteralPath $script:ManagedRecoveryPath -Raw) -eq "previous recovery") `
+    -Message "Rollback did not restore the previous managed recovery script."
+  Assert-True `
+    -Condition ((Read-JsonFile -Path $script:SettingsPath).desiredState -eq "stopped") `
+    -Message "Rollback changed an intentionally stopped installation to running."
 
   $sharedLogPath = Join-Path $temporaryRoot "shared.log"
   $sharedLog = [System.IO.File]::Open(
@@ -287,6 +472,40 @@ try {
   Assert-True `
     -Condition ($sourceText.Contains("RecoveryStart") -and $sourceText.Contains("-ForceRestart")) `
     -Message "Recovery start recheck or explicit install restart is missing."
+  Assert-True `
+    -Condition ($sourceText.Contains('ValidateSet("Install", "Start", "Stop", "Plan", "Update")')) `
+    -Message "Portable setup does not expose Update mode."
+  $preflightIndex = $sourceText.IndexOf("Invoke-UpdatePreflight -Root `$worktreePath")
+  $updateStopIndex = $sourceText.IndexOf("Stop-DevSpaceRuntime", $preflightIndex)
+  Assert-True `
+    -Condition ($preflightIndex -ge 0 -and $updateStopIndex -gt $preflightIndex) `
+    -Message "Update can stop the current runtime before candidate preflight."
+  $updateRuntimeMutexIndex = $sourceText.IndexOf(
+    "`$runtimeMutex = Enter-RuntimeOperation",
+    $preflightIndex
+  )
+  $settingsRereadIndex = $sourceText.IndexOf(
+    "`$settings = Read-JsonFile -Path `$script:SettingsPath",
+    $updateRuntimeMutexIndex
+  )
+  $desiredStateIndex = $sourceText.IndexOf(
+    "`$previousDesiredState = Get-DesiredRuntimeState -Settings `$settings",
+    $settingsRereadIndex
+  )
+  Assert-True `
+    -Condition (
+      $updateRuntimeMutexIndex -gt $preflightIndex -and
+      $settingsRereadIndex -gt $updateRuntimeMutexIndex -and
+      $desiredStateIndex -gt $settingsRereadIndex
+    ) `
+    -Message "Update does not re-read desired runtime state after candidate preflight."
+  Assert-True `
+    -Condition (
+      $sourceText.Contains('"merge", "--ff-only"') -and
+      $sourceText.Contains('"reset", "--hard"') -and
+      $sourceText.Contains('"rolled_back"')
+    ) `
+    -Message "Update fast-forward or rollback contract is incomplete."
 
   $planOutput = & powershell.exe `
     -NoProfile `

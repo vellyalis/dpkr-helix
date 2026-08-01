@@ -10,6 +10,13 @@ Remote clients reach the existing MCP listener through a public HTTPS tunnel and
 
 Project registration, path import, preset mutation, forgetting projects, operation streams, terminal/diff/agent-output views, and stop mutations are local-owner administration. They must not be added to the tunnel-facing MCP API.
 
+The managed Windows update request is a separate explicit software-maintenance
+action on the OAuth-protected MCP surface. It accepts no caller-selected path,
+remote, branch, package, command, or credential; advertises mutating,
+destructive, and open-world annotations; and delegates only to the canonical
+setup owner. Its read-only status response is sanitized. This does not relax
+the local-only administration boundary above.
+
 ### Workspace boundary
 
 A workspace limits DevSpace file tools to a root. Shell access is inherently more powerful than file-tool path checks; presets must not misrepresent this.

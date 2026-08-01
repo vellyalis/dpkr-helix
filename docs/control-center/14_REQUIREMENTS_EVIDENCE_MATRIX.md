@@ -28,6 +28,7 @@ Status meanings:
 | FR-OPS-009, FR-OPS-010, FR-OPS-011, FR-OPS-012, FR-OPS-013, FR-OPS-014, FR-OPS-015, FR-OPS-016 | Operation routes, Runs UI, canonical stop, reconciliation | route/stop/admin/dashboard tests; MWU-07.02–07.04 and MWU-07.10–07.12 | Automated + observed |
 | FR-VIS-001, FR-VIS-002, FR-VIS-003, FR-VIS-004, FR-VIS-005, FR-VIS-006, FR-VIS-007, FR-VIS-008, FR-VIS-009, FR-VIS-010, FR-VIS-011, FR-VIS-012 | Dashboard shell and four screens on React/Vite/CSS | dashboard screen/shell tests; MWU-07.15/07.16 production-browser walkthroughs | Automated + observed |
 | FR-CLI-001, FR-CLI-002, FR-CLI-003, FR-CLI-004, FR-CLI-005, FR-CLI-006 | CLI, config, user-config migration/defaulting | CLI/config tests; MWU-07.05 | Automated |
+| FR-UPD-001, FR-UPD-002, FR-UPD-003, FR-UPD-004, FR-UPD-005, FR-UPD-006, FR-UPD-007, FR-UPD-008, NFR-REL-007, NFR-UX-007 | canonical Windows setup Update mode; injected MCP system-update controller; bounded sanitized status | system-update MCP/controller tests; Windows Git/dirty/branch/preflight-order/rollback fault tests; installed no-console update/status and health observation | Automated + observed |
 | NFR-SEC-001, NFR-SEC-002, NFR-SEC-003, NFR-SEC-004, NFR-SEC-005, NFR-SEC-006, NFR-SEC-007 | Split listeners, dashboard auth/CSRF, path validation, redaction | admin/server/security/policy tests; MWU-07.02/07.03 and fixed Cloudflare ingress boundary proof | Automated + observed |
 | NFR-COMP-001, NFR-COMP-002 | Additive MCP results and optional Apps metadata | project-mcp-server test; MWU-07.01/07.05 | Automated |
 | NFR-REL-001, NFR-REL-002, NFR-REL-003, NFR-REL-004, NFR-REL-005, NFR-REL-006 | Migrations, bounded discovery/events/SSE, isolated projectors, reconciliation | migration/discovery/operation/admin tests; MWU-07.04 restart proof and MWU-07.10 reconnect observation | Automated + observed |
@@ -45,6 +46,9 @@ observations. MWU-07.18 additionally records direct completion of release-level
 manual scenarios A, B, D, and E. Final convergence confirms all 17 acceptance
 criteria and mandatory release gates pass; GOAL_07 is DONE under
 `07_TEST_AND_ACCEPTANCE_PLAN.md` and `09_PROJECT_STATE.md`.
+
+The additive FR-UPD/NFR rows are post-GOAL_07 operational maintenance and do
+not change the historical 124-ID closure count.
 
 ## GOAL_08 planned traceability
 

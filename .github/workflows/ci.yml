@@ -52,6 +52,13 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Test portable Windows lifecycle
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup-windows.test.ps1
+          powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\setup-windows-recovery.test.ps1
+
       - name: Build
         run: npm run build
 

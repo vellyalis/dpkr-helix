@@ -77,6 +77,7 @@ publishing the compatibility package accidentally.
 | Contributor attribution | current fork history plus NOTICE/LICENSE | copied upstream contributor/funding roster misrepresents this fork |
 | Windows Codex child launch | install-time verified single `windowsHide: true` option | dependency update alone still omits the no-console option; SDK fork creates a second owner |
 | Windows recovery trigger | existing limited-user no-console task plus canonical health-gated recovery | legacy public-or-local failure rule restarted healthy local state during tunnel-only outages |
+| Managed Windows update | canonical setup `Update` transaction plus MCP request/status adapter | arbitrary shell loses ownership/result across self-restart; daemon/polling/dashboard add friction or a second owner |
 
 ## Workstream portfolio
 
@@ -90,6 +91,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-01 no-focus Codex review | VERIFIED | real reviewer launch/continuation causes no console foreground transition |
 | WS-OPS-02 health-gated recovery | VERIFIED | public-only failure preserves local state; local failure restarts once; installed task passes |
 | WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
+| WS-UPD-01 ChatGPT-initiated update | AUTOMATED VERIFIED; MAIN/LIVE PROOF PENDING | publish the verified checkpoint, install it, and observe catalog/status plus local/public health |
 | WS-QA-08 measured coding parity | PLANNED | resume at MWU-08.01 after current priority |
 
 ## Architecture and complexity decision
@@ -128,6 +130,15 @@ Shorter polling, workspace probe writes, generic file retries, persistent MCP
 transport recreation, another watchdog, and privilege elevation were rejected
 because they worsen interaction or ownership without evidence of the relevant
 failure mechanism.
+
+Managed self-update also remains inside the Windows setup owner. The MCP layer
+accepts no source or command input; it only starts the canonical setup script
+hidden and reports bounded status. The script requires canonical origin, clean
+fast-forward `main`, and a stable External endpoint. Candidate verification
+runs in a temporary worktree before stop, and deployment has an exact package,
+source, script, desired-state, and health rollback. No dependency, daemon,
+service, scheduled upgrade, queue, dashboard action, credential, or background
+polling was added.
 
 ## Verification surface
 
@@ -200,5 +211,6 @@ Cutover outcome:
 
 ## Next executable action
 
-Resume at GOAL_08 MWU-08.01: freeze P01-P08 and record the same-snapshot
-local-Codex versus Web-plus-helix baseline.
+Publish the automated-verified WS-UPD-01 checkpoint to protected `main`, deploy
+it once through the existing setup owner, and prove the new MCP catalog/status
+plus local/public recovery. Then resume GOAL_08 MWU-08.01.

@@ -124,6 +124,11 @@ import {
   createDetachedLocalAgentWorkerSpawner,
   LocalAgentService,
 } from "./local-agent-service.js";
+import {
+  createWindowsSystemUpdateController,
+  type SystemUpdateController,
+} from "./system-update.js";
+import { registerSystemUpdateTools } from "./system-update-mcp.js";
 
 type Transport = StreamableHTTPServerTransport;
 // MCP clients can reconnect without closing the previous transport. Bound stale
@@ -1268,6 +1273,7 @@ export function createMcpServer(
   localAgents?: LocalAgentService,
   mcpToolProjector?: McpToolOperationProjector,
   operationStore?: OperationStore,
+  systemUpdate?: SystemUpdateController,
 ): McpServer {
   const server = new McpServer(
     {
@@ -1321,6 +1327,14 @@ export function createMcpServer(
       throw new Error("LocalAgentService is required when subagents are enabled.");
     }
     registerLocalAgentTools(server, config, workspaces, localAgents);
+  }
+
+  if (systemUpdate) {
+    registerSystemUpdateTools(
+      server,
+      systemUpdate,
+      (fields) => logToolCall(config, fields),
+    );
   }
 
   registerAppTool(
@@ -2448,6 +2462,7 @@ export function createMcpServer(
 export interface CreateServerOptions {
   incomingArtifactAdapters?: readonly IncomingArtifactAdapter[];
   localAgents?: LocalAgentService;
+  systemUpdate?: SystemUpdateController;
 }
 
 export function createServer(
@@ -2456,6 +2471,7 @@ export function createServer(
 ): RunningServer {
   const incomingArtifactAdapters = options.incomingArtifactAdapters
     ?? [createOpenAIIncomingArtifactAdapter()];
+  const systemUpdate = options.systemUpdate ?? createWindowsSystemUpdateController();
   const allowedHosts = config.allowedHosts.includes("*")
     ? undefined
     : Array.from(new Set([config.host, ...config.allowedHosts]));
@@ -2730,6 +2746,7 @@ export function createServer(
           localAgents,
           mcpToolProjector,
           operationStore,
+          systemUpdate,
         );
         await server.connect(transport);
       } else {

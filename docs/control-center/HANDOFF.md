@@ -4,8 +4,9 @@ Last synchronized: 2026-08-01
 
 ## Current position
 
-- Current work unit: Windows operational-stability maintenance; implementation,
-  local deployment, verification, and task-branch checkpoint complete.
+- Current work unit: ChatGPT-initiated Windows update; implementation and
+  automated verification complete, `main` publication and live installation
+  proof pending.
 - GOAL_01 through GOAL_07: DONE.
 - GOAL_08 Codex-Parity Coding Quality: design accepted; implementation
   `NOT_STARTED`.
@@ -39,6 +40,11 @@ Last synchronized: 2026-08-01
   preserves the existing PID and MCP sessions.
 - No shorter polling, generic file retry, workspace probe write, additional
   daemon, service, prompt, notification, UI, or permission was introduced.
+- The canonical Windows setup now owns an explicit hidden `Update` transaction;
+  MCP adds only a mutating request and sanitized read-only status. Candidate
+  proof runs before stop, concurrent requests are excluded, corrupt/stale
+  status is retryable, and failed deployment restores the prior package,
+  commit, scripts, desired state, and health.
 
 ## Completed before this work unit
 
@@ -119,7 +125,8 @@ Last synchronized: 2026-08-01
    current remote.
 5. Confirm GOAL_09 remains `DONE`; do not repeat its one-time clean-root cutover.
 6. Confirm the operational-stability checkpoint and current local/public health.
-7. Continue GOAL_08 at MWU-08.01 unless the owner sets a newer priority.
+7. If WS-UPD-01 has not reached `main` and the installed runtime, finish its
+   publication/deployment proof; otherwise continue GOAL_08 at MWU-08.01.
 
 Do not recreate GOAL_01 through GOAL_08 documents. Do not start public cutover
 commands merely because the preparation work is complete.
@@ -139,7 +146,14 @@ commands merely because the preparation work is complete.
   focused reviewer approval after one accepted finding, recovery fault tests,
   desired-state and operation-race fault injection, live idempotent Start,
   typecheck, full tests, production audit, build, and fresh local/public health
+- 2026-08-01 self-update automated proof: MCP catalog/annotation and path-
+  redaction tests; duplicate/crash/corrupt-status recovery; clean/main/origin/
+  preflight-race and rollback fault tests; full tests; Windows setup/recovery
+  unit and isolated integration tests; typecheck; build; production audit with
+  zero vulnerabilities; package dry run
 
 ## Exact next action
 
-Resume GOAL_08 MWU-08.01 with the same-snapshot P01-P08 baseline.
+Publish WS-UPD-01 to protected `main`, install that checkpoint with the existing
+setup owner, verify the live update tools/status and local/public health, then
+resume GOAL_08 MWU-08.01.

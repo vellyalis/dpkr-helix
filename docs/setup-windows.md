@@ -120,6 +120,49 @@ restarting them. It refuses to stop a reused PID unless its executable,
 creation time, and command line all match the recorded process identity, and it
 keeps the runtime record when identity cannot be proven.
 
+## Update From ChatGPT
+
+After installing this update surface and refreshing the ChatGPT connection once
+so it discovers the new tools, you can ask ChatGPT to update dpkr helix. ChatGPT
+uses `get_dpkr_helix_update_status` and `update_dpkr_helix`; you do not need to
+provide Git, npm, stop, or restart commands.
+
+This path is deliberately explicit. It never polls for versions or installs an
+update without a user request. It is available only when the managed source is a
+clean `main` checkout using `origin/main` and the installation uses an External
+stable endpoint. A Quick Tunnel changes address during restart, so the tool
+refuses that mode instead of stranding the ChatGPT connection.
+
+The updater:
+
+1. verifies the canonical dpkr helix `origin`, fetches `origin/main`, and rejects
+   dirty, non-main, or diverged source;
+2. creates a temporary detached worktree at the exact target commit;
+3. installs dependencies and runs the production audit, typecheck, full tests,
+   build, and public-release check while the current service remains available;
+4. packages the current installation as a rollback point;
+5. stops and replaces dpkr helix only after preflight succeeds, using a hidden
+   one-shot process;
+6. checks the CLI, local/public OAuth metadata, and Codex delegation;
+7. fast-forwards the managed source and updates the managed recovery scripts;
+8. restores the previous package, source commit, scripts, desired state, and
+   health if deployment fails.
+
+One MCP reconnect is expected after verified deployment begins because the
+server is replacing itself. After reconnecting, ask ChatGPT for the update
+status. The result is stored without credentials, local source paths, command
+output, or file contents.
+
+The equivalent local command is:
+
+```powershell
+& "$env:USERPROFILE\.devspace\setup-windows.ps1" -Mode Update
+```
+
+An update does not create a Scheduled Task, daemon, service, queue, dashboard
+button, or automatic upgrade policy. The existing setup/recovery owner remains
+responsible for installation and restart.
+
 ## Stable HTTPS Endpoint
 
 Quick Tunnel is convenient for setup and testing, but its hostname changes
