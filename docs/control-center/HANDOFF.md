@@ -4,9 +4,9 @@ Last synchronized: 2026-08-01
 
 ## Current position
 
-- Current work unit: ChatGPT-initiated Windows update; implementation and
-  automated verification complete, `main` publication and live installation
-  proof pending.
+- Current work unit: ChatGPT-initiated Windows update; `main` publication,
+  three-platform CI, physical installation, and live request/status proof
+  complete.
 - GOAL_01 through GOAL_07: DONE.
 - GOAL_08 Codex-Parity Coding Quality: design accepted; implementation
   `NOT_STARTED`.
@@ -45,6 +45,14 @@ Last synchronized: 2026-08-01
   proof runs before stop, concurrent requests are excluded, corrupt/stale
   status is retryable, and failed deployment restores the prior package,
   commit, scripts, desired state, and health.
+- The installed runtime is a physical packed artifact rather than a Junction to
+  the source checkout. Its exact production dependency tree is restored from
+  the shipped shrinkwrap before service start, so source maintenance no longer
+  modifies the files used by the running process.
+- A short hidden PowerShell launcher now hands the update to a hidden worker and
+  exits. It uses two bounded local log files, creates no scheduled updater,
+  daemon, UI, prompt, or automatic update, and passed a live `UP_TO_DATE`
+  request through the installed controller.
 
 ## Completed before this work unit
 
@@ -125,8 +133,8 @@ Last synchronized: 2026-08-01
    current remote.
 5. Confirm GOAL_09 remains `DONE`; do not repeat its one-time clean-root cutover.
 6. Confirm the operational-stability checkpoint and current local/public health.
-7. If WS-UPD-01 has not reached `main` and the installed runtime, finish its
-   publication/deployment proof; otherwise continue GOAL_08 at MWU-08.01.
+7. Continue GOAL_08 at MWU-08.01; WS-UPD-01 is complete on `main` and in the
+   installed runtime.
 
 Do not recreate GOAL_01 through GOAL_08 documents. Do not start public cutover
 commands merely because the preparation work is complete.
@@ -151,9 +159,14 @@ commands merely because the preparation work is complete.
   preflight-race and rollback fault tests; full tests; Windows setup/recovery
   unit and isolated integration tests; typecheck; build; production audit with
   zero vulnerabilities; package dry run
+- hosted CI runs `30695131888` and `30695948042`, each passing Ubuntu, macOS,
+  and Windows after closing deployment portability and hidden-launch defects
+- live physical package and exact dependency proof; managed script equality;
+  doctor exit `0`; desired-running state; local/public health; and an installed
+  controller request that ended `UP_TO_DATE` with the same request ID
 
 ## Exact next action
 
-Publish WS-UPD-01 to protected `main`, install that checkpoint with the existing
-setup owner, verify the live update tools/status and local/public health, then
-resume GOAL_08 MWU-08.01.
+Resume GOAL_08 at MWU-08.01: freeze P01-P08 and record the same-snapshot local
+Codex versus Web-plus-helix baseline before changing product behavior or model
+defaults.

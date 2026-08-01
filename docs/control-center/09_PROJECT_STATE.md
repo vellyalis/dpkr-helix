@@ -5,7 +5,7 @@ Last synchronized: 2026-08-01
 ## Current state
 
 - Repository: `vellyalis/dpkr-helix`
-- Branch: `fix/windows-operational-stability`
+- Branch: `main`
 - Visibility: PUBLIC
 - Working directory: unchanged
 - Product name: `dpkr helix`
@@ -17,9 +17,9 @@ Last synchronized: 2026-08-01
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; GOAL_08 remains the canonical next-program
   contract
-- Current maintenance unit: no-focus Codex review launch and health-gated
-  Windows recovery are implemented, locally deployed, and verified on the task
-  branch
+- Current maintenance unit: no-focus Codex review launch, health-gated Windows
+  recovery, and ChatGPT-initiated managed update are on `main`, locally
+  deployed, and verified
 
 ## Goal status
 
@@ -77,7 +77,7 @@ publishing the compatibility package accidentally.
 | Contributor attribution | current fork history plus NOTICE/LICENSE | copied upstream contributor/funding roster misrepresents this fork |
 | Windows Codex child launch | install-time verified single `windowsHide: true` option | dependency update alone still omits the no-console option; SDK fork creates a second owner |
 | Windows recovery trigger | existing limited-user no-console task plus canonical health-gated recovery | legacy public-or-local failure rule restarted healthy local state during tunnel-only outages |
-| Managed Windows update | canonical setup `Update` transaction plus MCP request/status adapter | arbitrary shell loses ownership/result across self-restart; daemon/polling/dashboard add friction or a second owner |
+| Managed Windows update | physical packed install plus canonical setup transaction and hidden MCP request/status launcher | source Junction lets maintenance lock or mutate live files; arbitrary shell loses ownership/result across self-restart; daemon/polling/dashboard add friction or a second owner |
 
 ## Workstream portfolio
 
@@ -91,7 +91,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-01 no-focus Codex review | VERIFIED | real reviewer launch/continuation causes no console foreground transition |
 | WS-OPS-02 health-gated recovery | VERIFIED | public-only failure preserves local state; local failure restarts once; installed task passes |
 | WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
-| WS-UPD-01 ChatGPT-initiated update | AUTOMATED VERIFIED; MAIN/LIVE PROOF PENDING | publish the verified checkpoint, install it, and observe catalog/status plus local/public health |
+| WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
 | WS-QA-08 measured coding parity | PLANNED | resume at MWU-08.01 after current priority |
 
 ## Architecture and complexity decision
@@ -140,6 +140,14 @@ source, script, desired-state, and health rollback. No dependency, daemon,
 service, scheduled upgrade, queue, dashboard action, credential, or background
 polling was added.
 
+Deployment now installs a packed physical artifact instead of linking the live
+runtime to the source checkout. A shipped temporary shrinkwrap restores the
+exact production tree before start. This removes the observed lock/mutation
+coupling between repository maintenance and the running native module. MCP uses
+a short hidden launcher whose output is drained; the launcher delegates to a
+hidden worker with two overwritten local logs. This closes the Windows process
+launch failure without adding a persistent process or user-facing console.
+
 ## Verification surface
 
 Completed release proof:
@@ -187,6 +195,19 @@ Completed release proof:
   persisting desired state; and
 - the deployed direct and scheduled recovery paths passed local/public health,
   with Scheduled Task result `0`.
+- hosted run `30695131888` passed Ubuntu, macOS, and Windows after physical
+  deployment portability fixes; hosted run `30695948042` passed the same matrix
+  for the hidden update launcher;
+- an isolated Windows lifecycle integration reinstalled while running, proved
+  a non-reparse physical package and exact native dependency, exercised
+  Stop/Start, occupied-port handling, failed-public-check cleanup, and PID
+  identity, then removed its fixtures;
+- the live installation contains the controller and MCP adapter, matches both
+  managed scripts, has desired state `running`, passes doctor, and passed local
+  and public health; and
+- the installed controller accepted a hidden update request, matched its
+  persisted request ID, and completed inactive with `UP_TO_DATE` at the current
+  `main` commit.
 
 Cutover outcome:
 
@@ -207,10 +228,12 @@ Cutover outcome:
 | filesystem aliases differ across operating systems | resolved | canonical comparison at security and query boundaries; logical workspace identity remains unchanged; Ubuntu/macOS/Windows CI passed |
 | Codex SDK compiled spawn shape may change | controlled | postinstall and production audit fail closed until the scoped repair is reviewed against the new shape |
 | this execution context could not register a replacement current-user task | accepted local deployment constraint | reuse the existing limited-user no-console task through canonical recovery; preserve helper-only rollback |
-| in-flight MCP requests cannot survive an actual process/OS loss | external protocol/platform residual | prevent avoidable restarts, persist workspace identity, recover the service, and let the client establish a new MCP transport |
+| in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
+| an already-open ChatGPT app may cache the previous tool catalog | external host residual | refresh or reconnect the app once after this tool-surface deployment; later updates reuse the same tools |
+| canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
 
 ## Next executable action
 
-Publish the automated-verified WS-UPD-01 checkpoint to protected `main`, deploy
-it once through the existing setup owner, and prove the new MCP catalog/status
-plus local/public recovery. Then resume GOAL_08 MWU-08.01.
+Resume GOAL_08 at MWU-08.01: freeze P01-P08 and record the same-snapshot local
+Codex versus Web-plus-helix baseline before changing product behavior or model
+defaults.

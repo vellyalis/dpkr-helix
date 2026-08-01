@@ -145,3 +145,22 @@ and Git rather than duplicated here.
 - Fault tests and live deployment proved missing-runtime retry, false-failure
   confirmation, mutex skip, same-PID Start, direct health, and scheduled result
   `0`.
+
+## 2026-08-01 — ChatGPT-initiated managed update completed
+
+- The canonical Windows setup and two bounded MCP tools now own explicit update
+  request and sanitized status without accepting paths, commands, or options.
+- Preflight runs before service replacement; clean canonical fast-forward main,
+  concurrency exclusion, stale/corrupt-state recovery, deployment health, and
+  package/source/script/desired-state rollback are enforced.
+- The runtime is installed from a packed physical artifact with its exact
+  production dependency tree, removing the observed source-Junction coupling
+  that could lock or mutate live native files during repository maintenance.
+- A short hidden launcher delegates to a hidden update worker with overwritten
+  local logs. No foreground terminal, automatic updater, daemon, task, prompt,
+  notification, dashboard control, or new permission was added.
+- Hosted CI passed Ubuntu, macOS, and Windows. The live installation passed
+  script equality, exact dependency, doctor, desired state, local/public health,
+  and an installed-controller request that ended `UP_TO_DATE` with matching
+  persisted identity.
+- WS-UPD-01 is `DONE`; the next executable unit returns to GOAL_08 MWU-08.01.
