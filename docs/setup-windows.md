@@ -97,11 +97,11 @@ checkout, creates a new Owner password, runs the official Codex browser login
 when needed, starts DevSpace and the tunnel, and checks local/public OAuth
 metadata plus a real Codex subagent run.
 
-The global runtime is installed from a built package archive with its verified
-production dependencies bundled, rather than an npm link to the checkout.
-Normal source dependency maintenance therefore cannot lock or partially remove
-files used by the running service, and deployment does not re-resolve dependency
-versions after verification.
+The global runtime is installed from a built package archive rather than an npm
+link to the checkout, then its production dependencies are restored from the
+verified deployment lock. Normal source dependency maintenance therefore cannot
+lock or partially remove files used by the running service, and compatible range
+updates cannot silently change the deployed tree after verification.
 
 The final line prints the MCP URL to enter in ChatGPT Developer mode. ChatGPT
 app creation and its OAuth approval remain interactive account actions.

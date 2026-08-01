@@ -487,6 +487,13 @@ try {
     ) `
     -Message "Install mode links the global runtime to the mutable source checkout."
   Assert-True `
+    -Condition (
+      $sourceText.Contains('"ci",') -and
+      $sourceText.Contains('"--omit=dev",') -and
+      $sourceText.Contains('npm-shrinkwrap.json')
+    ) `
+    -Message "Installed runtime dependencies are not restored from the verified lock."
+  Assert-True `
     -Condition ($sourceText.Contains("RecoveryStart") -and $sourceText.Contains("-ForceRestart")) `
     -Message "Recovery start recheck or explicit install restart is missing."
   Assert-True `

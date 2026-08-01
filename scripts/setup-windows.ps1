@@ -717,6 +717,26 @@ function Install-BuiltDevSpacePackage {
     "--allow-scripts=@waishnav/devspace",
     $PackagePath
   )
+  $installedRoot = Join-Path (Get-GlobalNpmRoot) "@waishnav\devspace"
+  $installedItem = Get-Item -LiteralPath $installedRoot -Force -ErrorAction Stop
+  if ($installedItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+    throw "The installed DevSpace runtime is linked to a mutable source directory."
+  }
+  if (-not (Test-Path -LiteralPath (Join-Path $installedRoot "npm-shrinkwrap.json") -PathType Leaf)) {
+    throw "The installed DevSpace runtime is missing its deployment lock."
+  }
+  Push-Location $installedRoot
+  try {
+    Invoke-Checked -FilePath $npm -Arguments @(
+      "ci",
+      "--omit=dev",
+      "--prefer-offline",
+      "--allow-scripts=@waishnav/devspace"
+    )
+  }
+  finally {
+    Pop-Location
+  }
 }
 
 function Ensure-WingetPackage {
@@ -865,12 +885,7 @@ function Install-DevSpace {
       Pop-Location
     }
     $devspacePackage = New-DevSpacePackage -Root $Root -Destination $packageRoot
-    Invoke-Checked -FilePath $npm -Arguments @(
-      "install",
-      "--global",
-      "--allow-scripts=@waishnav/devspace",
-      $devspacePackage
-    )
+    Install-BuiltDevSpacePackage -PackagePath $devspacePackage
     Invoke-Checked -FilePath $npm -Arguments @(
       "install",
       "--global",

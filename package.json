@@ -29,7 +29,6 @@
     "skills",
     "README.md"
   ],
-  "bundleDependencies": true,
   "scripts": {
     "pretest": "tsx src/operations/operation-stop.test.ts && tsx src/admin/operation-routes.test.ts",
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
