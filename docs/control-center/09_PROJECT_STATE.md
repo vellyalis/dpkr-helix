@@ -1,11 +1,11 @@
 # Project State
 
-Last synchronized: 2026-07-31
+Last synchronized: 2026-08-01
 
 ## Current state
 
 - Repository: `vellyalis/dpkr-helix`
-- Branch: `main`
+- Branch: `fix/windows-operational-stability`
 - Visibility: PUBLIC
 - Working directory: unchanged
 - Product name: `dpkr helix`
@@ -17,6 +17,9 @@ Last synchronized: 2026-07-31
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; GOAL_08 remains the canonical next-program
   contract
+- Current maintenance unit: no-focus Codex review launch and health-gated
+  Windows recovery are implemented, locally deployed, and verified on the task
+  branch
 
 ## Goal status
 
@@ -72,6 +75,8 @@ publishing the compatibility package accidentally.
 | Distribution | public source clone, npm publication disabled | publishing under upstream npm namespace misstates ownership |
 | Operational State | compact public-safe Current State plus separate sanitized ledger | large mixed State/Handoff leaked machine-specific history and slowed resume |
 | Contributor attribution | current fork history plus NOTICE/LICENSE | copied upstream contributor/funding roster misrepresents this fork |
+| Windows Codex child launch | install-time verified single `windowsHide: true` option | dependency update alone still omits the no-console option; SDK fork creates a second owner |
+| Windows recovery trigger | existing limited-user no-console task plus canonical health-gated recovery | legacy public-or-local failure rule restarted healthy local state during tunnel-only outages |
 
 ## Workstream portfolio
 
@@ -82,6 +87,8 @@ publishing the compatibility package accidentally.
 | WS-PUB-03 public documentation | VERIFIED | public copy, policies, attribution, and demo asset reviewed |
 | WS-PUB-04 supply-chain/package hygiene | VERIFIED | clean install/audit pass; internal state excluded |
 | WS-PUB-05 public cutover | DONE | approved old-run deletion, clean-root push, public security controls, and public-clone acceptance complete |
+| WS-OPS-01 no-focus Codex review | VERIFIED | real reviewer launch/continuation causes no console foreground transition |
+| WS-OPS-02 health-gated recovery | VERIFIED | public-only failure preserves local state; local failure restarts once; installed task passes |
 | WS-QA-08 measured coding parity | PLANNED | resume at MWU-08.01 after current priority |
 
 ## Architecture and complexity decision
@@ -100,6 +107,17 @@ patched version directly and postinstall replaces only Pi's exact nested copy
 when necessary, verifies the real resolved version, and fails closed. A
 lockfile-only patch was rejected after clean-install proof showed it could make
 the audit report clean while leaving old code on disk.
+
+The compatible Codex SDK does not expose a Windows child-process creation
+option. The accepted local postinstall repair therefore changes only its unique
+compiled native spawn, requires exactly one `windowsHide: true`, and fails
+install and audit on duplicate or unknown shapes. It adds no fork, dependency,
+process owner, retry path, or configuration surface.
+
+Windows recovery keeps the existing setup/runtime record as the sole DevSpace
+owner. A public-only outage never restarts a healthy local process, while the
+existing Cloudflared Windows service remains responsible for tunnel restart.
+Managed helper writes roll back if Task Scheduler registration fails.
 
 ## Verification surface
 
@@ -131,7 +149,16 @@ Completed release proof:
   inspection, and Windows setup `Plan`;
 - after public runners became available, CI exposed and closed cross-platform
   path-identity and tool-provisioning defects; hosted run `30570280066` passed
-  the complete Ubuntu, macOS, and Windows matrix at source commit `02a4996`.
+  the complete Ubuntu, macOS, and Windows matrix at source commit `02a4996`;
+- a real Codex reviewer start and continuation completed without a console
+  foreground transition;
+- one accepted duplicate-option review finding was fixed, and focused re-review
+  reported no blocking defect;
+- recovery fault tests proved intentional-stop preservation, public-only
+  preservation, one local restart, no-console task action, registration
+  rollback, and exact removal; and
+- typecheck, the full suite including write/edit/apply-patch paths, build, and a
+  zero-vulnerability production audit passed.
 
 Cutover outcome:
 
@@ -150,6 +177,8 @@ Cutover outcome:
 | public release cannot be recalled | realized publication boundary | source was published only after explicit owner approval and clean-clone proof |
 | machine-local ignored folders remain on this PC | local-only, expected | ignore rules plus public checker path gate |
 | filesystem aliases differ across operating systems | resolved | canonical comparison at security and query boundaries; logical workspace identity remains unchanged; Ubuntu/macOS/Windows CI passed |
+| Codex SDK compiled spawn shape may change | controlled | postinstall and production audit fail closed until the scoped repair is reviewed against the new shape |
+| this execution context could not register a replacement current-user task | accepted local deployment constraint | reuse the existing limited-user no-console task through canonical recovery; preserve helper-only rollback |
 
 ## Next executable action
 

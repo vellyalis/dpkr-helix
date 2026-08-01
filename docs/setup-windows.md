@@ -204,6 +204,10 @@ minutes. Its Action enters through `wscript.exe //B //NoLogo`; Windows Script
 Host starts the recovery PowerShell with window style `0`, so periodic checks
 do not create an interactive console window.
 
+Task registration is transactional with respect to its managed helper files.
+If Windows rejects the Task Scheduler update, the prior helper contents are
+restored and a first-time failed install leaves no managed helper behind.
+
 Recovery reads only the saved External origin, port, and installer-owned runtime
 record. If the runtime record is absent after an intentional
 `setup-windows.ps1 -Mode Stop`, it stays stopped. If local health passes but
@@ -235,6 +239,10 @@ does not match its managed markers.
   verification failures automatically stop processes started by that attempt.
 - The managed Codex TOML block is replaced atomically and checked with the
   installed Codex CLI; the prior file is restored if validation fails.
+- DevSpace's Codex SDK child is installed with the Windows no-console spawn
+  option. Postinstall and production audit fail closed if an SDK update removes,
+  duplicates, or changes that option instead of silently restoring focus-stealing
+  behavior.
 - Use `-Mode Stop` for immediate tunnel and DevSpace cutoff.
 
 Official references:

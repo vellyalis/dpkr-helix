@@ -1,10 +1,11 @@
 # DevSpace Control Center Handoff
 
-Last synchronized: 2026-07-31
+Last synchronized: 2026-08-01
 
 ## Current position
 
-- Current work unit: GOAL_09 Public Release Readiness.
+- Current work unit: Windows operational-stability maintenance; implementation,
+  local deployment, verification, and task-branch checkpoint complete.
 - GOAL_01 through GOAL_07: DONE.
 - GOAL_08 Codex-Parity Coding Quality: design accepted; implementation
   `NOT_STARTED`.
@@ -25,6 +26,13 @@ Last synchronized: 2026-07-31
   release commit.
 - Private vulnerability reporting is enabled. `main` branch protection applies
   to administrators and blocks force-push and branch deletion.
+- Codex review delegation now verifies a single `windowsHide: true` option in
+  the SDK's native child spawn. A real reviewer start/continuation completed
+  without any console process taking foreground focus.
+- Windows recovery now preserves healthy local DevSpace during a public-only
+  outage. The current installation reuses its existing limited-user,
+  no-console task through the managed health-gated recovery script because the
+  present execution context could not register a replacement task.
 
 ## Completed before this work unit
 
@@ -104,7 +112,8 @@ Last synchronized: 2026-07-31
 4. Reconcile `git status --short --branch`, `git log -5 --oneline`, and the
    current remote.
 5. Confirm GOAL_09 remains `DONE`; do not repeat its one-time clean-root cutover.
-6. Continue GOAL_08 at MWU-08.01 unless the owner sets a newer priority.
+6. Confirm the operational-stability checkpoint and current local/public health.
+7. Continue GOAL_08 at MWU-08.01 unless the owner sets a newer priority.
 
 Do not recreate GOAL_01 through GOAL_08 documents. Do not start public cutover
 commands merely because the preparation work is complete.
@@ -120,6 +129,9 @@ commands merely because the preparation work is complete.
 - unauthenticated public clone acceptance
 - public visibility, vulnerability reporting, and branch-protection verification
 - hosted Ubuntu, macOS, and Windows CI run `30570280066`
+- 2026-08-01 operational maintenance: real no-focus Codex review probe,
+  focused reviewer approval after one accepted finding, recovery fault tests,
+  typecheck, full tests, production audit, build, and fresh local/public health
 
 ## Exact next action
 

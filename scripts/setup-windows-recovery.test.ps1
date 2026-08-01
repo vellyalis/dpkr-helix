@@ -58,6 +58,7 @@ function Get-RecoveryFunctionSource {
         "Invoke-Recovery",
         "Get-HiddenLauncherContent",
         "Assert-ManagedFile",
+        "Restore-ManagedFile",
         "Test-ManagedTask",
         "Install-Recovery",
         "Remove-Recovery"
@@ -265,6 +266,9 @@ try {
       [string] $Description,
       [switch] $Force
     )
+    if ($script:failRegistration) {
+      throw "injected task registration failure"
+    }
     $script:registeredTaskName = $TaskName
     $script:registeredTask = [pscustomobject]@{
       TaskPath = $TaskPath
@@ -282,6 +286,27 @@ try {
     $script:unregisteredTaskPath = $TaskPath
     $script:registeredTask = $null
   }
+
+  $script:failRegistration = $true
+  $registrationRejected = $false
+  $registrationError = $null
+  try {
+    Install-Recovery
+  }
+  catch {
+    $registrationError = $_.Exception.Message
+    $registrationRejected = $_.Exception.Message.Contains("injected task registration failure")
+  }
+  Assert-True `
+    -Condition $registrationRejected `
+    -Message "Injected task registration failure was not surfaced: $registrationError"
+  Assert-True `
+    -Condition (-not (Test-Path -LiteralPath $script:ManagedRecoveryPath)) `
+    -Message "Failed task registration left the managed recovery script."
+  Assert-True `
+    -Condition (-not (Test-Path -LiteralPath $script:HiddenLauncherPath)) `
+    -Message "Failed task registration left the managed hidden launcher."
+  $script:failRegistration = $false
 
   Install-Recovery
   Assert-True `

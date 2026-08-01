@@ -41,7 +41,7 @@ $script:SourceRecoveryPath = [System.IO.Path]::GetFullPath($PSCommandPath)
 function Write-Utf8NoBom {
   param(
     [Parameter(Mandatory = $true)][string] $Path,
-    [Parameter(Mandatory = $true)][string] $Content
+    [Parameter(Mandatory = $true)][AllowEmptyString()][string] $Content
   )
   $encoding = New-Object System.Text.UTF8Encoding($false)
   [System.IO.File]::WriteAllText($Path, $Content, $encoding)
@@ -220,6 +220,22 @@ function Assert-ManagedFile {
   }
 }
 
+function Restore-ManagedFile {
+  param(
+    [Parameter(Mandatory = $true)][string] $Path,
+    [Parameter(Mandatory = $true)][bool] $HadPrevious,
+    [Parameter(Mandatory = $true)][AllowEmptyString()][string] $PreviousContent
+  )
+  if ($HadPrevious) {
+    Write-Utf8NoBom -Path $Path -Content $PreviousContent
+    return
+  }
+  if (Test-Path -LiteralPath $Path -PathType Leaf) {
+    Assert-ManagedFile -Path $Path
+    Remove-Item -LiteralPath $Path -Force
+  }
+}
+
 function Test-ManagedTask {
   param([Parameter(Mandatory = $true)] $Task)
   $actions = @(Get-PropertyValue -InputObject $Task -Name "Actions")
@@ -266,6 +282,14 @@ function Install-Recovery {
   Get-RecoverySettings | Out-Null
   Assert-ManagedFile -Path $script:ManagedRecoveryPath
   Assert-ManagedFile -Path $script:HiddenLauncherPath
+  $hadPreviousRecovery = Test-Path -LiteralPath $script:ManagedRecoveryPath -PathType Leaf
+  $previousRecovery = if ($hadPreviousRecovery) {
+    Read-Utf8Text -Path $script:ManagedRecoveryPath
+  } else { "" }
+  $hadPreviousLauncher = Test-Path -LiteralPath $script:HiddenLauncherPath -PathType Leaf
+  $previousLauncher = if ($hadPreviousLauncher) {
+    Read-Utf8Text -Path $script:HiddenLauncherPath
+  } else { "" }
 
   $existingTask = Get-ScheduledTask `
     -TaskName $script:TaskName `
@@ -275,59 +299,85 @@ function Install-Recovery {
     throw "Refusing to replace an unmanaged Scheduled Task named '$($script:TaskName)'."
   }
 
-  if (-not (Test-Path -LiteralPath $script:DevSpaceDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $script:DevSpaceDir -Force | Out-Null
-  }
-  $sourcePath = $script:SourceRecoveryPath
-  $destinationPath = [System.IO.Path]::GetFullPath($script:ManagedRecoveryPath)
-  if (
-    -not [string]::Equals(
-      $sourcePath,
-      $destinationPath,
-      [System.StringComparison]::OrdinalIgnoreCase
-    )
-  ) {
-    Copy-Item -LiteralPath $sourcePath -Destination $destinationPath -Force
-  }
-  Write-Utf8NoBom `
-    -Path $script:HiddenLauncherPath `
-    -Content ((Get-HiddenLauncherContent).Trim() + "`r`n")
+  $createdTask = -not $existingTask
+  try {
+    if (-not (Test-Path -LiteralPath $script:DevSpaceDir -PathType Container)) {
+      New-Item -ItemType Directory -Path $script:DevSpaceDir -Force | Out-Null
+    }
+    $sourcePath = $script:SourceRecoveryPath
+    $destinationPath = [System.IO.Path]::GetFullPath($script:ManagedRecoveryPath)
+    if (
+      -not [string]::Equals(
+        $sourcePath,
+        $destinationPath,
+        [System.StringComparison]::OrdinalIgnoreCase
+      )
+    ) {
+      Copy-Item -LiteralPath $sourcePath -Destination $destinationPath -Force
+    }
+    Write-Utf8NoBom `
+      -Path $script:HiddenLauncherPath `
+      -Content ((Get-HiddenLauncherContent).Trim() + "`r`n")
 
-  $action = New-ScheduledTaskAction `
-    -Execute $script:WscriptPath `
-    -Argument ('//B //NoLogo "' + $script:HiddenLauncherPath + '"')
-  $repeatTrigger = New-ScheduledTaskTrigger `
-    -Once `
-    -At ([DateTime]::Now.AddMinutes(1)) `
-    -RepetitionInterval (New-TimeSpan -Minutes 5) `
-    -RepetitionDuration (New-TimeSpan -Days 3650)
-  $logonTrigger = New-ScheduledTaskTrigger -AtLogOn
-  $principal = New-ScheduledTaskPrincipal `
-    -UserId ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name) `
-    -LogonType Interactive `
-    -RunLevel Limited
-  $settings = New-ScheduledTaskSettingsSet `
-    -AllowStartIfOnBatteries `
-    -DontStopIfGoingOnBatteries `
-    -StartWhenAvailable `
-    -MultipleInstances IgnoreNew `
-    -ExecutionTimeLimit (New-TimeSpan -Minutes 2)
-  Register-ScheduledTask `
-    -TaskName $script:TaskName `
-    -TaskPath $script:TaskPath `
-    -Action $action `
-    -Trigger @($repeatTrigger, $logonTrigger) `
-    -Principal $principal `
-    -Settings $settings `
-    -Description $script:TaskDescription `
-    -Force | Out-Null
+    $action = New-ScheduledTaskAction `
+      -Execute $script:WscriptPath `
+      -Argument ('//B //NoLogo "' + $script:HiddenLauncherPath + '"')
+    $repeatTrigger = New-ScheduledTaskTrigger `
+      -Once `
+      -At ([DateTime]::Now.AddMinutes(1)) `
+      -RepetitionInterval (New-TimeSpan -Minutes 5) `
+      -RepetitionDuration (New-TimeSpan -Days 3650)
+    $logonTrigger = New-ScheduledTaskTrigger -AtLogOn
+    $principal = New-ScheduledTaskPrincipal `
+      -UserId ([System.Security.Principal.WindowsIdentity]::GetCurrent().Name) `
+      -LogonType Interactive `
+      -RunLevel Limited
+    $settings = New-ScheduledTaskSettingsSet `
+      -AllowStartIfOnBatteries `
+      -DontStopIfGoingOnBatteries `
+      -StartWhenAvailable `
+      -MultipleInstances IgnoreNew `
+      -ExecutionTimeLimit (New-TimeSpan -Minutes 2)
+    Register-ScheduledTask `
+      -TaskName $script:TaskName `
+      -TaskPath $script:TaskPath `
+      -Action $action `
+      -Trigger @($repeatTrigger, $logonTrigger) `
+      -Principal $principal `
+      -Settings $settings `
+      -Description $script:TaskDescription `
+      -Force | Out-Null
 
-  $installed = Get-ScheduledTask `
-    -TaskName $script:TaskName `
-    -TaskPath $script:TaskPath `
-    -ErrorAction Stop
-  if (-not (Test-ManagedTask -Task $installed)) {
-    throw "The recovery task was registered with an unexpected action."
+    $installed = Get-ScheduledTask `
+      -TaskName $script:TaskName `
+      -TaskPath $script:TaskPath `
+      -ErrorAction Stop
+    if (-not (Test-ManagedTask -Task $installed)) {
+      throw "The recovery task was registered with an unexpected action."
+    }
+  }
+  catch {
+    if ($createdTask) {
+      $installed = Get-ScheduledTask `
+        -TaskName $script:TaskName `
+        -TaskPath $script:TaskPath `
+        -ErrorAction SilentlyContinue
+      if ($installed -and (Test-ManagedTask -Task $installed)) {
+        Unregister-ScheduledTask `
+          -TaskName $script:TaskName `
+          -TaskPath $script:TaskPath `
+          -Confirm:$false
+      }
+    }
+    Restore-ManagedFile `
+      -Path $script:HiddenLauncherPath `
+      -HadPrevious $hadPreviousLauncher `
+      -PreviousContent $previousLauncher
+    Restore-ManagedFile `
+      -Path $script:ManagedRecoveryPath `
+      -HadPrevious $hadPreviousRecovery `
+      -PreviousContent $previousRecovery
+    throw
   }
   Write-Host "Installed Scheduled Task: $($script:TaskName)"
 }

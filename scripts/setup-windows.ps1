@@ -413,7 +413,12 @@ function Install-DevSpace {
   try {
     Invoke-Checked -FilePath $npm -Arguments @("ci", "--include=dev")
     Invoke-Checked -FilePath $npm -Arguments @("run", "build")
-    Invoke-Checked -FilePath $npm -Arguments @("install", "--global", ".")
+    Invoke-Checked -FilePath $npm -Arguments @(
+      "install",
+      "--global",
+      "--allow-scripts=@waishnav/devspace",
+      "."
+    )
     Invoke-Checked -FilePath $npm -Arguments @(
       "install",
       "--global",

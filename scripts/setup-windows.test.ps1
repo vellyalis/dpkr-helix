@@ -256,6 +256,9 @@ try {
   Assert-True `
     -Condition ($mainStopIndex -ge 0 -and $mainStopIndex -lt $mainInstallIndex) `
     -Message "Install mode does not stop the managed runtime before replacing dependencies."
+  Assert-True `
+    -Condition $sourceText.Contains('"--allow-scripts=@waishnav/devspace"') `
+    -Message "Global DevSpace install does not explicitly allow its reviewed postinstall repairs."
 
   $planOutput = & powershell.exe `
     -NoProfile `

@@ -1245,3 +1245,46 @@ working-tree/history/path coverage, npm becomes an intentional distribution
 channel under an owned package identity, or a recognized secret is found in
 pre-public history. A real secret invalidates the force-push-only approach and
 requires repository recreation or another purge with independent proof.
+
+## ADR-040: Hide Codex review children and preserve local state across tunnel outages
+
+**Date:** 2026-08-01
+
+**Status:** Accepted and locally verified
+
+**Context:** On Windows, a Codex-backed review could create a visible terminal
+and steal foreground focus. Separately, the installed legacy recovery helper
+restarted DevSpace when either local or public health failed, so a transient
+tunnel-only outage could interrupt an otherwise healthy MCP session and make
+subsequent file writes unavailable until reconnection.
+
+**Decision:** Keep the existing Codex SDK and patch only its unique compiled
+native spawn block during the existing postinstall lifecycle. Require exactly
+one `windowsHide: true` option and fail closed on duplicate or unknown shapes.
+Keep the existing setup/runtime record as the sole DevSpace owner. Recovery
+restarts only when local health fails; public-only failure preserves the local
+process and leaves tunnel recovery to the existing Windows service owner.
+Managed recovery helper files roll back if task registration fails.
+
+**Alternatives rejected:** A Codex SDK fork, because it creates a second
+dependency owner; a new watchdog/service, because the existing task and Windows
+service own the required lifecycles; broad retries, because they hide disconnect
+mechanisms; and restarting local DevSpace for tunnel-only failure, because it
+destroys healthy session continuity.
+
+**Complexity receipt:** Accepted. One dependency-free install repair extends the
+existing postinstall/audit pattern, and one rollback path strengthens the
+existing recovery script. No dependency, daemon, service, store, queue, cache,
+configuration surface, or permission expansion is added.
+
+**Failure and recovery:** An SDK layout change blocks install/audit rather than
+silently regressing focus behavior. Revert the scoped patch and reinstall the
+prior package to roll back. Recovery task registration failure restores prior
+managed helper contents. A constrained installation may reuse an already-owned
+limited-user no-console task by pointing its user-owned helper at the canonical
+recovery script; no task deletion or privilege increase is required.
+
+**Reconsider when:** The upstream Codex SDK exposes or guarantees an equivalent
+Windows spawn option, the existing task can be replaced under normal user
+permissions, or fresh evidence identifies a different connection-interruption
+mechanism.

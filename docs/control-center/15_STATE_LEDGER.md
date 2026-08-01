@@ -115,3 +115,18 @@ and Git rather than duplicated here.
   intermediate implementation and closed its S1 and S2 findings.
 - Hosted CI run `30570280066` passed the complete Ubuntu, macOS, and Windows
   matrix at source commit `02a4996`, clearing the announcement blocker.
+
+## 2026-08-01 — Windows operational stability hardened
+
+- Codex-backed review now installs and audits an exact Windows no-console child
+  spawn option; a real reviewer launch and continuation caused no console
+  foreground transition.
+- One reviewer finding about duplicate option precedence was accepted, fixed,
+  and closed by focused re-review.
+- Recovery now preserves healthy local DevSpace during tunnel-only failure and
+  rolls back helper files when Task Scheduler registration fails.
+- The current installation reused its existing limited-user hidden task without
+  deleting it or expanding privileges; the managed recovery path passed direct
+  and scheduled health checks.
+- Typecheck, full tests including file write/edit/patch paths, Windows setup and
+  recovery fault tests, build, and production audit passed.
