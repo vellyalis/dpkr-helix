@@ -730,8 +730,7 @@ function Install-BuiltDevSpacePackage {
     Invoke-Checked -FilePath $npm -Arguments @(
       "ci",
       "--omit=dev",
-      "--prefer-offline",
-      "--allow-scripts=@waishnav/devspace"
+      "--prefer-offline"
     )
   }
   finally {
