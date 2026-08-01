@@ -1731,8 +1731,10 @@ function Start-DevSpaceRuntime {
 
     $previousTrustProxy = $env:DEVSPACE_TRUST_PROXY
     $previousRequestLogging = $env:DEVSPACE_LOG_REQUESTS
+    $previousToolCallLogging = $env:DEVSPACE_LOG_TOOL_CALLS
     $env:DEVSPACE_TRUST_PROXY = "1"
     $env:DEVSPACE_LOG_REQUESTS = "0"
+    $env:DEVSPACE_LOG_TOOL_CALLS = "0"
     try {
       $quotedCli = '"' + $devspaceCli.Replace('"', '\"') + '"'
       $devspaceProcess = Start-Process `
@@ -1747,6 +1749,7 @@ function Start-DevSpaceRuntime {
     finally {
       $env:DEVSPACE_TRUST_PROXY = $previousTrustProxy
       $env:DEVSPACE_LOG_REQUESTS = $previousRequestLogging
+      $env:DEVSPACE_LOG_TOOL_CALLS = $previousToolCallLogging
     }
 
     if (-not (Wait-ForOwnedTcpPort `

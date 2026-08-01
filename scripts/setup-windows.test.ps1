@@ -562,6 +562,9 @@ try {
     -Condition ($sourceText.Contains('-SourcePath (Join-Path $resolvedSourceRoot "scripts\setup-windows-recovery.ps1")')) `
     -Message "Install mode does not refresh the managed recovery script."
   Assert-True `
+    -Condition ($sourceText.Contains('$env:DEVSPACE_LOG_TOOL_CALLS = "0"')) `
+    -Message "Managed runtime leaves high-volume successful tool logging enabled."
+  Assert-True `
     -Condition (
       $sourceText.Contains('if ($Mode -eq "LaunchUpdate")') -and
       $sourceText.Contains('-WindowStyle Hidden') -and
