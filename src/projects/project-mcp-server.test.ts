@@ -140,6 +140,10 @@ try {
     assert.ok(readTool, "workspace-scoped read remains in the MCP tool catalog");
     assert.ok(editTool, "legacy edit remains in the MCP tool catalog");
     assert.ok(writeTool, "legacy write remains in the MCP tool catalog");
+    assert.match(
+      readTool.description ?? "",
+      /Advertising a skill never expands the user's or task's granted read scope/,
+    );
     assert.deepEqual(listTool.annotations, PROJECT_LIST_TOOL_ANNOTATIONS);
     assert.deepEqual(openTool.annotations, PROJECT_OPEN_TOOL_ANNOTATIONS);
     assert.deepEqual(openTool._meta?.ui, {
@@ -265,6 +269,10 @@ try {
     assert.equal(
       typeof (openedLegacy.structuredContent?.repositoryContext as { fingerprint?: unknown } | undefined)?.fingerprint,
       "string",
+    );
+    assert.match(
+      String(openedLegacy.structuredContent?.instruction ?? ""),
+      /If a narrower read boundary excludes a skill path, do not read or activate that skill/,
     );
     const legacyWorkspaceId = openedLegacy.structuredContent?.workspaceId;
     assert.equal(typeof legacyWorkspaceId, "string");

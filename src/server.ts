@@ -269,6 +269,9 @@ const toolNames = {
   shell: "bash",
 } as const;
 
+const SKILL_READ_BOUNDARY_INSTRUCTION =
+  "Advertising a skill never expands the user's or task's granted read scope. If a narrower read boundary excludes a skill path, do not read or activate that skill; continue without it.";
+
 interface ToolLogFields {
   tool: string;
   workspaceId?: string;
@@ -293,18 +296,17 @@ function serverInstructions(config: ServerConfig): string {
     config.widgets === "changes"
       ? " If the turn successfully modifies files by creating, editing, overwriting, deleting, moving, or applying patches, call show_changes exactly once for that workspace after the final related file change and before your final response so the user can inspect the aggregate diff for that turn. Do not call it after every individual file change; do not skip it because individual file-change tools already returned diffs."
       : "";
+  const skills = config.skillsEnabled
+    ? `When ${toolNames.openWorkspace} returns available skills and a task matches a skill, use ${toolNames.read} to read that skill's path before proceeding, but only when the path is inside the granted read scope. Skill paths may be outside the workspace, and ${toolNames.read} only permits advertised SKILL.md files and files under already-loaded skill directories. ${SKILL_READ_BOUNDARY_INSTRUCTION} `
+    : "";
 
   if (config.toolMode === "codex") {
-    return `Use dpkr helix as a local coding workspace. For registered projects, call ${toolNames.listProjects} to discover stable IDs/slugs, then call ${toolNames.openProject}; reuse its workspaceId. For unregistered legacy folders, call ${toolNames.openWorkspace} once with the path and reuse its workspaceId. Use ${toolNames.read} for direct file reads, apply_patch for all file modifications, exec_command for inspection, tests, builds, and other commands, and write_stdin to poll or interact with running processes. Follow instructions returned by ${toolNames.openProject} or ${toolNames.openWorkspace}; read applicable instruction and skill files before working in their scope.${continuityInstruction}${localAgentInstruction}${artifactInstruction}${showChangesInstruction}`;
+    return `Use dpkr helix as a local coding workspace. For registered projects, call ${toolNames.listProjects} to discover stable IDs/slugs, then call ${toolNames.openProject}; reuse its workspaceId. For unregistered legacy folders, call ${toolNames.openWorkspace} once with the path and reuse its workspaceId. Use ${toolNames.read} for direct file reads, apply_patch for all file modifications, exec_command for inspection, tests, builds, and other commands, and write_stdin to poll or interact with running processes. Follow instructions returned by ${toolNames.openProject} or ${toolNames.openWorkspace}; read applicable instruction files before working in their scope. ${skills}${continuityInstruction}${localAgentInstruction}${artifactInstruction}${showChangesInstruction}`;
   }
 
   const inspection = config.toolMode !== "full"
     ? `In minimal tool mode, ${toolNames.grep}, ${toolNames.glob}, and ${toolNames.ls} are disabled; use ${toolNames.shell} with command-line tools such as grep, rg, find, ls, and tree for search and directory inspection. `
     : `Prefer ${toolNames.read}, ${toolNames.grep}, ${toolNames.glob}, and ${toolNames.ls} for file inspection. `;
-
-  const skills = config.skillsEnabled
-    ? `When ${toolNames.openWorkspace} returns available skills and a task matches a skill, use ${toolNames.read} to read that skill's path before proceeding. Skill paths may be outside the workspace, but ${toolNames.read} only permits advertised SKILL.md files and files under already-loaded skill directories. `
-    : "";
 
   const agentsMd = `Follow instructions returned by ${toolNames.openWorkspace}. Before working under a path listed in availableAgentsFiles, use ${toolNames.read} to inspect that instruction file and follow it. `;
 
@@ -801,7 +803,7 @@ function createWorkspaceToolResult(input: {
     path: formatAgentsPath(file.path, workspace.root),
   }));
   const workspaceInstruction = input.config.skillsEnabled
-    ? "Use this workspaceId in all subsequent tool calls for this project. Do not call open_workspace or open_project again for this same folder unless this workspaceId stops working, the user asks to reopen, or you switch to a different folder/worktree. Follow loaded agentsFiles instructions. Before working under a path listed in availableAgentsFiles, read that instruction file. When a task matches an available skill in skills, read its path before proceeding."
+    ? `Use this workspaceId in all subsequent tool calls for this project. Do not call open_workspace or open_project again for this same folder unless this workspaceId stops working, the user asks to reopen, or you switch to a different folder/worktree. Follow loaded agentsFiles instructions. Before working under a path listed in availableAgentsFiles, read that instruction file. When a task matches an available skill in skills, read its path before proceeding only when that path is inside the granted read scope. ${SKILL_READ_BOUNDARY_INSTRUCTION}`
     : "Use this workspaceId in all subsequent tool calls for this project. Do not call open_workspace or open_project again for this same folder unless this workspaceId stops working, the user asks to reopen, or you switch to a different folder/worktree. Follow loaded agentsFiles instructions. Before working under a path listed in availableAgentsFiles, read that instruction file.";
   const instruction = `${workspaceInstruction} ${DEVSPACE_SESSION_CONTINUITY_INSTRUCTION}`;
   const resultText = [
@@ -1671,7 +1673,7 @@ export function createMcpServer(
           "Read a file inside an open workspace. Use this for file inspection instead of shell commands like cat or sed. Call open_workspace first and pass workspaceId.",
           "Use this tool to inspect relevant AGENTS.md or CLAUDE.md files listed by open_workspace before working in nested directories.",
           config.skillsEnabled
-            ? "If available skills were returned and a task matches one, read that skill's path before proceeding. Skill paths may be outside the workspace; only advertised SKILL.md files and files under already-loaded skill directories are readable."
+            ? `If available skills were returned and a task matches one, read that skill's path before proceeding only when that path is inside the granted read scope. Skill paths may be outside the workspace; only advertised SKILL.md files and files under already-loaded skill directories are readable. ${SKILL_READ_BOUNDARY_INSTRUCTION}`
             : "",
         ]
           .filter(Boolean)
@@ -1684,7 +1686,7 @@ export function createMcpServer(
           .string()
           .describe(
             config.skillsEnabled
-              ? "File path to read, relative to the workspace root. May also be an advertised skill path from open_workspace skills."
+              ? "File path to read, relative to the workspace root. May also be an advertised skill path from open_workspace skills when the user's or task's granted read scope permits it."
               : "File path to read, relative to the workspace root.",
           ),
         offset: z
