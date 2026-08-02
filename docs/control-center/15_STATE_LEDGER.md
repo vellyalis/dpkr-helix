@@ -420,3 +420,18 @@ and Git rather than duplicated here.
   expected reconnect. The mutating tool remains explicit-request-only; no
   daemon, browser controller, permission, credential, model/profile default, or
   automatic upgrade policy was added.
+
+## 2026-08-03 — GPT-5.6 Sol effort comparison queued
+
+- The owner requires a complete comparison of the same `gpt-5.6-sol` model at
+  medium, high, and xhigh on frozen P01-P08 snapshots for both local Codex and
+  signed-in Web plus dpkr helix.
+- Existing medium results are diagnostic only because five Web delegation
+  attempts used managed `gpt-5.5`; High covered only P01/P02/P05/P07 and also
+  contains mixed delegated execution; xhigh has no records.
+- `effort-comparison-plan.json` and `EFFORT_COMPARISON_RUNBOOK.md` define 96
+  required fresh records, the existing disagreement-only tie-break, mandatory
+  safety-first ranking, and a P05 attribution canary before the full matrix.
+- The owner explicitly deferred all evaluation turns until 2026-08-04. No
+  model/profile default, product behavior, authentication, or external account
+  state changed during preparation.

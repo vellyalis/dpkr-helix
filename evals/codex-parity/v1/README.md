@@ -71,9 +71,13 @@ evidence. A result that is still in template state is not a baseline record.
 
 The current configuration is `gpt-5.5` at medium reasoning with managed profile
 digest `195f31f49c99c75247bdc290a4bbc032fd48568aa6be9569859d3f72e4c491b0`.
-The first candidate is `gpt-5.6-sol` at medium with the same profile text.
-Higher effort is evaluated only on the hard subset after the same-effort
-comparison. Model and prompt defaults are not changed by this suite.
+The first completed candidate was `gpt-5.6-sol` at medium with the same profile
+text. Its original conditional higher-effort rule evaluated High only on the
+hard subset. A later owner-requested full `medium` / `high` / `xhigh` comparison
+is defined separately by `effort-comparison-plan.json` and
+`EFFORT_COMPARISON_RUNBOOK.md`; it reuses the frozen snapshots without changing
+the v1 historical matrix. Model and prompt defaults are not changed by either
+evaluation.
 
 ## Safety and ownership
 

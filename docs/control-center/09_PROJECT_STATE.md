@@ -1,6 +1,6 @@
 # Project State
 
-Last synchronized: 2026-08-02
+Last synchronized: 2026-08-03
 
 ## Current state
 
@@ -15,11 +15,12 @@ Last synchronized: 2026-08-02
 - Upstream: `Waishnav/devspace`
 - License: MIT, upstream copyright retained
 - Public `origin/main`: parentless release root plus public-safe release state
-- Public roadmap: `docs/ROADMAP.md`; GOAL_08 is complete.
-- Current program unit: none. GOAL_08 MWU-08.01 through MWU-08.06 and GOAL_10
-  catalog convergence are complete; the measured current `gpt-5.5` medium
-  setting is retained, and signed-in Web plus dpkr helix passes the frozen
-  parity gate 8/8 versus retained local 5/8.
+- Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
+  intact and WS-QA-09 is the next evaluation.
+- Current program unit: WS-QA-09 is `READY`, with execution deferred by the
+  owner until 2026-08-04. It compares the same `gpt-5.6-sol` model at medium,
+  high, and xhigh on complete P01-P08 snapshots across local Codex and signed-in
+  Web plus dpkr helix. No evaluation turn has begun.
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
@@ -115,6 +116,7 @@ publishing the compatibility package accidentally.
 | MWU-08.04 structured Codex outcome | installed Codex SDK per-turn schema plus existing LocalAgentService/store and operation/MCP/UI projections; nullable disposition/question and same-session continuation | prose parsing silently manufactures completion; a second message/store/notification owner duplicates lifecycle state; changing non-Codex adapters without native schema breaks compatibility |
 | MWU-08.05 bounded wait | optional 0..30000 ms wait on the existing status tool/service path with explicit timeout metadata | duplicate workers, background polling, cancellation, or another wait owner add risk without improving the measured workflow |
 | MWU-08.06 parity convergence | existing server/workspace/read metadata explicitly preserves narrower task read boundaries over advertised Skills; signed-in Web 8/8 versus retained local 5/8 | a new per-turn permission language/enforcement owner is not justified by the advisory-metadata experiment; repeated wording tuning or a model/default change lacks evidence |
+| WS-QA-09 `gpt-5.6-sol` effort | no selected effort yet; full fresh matrix required | historical medium is mixed, High is a mixed four-case subset, and xhigh is absent, so none can close the owner-requested comparison |
 
 ## Workstream portfolio
 
@@ -131,6 +133,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
 | WS-QA-08 measured coding parity | VERIFIED / DONE | signed-in Web passes 8/8 versus retained local 5/8 with zero mandatory safety regression |
+| WS-QA-09 GPT-5.6 Sol effort comparison | READY | all six attribution cells pass, then fresh medium/high/xhigh P01-P08 results and any required tie-breaks close the matrix |
 
 ## Architecture and complexity decision
 
@@ -476,8 +479,9 @@ Cutover outcome:
 
 ## Next executable action
 
-No implementation action remains in GOAL_10. On the owner's next explicit dpkr
-helix update request, use `update_dpkr_helix`, allow the expected reconnect, and
-report the sanitized result through `get_dpkr_helix_update_status`. Do not change
-provider/model/profile defaults or invent another parity workstream from the
-known M03 residual.
+On 2026-08-04, reconcile Git and the frozen suite hash, validate the three
+prepared effort workspaces, then run P05 attempt 1 as the attribution canary for
+each effort and surface. Continue to the 96-record full matrix only when every
+controller and delegated provider is attributable to `gpt-5.6-sol` at the
+target effort. Do not change the installed default model/profile or score a
+managed `gpt-5.5` fallback as 5.6-sol.

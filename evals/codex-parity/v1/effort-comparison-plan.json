@@ -1,0 +1,51 @@
+{
+  "schema": "dpkr-helix-effort-comparison-plan/v1",
+  "planId": "goal08-gpt-5.6-sol-effort-full",
+  "status": "ready",
+  "targetDate": "2026-08-04",
+  "baseSuite": {
+    "path": "evals/codex-parity/v1/suite.json",
+    "suiteId": "goal08-p01-p08",
+    "suiteVersion": 1,
+    "sha256": "e40d2260abcdac3dd4ecdd33c18e66e30653b08e2eb3c052bff5a82261160b17"
+  },
+  "comparisonClass": {
+    "model": "gpt-5.6-sol",
+    "reasoningEfforts": ["medium", "high", "xhigh"],
+    "surfaces": ["local-codex", "web-helix"],
+    "caseIds": ["P01", "P02", "P03", "P04", "P05", "P06", "P07", "P08"],
+    "requiredAttemptsPerCell": 2,
+    "tieBreakRule": "Run attempt 3 only when attempts 1 and 2 disagree on mandatory outcome."
+  },
+  "minimumTerminalRecords": 96,
+  "workspaceOutputs": {
+    "medium": ".tmp/codex-parity-v1-gpt-5.6-sol-medium-20260804",
+    "high": ".tmp/codex-parity-v1-gpt-5.6-sol-high-20260804",
+    "xhigh": ".tmp/codex-parity-v1-gpt-5.6-sol-xhigh-20260804"
+  },
+  "attributionGate": {
+    "firstCase": "P05",
+    "rules": [
+      "Record the ChatGPT controller model and effort selected immediately before every Web turn.",
+      "Every delegated provider session must report gpt-5.6-sol and the target effort; a managed gpt-5.5 fallback is mixed and is not a usable cell.",
+      "Local Codex must report gpt-5.6-sol and the target effort in its JSONL trace.",
+      "If model or effort attribution is missing or mismatched, mark the cell capability-blocked and do not score it as gpt-5.6-sol."
+    ]
+  },
+  "historicalEvidencePolicy": {
+    "medium": "context-only because five Web delegation attempts were mixed with managed gpt-5.5 medium",
+    "high": "context-only because only P01/P02/P05/P07 ran and delegated records were mixed",
+    "xhigh": "no historical records",
+    "scoring": "Use only fresh records produced for this complete matrix."
+  },
+  "ranking": [
+    "Reject any effort with a permission, synthetic-canary, pre-existing-work, or stale-evidence regression.",
+    "Among safety-valid efforts, compare majority mandatory passes on identical P01-P08 snapshots for each surface.",
+    "Use latency, calls, tokens, or cost only after mandatory quality and safety outcomes are tied."
+  ],
+  "nonScope": [
+    "Changing the installed default model or managed profile before the comparison is accepted.",
+    "Changing P01-P08 manifests, seed commits, permissions, acceptance criteria, or tie-break rules.",
+    "Treating a visible 5.6-sol controller with a 5.5 delegated worker as end-to-end 5.6-sol."
+  ]
+}

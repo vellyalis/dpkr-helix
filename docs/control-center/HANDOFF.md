@@ -1,6 +1,6 @@
 # DevSpace Control Center Handoff
 
-Last synchronized: 2026-08-02
+Last synchronized: 2026-08-03
 
 ## Current position
 
@@ -16,6 +16,9 @@ Last synchronized: 2026-08-02
 - GOAL_10: `DONE`; the standard MCP catalog-change signal is implemented, the
   one-time legacy ChatGPT catalog migration was automated, and live read-only
   status invocation passed.
+- WS-QA-09: `READY`; the owner requires a complete same-snapshot comparison of
+  `gpt-5.6-sol` medium, high, and xhigh across local Codex and Web plus helix.
+  Execution is explicitly deferred until 2026-08-04.
 - Installed working directory: unchanged.
 - Remote history replacement and visibility change were completed with explicit
   owner approval. No tag, GitHub Release, or npm publication was created.
@@ -328,8 +331,10 @@ commands merely because the preparation work is complete.
 
 ## Exact next action
 
-No implementation action remains in GOAL_10. On the owner's next explicit dpkr
-helix update request, use `update_dpkr_helix`, allow the expected reconnect, and
-report the sanitized result with `get_dpkr_helix_update_status`. The mutating
-tool remains explicit-request-only. Do not change model/profile defaults or
-expand the M03 residual into a new workstream without explicit user direction.
+On 2026-08-04, follow
+`evals/codex-parity/v1/EFFORT_COMPARISON_RUNBOOK.md`. Reconcile Git and suite
+hash, validate the prepared medium/high/xhigh roots, and run P05 attempt 1 as
+the model/effort attribution canary for all six surface/effort cells. Only then
+run the remaining complete P01-P08 matrix. A delegated managed `gpt-5.5`
+fallback is capability-blocked, not a 5.6-sol result. Do not change installed
+defaults before the comparison is accepted.

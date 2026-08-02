@@ -20,6 +20,7 @@ measured baseline shows that it would not improve a real outcome.
 | Local coding baseline | Shipped | Approved project access, direct file and shell tools, reusable workspaces, project policies, handoffs, local-agent delegation, and live operations |
 | Source distribution and hardening | Shipped | Source-based installation, public/private data boundary, security and contribution policies, dependency checks, and a reviewed public-release runbook |
 | Measured Codex-quality parity | Shipped | Signed-in Web-plus-helix passes the frozen suite 8/8 versus retained local Codex 5/8 without weakening permissions, evidence truth, or existing work |
+| GPT-5.6 Sol effort comparison | Next | Compare `medium`, `high`, and `xhigh` on complete, identical P01-P08 snapshots across local Codex and Web-plus-helix |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -46,6 +47,20 @@ criteria live in the canonical
 [GOAL_08 Codex-Parity Coding Quality](./control-center/goals/GOAL_08_CODEX_PARITY.md)
 contract. The ordered implementation record is
 [08_IMPLEMENTATION_PLAN.md](./control-center/08_IMPLEMENTATION_PLAN.md).
+
+## Next evaluation: GPT-5.6 Sol effort comparison
+
+The owner selected one follow-up comparison without reopening completed product
+implementation: run the same `gpt-5.6-sol` model at `medium`, `high`, and
+`xhigh` across all P01-P08 cases and both surfaces. Historical medium and High
+records are diagnostic only because delegated attempts were mixed with managed
+`gpt-5.5`, High covered only four cases, and xhigh was not run.
+
+The execution is ready but intentionally deferred until 2026-08-04. The
+[machine-readable plan](../evals/codex-parity/v1/effort-comparison-plan.json)
+and [runbook](../evals/codex-parity/v1/EFFORT_COMPARISON_RUNBOOK.md) preserve the
+frozen snapshots, require actual model/effort attribution before scoring, and
+stop a cell before the full run if the host falls back to another model.
 
 ## Decision rules
 
