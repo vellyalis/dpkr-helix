@@ -17,10 +17,11 @@ Last synchronized: 2026-08-02
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; GOAL_08 remains the canonical next-program
   contract
-- Current program unit: GOAL_08 MWU-08.05 bounded agent-status wait is next.
+- Current program unit: GOAL_08 MWU-08.06 parity convergence is next.
   MWU-08.01 configuration selection, MWU-08.02 shared repository context,
-  MWU-08.03 model-visible final review, and MWU-08.04 structured Codex outcomes
-  are complete; the measured current `gpt-5.5` medium setting is retained.
+  MWU-08.03 model-visible final review, MWU-08.04 structured Codex outcomes,
+  and MWU-08.05 bounded agent-status wait are complete; the measured current
+  `gpt-5.5` medium setting is retained.
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
@@ -36,7 +37,7 @@ Last synchronized: 2026-08-02
 | GOAL_05 Codex Handoff | DONE | structured local-agent handoff |
 | GOAL_06 Live Operations Dashboard | DONE | canonical live/retained operation views |
 | GOAL_07 Integration and Hardening | DONE | distribution, recovery, security, acceptance |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01/02/03/04 complete; current setting retained; MWU-08.05 is next |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01/02/03/04/05 complete; current setting retained; MWU-08.06 is next |
 | GOAL_09 Public Release Readiness | DONE | clean-history source release published and publicly verified |
 
 ## Goal model — GOAL_09
@@ -102,7 +103,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
-| WS-QA-08 measured coding parity | IN_PROGRESS | MWU-08.01/02/03/04 complete; MWU-08.05 bounded agent-status wait is next |
+| WS-QA-08 measured coding parity | IN_PROGRESS | MWU-08.01/02/03/04/05 complete; MWU-08.06 parity convergence is next |
 
 ## Architecture and complexity decision
 
@@ -350,6 +351,38 @@ MWU-08.04 structured-outcome proof:
   diff validation, and independent A2 R1/R2 pass. R1's sole S3 boundary-test
   finding is resolved with no new S0/S1 defect.
 
+MWU-08.05 bounded-wait proof:
+
+- `get_agent_status` validates optional integer `waitMs` from zero through 30
+  seconds; omission and zero perform the previous immediate read;
+- positive values reuse the existing service wait, cap each poll delay to the
+  remaining bound, and treat `needs_input` as settled even during a transient
+  active status;
+- an expired active wait returns explicit `timedOut: true` in plain text and
+  structured content without cancellation, restart, worker spawn, or provider
+  invocation;
+- focused fixtures prove exact bounds, live completion transition, completed/
+  input/error/stopped states, timeout, compatibility, and no duplicate work;
+- focused tests, typecheck, full and policy regression, production build/audit,
+  public/diff gates, and independent A2 R1/R2 pass. R1's S3 transition-proof
+  candidate was fixed and R2 returned zero findings; and
+- the GOAL_08 product/test source-addition ratio remains within the fixed 1/3
+  verification limit (`1180` product to `393` test lines from the accepted
+  pre-feature checkpoint).
+
+ChatGPT self-update recheck:
+
+- public `origin/main` contains the zero-input `update_dpkr_helix` request and
+  sanitized `get_dpkr_helix_update_status` tools, and its update owner matches
+  the current local source;
+- isolated MCP/controller and Windows setup evidence proves tool visibility,
+  preflight-before-stop, duplicate exclusion, bounded sanitized status,
+  rollback, and hidden launch; the installed controller reports `UP_TO_DATE`
+  at public commit `24a2a42`; and
+- current GOAL_08 commits are still local-only because no remote publication
+  was authorized. Public installations cannot receive them until an approved
+  fast-forward publication reaches `origin/main`.
+
 Cutover outcome:
 
 - Source publication is complete and GOAL_09 is closed.
@@ -377,11 +410,12 @@ Cutover outcome:
 | should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
 | repository context and verification-basis capture observe a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/review or re-verification produces a new fingerprint, exact equality is required for `fresh`, and locks or double fingerprinting remain deferred without a measured inconsistency |
 | live Codex and signed-in ChatGPT have not exercised the new structured outcome in this unit | acceptance evidence deferred, not claimed | keep automated SDK/schema and lifecycle proof for MWU-08.04; run real-provider and signed-in host acceptance in MWU-08.06 under its approval boundary |
+| current GOAL_08 commits are ahead of public `origin/main` | publication not authorized in this unit | the public self-updater is healthy but can deliver only published commits; request explicit approval before pushing the verified checkpoint |
 
 ## Next executable action
 
-Begin GOAL_08 MWU-08.05 only. Extend the existing `get_agent_status` tool with
-optional bounded `waitMs` through `LocalAgentService.waitForStatus`, return
-explicit timeout metadata, and prove terminal, input-required, error, stop,
-timeout, omission, plain-MCP, and no-duplicate-worker/provider-call behavior.
-Do not begin MWU-08.06 or change provider/model/profile defaults.
+Begin GOAL_08 MWU-08.06 only. Rerun P01-P08 on identical snapshots, perform
+the signed-in normal-Chat acceptance under the external-action approval
+boundary, run the required regression/security/build gates, and converge the
+remaining requirements evidence and user docs. Do not change provider/model/
+profile defaults or publish local commits without explicit approval.

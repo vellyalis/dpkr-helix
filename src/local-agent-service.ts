@@ -152,12 +152,14 @@ export class LocalAgentService {
     options: LocalAgentStatusOptions = {},
   ): Promise<LocalAgentRecord> {
     const waitMs = options.waitMs ?? 15_000;
-    const pollMs = options.pollMs ?? 500;
+    const pollMs = Math.max(1, options.pollMs ?? 500);
     const deadline = this.now() + waitMs;
     let record = this.getStatus(id);
 
-    while (isActive(record) && this.now() < deadline) {
-      await this.delay(pollMs);
+    while (isLocalAgentActive(record)) {
+      const remainingMs = deadline - this.now();
+      if (remainingMs <= 0) break;
+      await this.delay(Math.min(pollMs, remainingMs));
       record = this.store.get(id) ?? record;
     }
 
@@ -496,8 +498,9 @@ export async function cleanupLocalAgentPromptFile(promptFile: string): Promise<v
   await rm(directory, { recursive: true, force: true });
 }
 
-function isActive(record: LocalAgentRecord): boolean {
-  return record.status === "starting" || record.status === "running";
+export function isLocalAgentActive(record: LocalAgentRecord): boolean {
+  return record.disposition !== "needs_input"
+    && (record.status === "starting" || record.status === "running");
 }
 
 function assertSafeLocalAgentRequest(fields: ReadonlyArray<readonly [string, string]>): void {

@@ -5,10 +5,10 @@
 ## Status
 
 `IN_PROGRESS` — MWU-08.01 baseline/configuration selection, MWU-08.02 shared
-repository context/fingerprint, MWU-08.03 model-visible final review, and
-MWU-08.04 structured Codex outcomes are complete. The measured current
-`gpt-5.5` medium setting is retained; MWU-08.05 bounded agent-status wait is
-next.
+repository context/fingerprint, MWU-08.03 model-visible final review,
+MWU-08.04 structured Codex outcomes, and MWU-08.05 bounded agent-status wait
+are complete. The measured current `gpt-5.5` medium setting is retained;
+MWU-08.06 parity convergence is next.
 
 ## Goal
 
@@ -139,7 +139,7 @@ directory, or creating a new development root.
 | --- | --- | --- | --- |
 | H1: profile model/effort and prompt/tool metadata limit task quality | Context setting | same snapshots pass more often without product code | Compared; current setting retained, M03 defect recorded |
 | H2: weak start/end contracts cause missed context and untrustworthy completion | Mechanism | fewer unrelated changes and stale-verification claims | Accepted through bounded start context and model-visible review freshness |
-| H3: polling and unstructured blocking cause avoidable turns and guesses | Mechanism/UX | fewer status calls and fewer assumption-driven edits | Structured outcomes accepted; bounded wait is the current bottleneck |
+| H3: polling and unstructured blocking cause avoidable turns and guesses | Mechanism/UX | fewer status calls and fewer assumption-driven edits | Accepted through structured outcomes and bounded status waiting |
 | H4: cancellation is the main quality bottleneck | Lifecycle mechanism | task success changes materially when cancel exists | Deferred; current evidence supports operational hygiene only |
 | H5: more agents, services, indexes, or reverse notifications improve quality | Architecture | frequent tasks pass more often despite added owners | Rejected without new evidence |
 
@@ -742,6 +742,22 @@ daemon, model/profile default, publication, or external account state changed.
 - return timeout metadata;
 - prove completion, question, error, stop, and timeout paths;
 - confirm no duplicate worker or provider call.
+
+MWU-08.05 closed on 2026-08-02. `get_agent_status` now accepts integer
+`waitMs` from `0` through `30000`; omission and zero retain the immediate read,
+while positive values use the existing `LocalAgentService.waitForStatus`.
+Polling never requests a delay beyond the remaining bound, `needs_input` is a
+settled outcome even during a transient active status, and an expired active
+wait returns `timedOut: true` through both plain MCP text and structured
+content without cancelling, restarting, or duplicating the worker.
+
+Focused MCP/service/output fixtures prove omitted/zero behavior, exact schema
+bounds, live completion transition, completed/input/error/stopped states,
+active timeout, and unchanged worker/provider invocation. Typecheck, full and
+policy regression, production build/audit, public/diff gates, and independent
+A2 review through focused R2 pass. R1's S3 live-transition proof candidate was
+fixed; R2 found no fix-induced S0/S1 defect. No dependency, service, store,
+daemon, model/profile default, publication, or external account state changed.
 
 ### MWU-08.06 — Parity convergence
 

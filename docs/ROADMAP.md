@@ -35,11 +35,11 @@ correctness, safety, review quality, and workflow continuity.
 | Order | Milestone | User-visible outcome | Exit rule |
 | --- | --- | --- | --- |
 | 1 — Complete | Baseline and configuration selection | Current `gpt-5.5` medium retained after same-snapshot medium, conditional-High, and metadata comparisons | Frozen suite and evidence-based selection recorded before product behavior changes |
-| 2 — Next | Shared repository context | Opened workspaces provide bounded, accurate repository context and a tree fingerprint | Prove clean, dirty, detached, non-Git, missing, and oversized cases without mutating index, checkout, or refs |
-| 3 — Planned | Review and verification freshness | The model can distinguish fresh verification from stale or legacy evidence after files change | Prove fresh → stale → reverified transitions and preserve existing clients |
-| 4 — Planned | Structured outcomes and questions | Codex can return completed, needs-input, or error outcomes without speculative edits and can continue the same thread after an answer | Prove persistence, restart behavior, same-session continuation, and provider compatibility |
-| 5 — Planned | Bounded status waiting | One bounded status call can wait for completion or a question without duplicate execution | Prove terminal, input, error, stop, and timeout paths with zero duplicate workers |
-| 6 — Planned | Parity convergence | The complete same-snapshot suite, signed-in host workflow, security gates, and regressions agree | Mark the program complete only when Web-plus-helix has no additional mandatory failure |
+| 2 — Complete | Shared repository context | Opened workspaces provide bounded, accurate repository context and a tree fingerprint | Prove clean, dirty, detached, non-Git, missing, and oversized cases without mutating index, checkout, or refs |
+| 3 — Complete | Review and verification freshness | The model can distinguish fresh verification from stale or legacy evidence after files change | Prove fresh → stale → reverified transitions and preserve existing clients |
+| 4 — Complete | Structured outcomes and questions | Codex can return completed, needs-input, or error outcomes without speculative edits and can continue the same thread after an answer | Prove persistence, restart behavior, same-session continuation, and provider compatibility |
+| 5 — Complete | Bounded status waiting | One bounded status call can wait for completion or a question without duplicate execution | Prove terminal, input, error, stop, and timeout paths with zero duplicate workers |
+| 6 — Next | Parity convergence | The complete same-snapshot suite, signed-in host workflow, security gates, and regressions agree | Mark the program complete only when Web-plus-helix has no additional mandatory failure |
 
 The detailed requirements, failure behavior, task fixtures, and acceptance
 criteria live in the canonical

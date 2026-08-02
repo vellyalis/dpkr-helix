@@ -20,7 +20,7 @@ Codex must select the first non-DONE goal whose dependencies are DONE.
 | GOAL_05 Codex Handoff | DONE | GOAL_03, GOAL_04 | Reusable local-agent service and explicit structured MCP delegation |
 | GOAL_06 Live Operations and Control Center UI | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05 | Canonical operation projection, live run evidence, coherent Projects/Runs/Agents/System UI |
 | GOAL_07 Integration and Hardening | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05, GOAL_06 | End-to-end UX, reliability, security, docs, visual/accessibility, compatibility proof |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | GOAL_07 | MWU-08.01/02/03/04 complete; MWU-08.05 bounded wait next |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | GOAL_07 | MWU-08.01/02/03/04/05 complete; MWU-08.06 parity convergence next |
 | GOAL_09 Public Release Readiness | DONE | GOAL_07 | Clean-history source release published and publicly verified |
 
 GOAL_02 and GOAL_03 may be implemented in either order after GOAL_01. Do not work on both in the same worktree unless explicitly orchestrated with non-overlapping write ownership.
@@ -1161,7 +1161,16 @@ while preserving the agent and provider-session identities. MCP, card,
 dashboard, admin, and CLI projections expose the outcome without changing
 legacy-provider behavior. Focused and full tests, policy regression, typecheck,
 production build/audit, diff validation, and independent A2 review through R2
-pass. R1's sole S3 boundary-test finding is resolved. MWU-08.05 is next.
+pass. R1's sole S3 boundary-test finding is resolved. MWU-08.05 followed.
+
+MWU-08.05 closed on 2026-08-02. `get_agent_status` accepts optional integer
+`waitMs` from zero through 30 seconds, preserves immediate omission/zero
+behavior, and returns explicit `timedOut` metadata while an agent remains
+active. Positive waits reuse `LocalAgentService.waitForStatus`; bounded polling
+returns on completion, input, error, or stop without starting or calling a
+worker/provider. Plain and structured MCP fixtures, focused tests, typecheck,
+full and policy regression, production build/audit, public/diff gates, and
+independent A2 review through focused R2 pass. MWU-08.06 is next.
 
 ## GOAL_09 public-release preparation
 
@@ -1225,10 +1234,10 @@ Strict logical dependency for GOAL_04 includes GOAL_03 because policy metadata m
 - [x] P01-P08 baseline recorded before feature changes
 - [x] model/profile/prompt candidate accepted or rejected by same-snapshot evidence
 - [x] repository context and fingerprint acceptance passes
-- [ ] model-visible review and verification-freshness acceptance passes
-- [ ] structured Codex needs-input and same-thread continuation acceptance passes
-- [ ] bounded agent wait acceptance passes
-- [ ] plain MCP, policy, migration, secret, typecheck, full test, and build gates pass
+- [x] model-visible review and verification-freshness acceptance passes
+- [x] structured Codex needs-input and same-thread continuation acceptance passes
+- [x] bounded agent wait acceptance passes
+- [x] plain MCP, policy, migration, secret, typecheck, full test, and build gates pass
 - [ ] signed-in normal-Chat acceptance passes
 - [ ] requirements evidence, decisions, Project State, HANDOFF, and user docs converge
 

@@ -318,3 +318,21 @@ and Git rather than duplicated here.
 - No dependency, service, store, daemon, model/profile default, publication, or
   external account state changed. Real-provider and signed-in host acceptance
   remain explicitly deferred to MWU-08.06; MWU-08.05 bounded wait is next.
+
+## 2026-08-02 — GOAL_08 bounded status wait accepted
+
+- MWU-08.05 exposes optional integer `waitMs` from zero through 30 seconds on
+  `get_agent_status`; omission and zero preserve the immediate-read contract.
+- Positive waits reuse `LocalAgentService.waitForStatus`, cap polling to the
+  remaining bound, return on completion/input/error/stop, and expose active
+  expiry as `timedOut: true` in plain and structured MCP output.
+- Focused fixtures prove a live completion transition, exact input bounds,
+  terminal/input/error/stop/timeout behavior, and no worker/provider duplicate.
+- Focused tests, typecheck, full and policy regression, production build/audit,
+  and public/diff gates pass. Independent A2 R1's S3 transition-proof candidate
+  was fixed; focused R2 returned zero findings.
+- The public ChatGPT self-update request/status tools match current local source
+  and the installed sanitized controller state is `UP_TO_DATE` at public commit
+  `24a2a42`. GOAL_08 commits remain local-only until explicit push approval.
+- No dependency, service, store, daemon, model/profile default, publication, or
+  external account state changed. MWU-08.06 parity convergence is next.

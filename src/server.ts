@@ -121,12 +121,14 @@ import {
   createLocalAgentActionOutput,
   createLocalAgentCardSummary,
   createLocalAgentListOutput,
+  createLocalAgentStatusOutput,
   LOCAL_AGENT_READ_TOOL_ANNOTATIONS,
   LOCAL_AGENT_RUN_TOOL_ANNOTATIONS,
   localAgentViewOutputSchema,
 } from "./local-agent-mcp.js";
 import {
   createDetachedLocalAgentWorkerSpawner,
+  isLocalAgentActive,
   LocalAgentService,
 } from "./local-agent-service.js";
 import {
@@ -1155,19 +1157,28 @@ function registerLocalAgentTools(
     {
       title: "Get agent status",
       description:
-        "Read one local-agent session status, structured input question, latest final response, or error. Input-required work remains resumable and is not reported as verification pending; a completed provider result is still not verified implementation.",
+        "Read one local-agent session status, optionally waiting up to 30 seconds for completion, input, error, or stop. A timed-out wait returns the current active state; provider results are not verified implementation.",
       inputSchema: {
         id: z.string().trim().min(1).max(200),
+        waitMs: z.number().int().min(0).max(30_000).optional()
+          .describe("Optional bounded wait in milliseconds. Omit or use 0 for an immediate read."),
       },
       outputSchema: resultOutputSchema({
         agent: localAgentViewOutputSchema,
+        timedOut: z.boolean(),
       }),
       ...toolWidgetDescriptorMeta(config, "agents"),
       annotations: LOCAL_AGENT_READ_TOOL_ANNOTATIONS,
     },
-    async ({ id }) => {
-      const record = localAgents.getStatus(id);
-      const output = createLocalAgentActionOutput("status", record);
+    async ({ id, waitMs }) => {
+      const shouldWait = waitMs !== undefined && waitMs > 0;
+      const record = shouldWait
+        ? await localAgents.waitForStatus(id, { waitMs })
+        : localAgents.getStatus(id);
+      const output = createLocalAgentStatusOutput(
+        record,
+        shouldWait && isLocalAgentActive(record),
+      );
       return {
         content: [textBlock(output.result)],
         _meta: {

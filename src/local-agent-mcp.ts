@@ -86,6 +86,20 @@ export function createLocalAgentActionOutput(
   };
 }
 
+export function createLocalAgentStatusOutput(
+  record: LocalAgentRecord,
+  timedOut: boolean,
+): { result: string; agent: LocalAgentView; timedOut: boolean } {
+  const output = createLocalAgentActionOutput("status", record);
+  return {
+    ...output,
+    result: timedOut
+      ? `${output.result}\nTimed out waiting; the agent remains ${output.agent.status}.`
+      : output.result,
+    timedOut,
+  };
+}
+
 export function createLocalAgentListOutput(
   records: LocalAgentRecord[],
 ): {

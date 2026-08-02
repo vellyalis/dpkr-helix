@@ -226,6 +226,28 @@ try {
     assert.match(prompts[0] ?? "", /Goal:\nImplement the change\./);
     assert.match(prompts[0] ?? "", /Acceptance criteria:\n- The service is shared\./);
 
+    const spawnsBeforeWait = spawns.length;
+    for (const [waitMs, patch, timedOut] of [
+      [undefined, { status: "starting" }, false],
+      [0, { status: "running" }, false],
+      [1, { status: "running" }, true],
+      [30_000, { status: "idle", disposition: "completed", latestResponse: "Completed." }, false],
+      [30_000, { status: "running", disposition: "needs_input", question: "Which target?" }, false],
+      [30_000, { status: "error", error: "Provider failed." }, false],
+      [30_000, { status: "stopped" }, false],
+    ] as const) {
+      store.update("agt_1", { disposition: undefined, latestResponse: undefined, question: undefined, error: undefined, ...(patch.status === "idle" ? { status: "running" } : patch) });
+      if (patch.status === "idle") setTimeout(() => store.update("agt_1", patch), 0);
+      const settled = asTextToolResult(await client.callTool({ name: "get_agent_status", arguments: waitMs === undefined ? { id: "agt_1" } : { id: "agt_1", waitMs } }));
+      assert.equal(settled.structuredContent?.timedOut, timedOut);
+      assert.equal((settled.structuredContent?.agent as { status?: string }).status, patch.status);
+      if (timedOut) assert.match(settled.content[0]?.text ?? "", /Timed out waiting/);
+    }
+    for (const waitMs of [-1, 30_001]) {
+      assert.equal(asTextToolResult(await client.callTool({ name: "get_agent_status", arguments: { id: "agt_1", waitMs } })).isError, true);
+    }
+    assert.equal(spawns.length, spawnsBeforeWait);
+
     const getsBeforeDeniedVerification = store.getCount;
     const deniedVerification = asTextToolResult(await client.callTool({
       name: "exec_command",

@@ -6,9 +6,9 @@ Last synchronized: 2026-08-02
 
 - Completed work units: GOAL_08 MWU-08.01 configuration selection, MWU-08.02
   shared repository context/tree fingerprint, MWU-08.03 model-visible
-  review/freshness, and MWU-08.04 structured Codex outcomes. The measured
-  current `gpt-5.5` medium setting is retained; MWU-08.05 bounded agent-status
-  wait is next.
+  review/freshness, MWU-08.04 structured Codex outcomes, and MWU-08.05 bounded
+  agent-status wait. The measured current `gpt-5.5` medium setting is retained;
+  MWU-08.06 parity convergence is next.
 - GOAL_01 through GOAL_07: DONE.
 - GOAL_08 Codex-Parity Coding Quality: `IN_PROGRESS`; P01-P08 manifests,
   deterministic snapshots, metadata prompts, and the result contract are frozen.
@@ -111,6 +111,15 @@ Last synchronized: 2026-08-02
 - MWU-08.04 A2 R1's sole S3 boundary-test finding was fixed; focused R2 confirms
   it resolved with no new S0/S1 defect. No delegated agents or long-running
   processes remain active.
+- `get_agent_status` now exposes optional integer `waitMs` through the existing
+  service wait. Omission/zero is immediate, active expiry is explicit in plain
+  and structured MCP, and completion/input/error/stop returns without worker or
+  provider duplication. MWU-08.05 A2 R1's S3 transition-proof candidate was
+  fixed; focused R2 returned zero findings.
+- The public ChatGPT self-update tools remain present and match the current
+  source. Isolated tests and installed sanitized status confirm the public
+  commit is `UP_TO_DATE`; current GOAL_08 commits remain local-only until an
+  explicitly approved push makes them available to public updaters.
 
 ## Completed before this work unit
 
@@ -120,11 +129,11 @@ Last synchronized: 2026-08-02
 - GOAL_08 defines the measured same-snapshot parity suite, model/profile
   selection, bounded start context, review freshness, structured user input,
   and bounded wait behavior.
-- GOAL_08's completed units are MWU-08.01, MWU-08.02, MWU-08.03, and MWU-08.04. P01-P08
+- GOAL_08's completed units are MWU-08.01, MWU-08.02, MWU-08.03, MWU-08.04, and MWU-08.05. P01-P08
   and the result template are frozen; the current baseline, rejected medium
   candidate, rejected High hard subset, metadata audit, bounded start context,
   model-visible review freshness, and structured outcome behavior are recorded.
-  The measured current setting is retained. MWU-08.05 is the active next unit.
+  The measured current setting is retained. MWU-08.06 is the active next unit.
 
 ## GOAL_09 completed release
 
@@ -193,9 +202,9 @@ Last synchronized: 2026-08-02
    current remote.
 5. Confirm GOAL_09 remains `DONE`; do not repeat its one-time clean-root cutover.
 6. Confirm the operational-comfort checkpoint and current local/public health.
-7. Continue GOAL_08 at MWU-08.05; do not recreate or rerun MWU-08.01 evidence,
-   MWU-08.02 repository-context work, MWU-08.03 review/freshness work, or
-   MWU-08.04 structured-outcome work.
+7. Continue GOAL_08 at MWU-08.06; do not recreate or rerun MWU-08.01 evidence,
+   MWU-08.02 repository-context work, MWU-08.03 review/freshness work,
+   MWU-08.04 structured-outcome work, or MWU-08.05 bounded-wait work.
    WS-UPD-01 is complete on `main` and in the installed runtime.
 
 Do not recreate GOAL_01 through GOAL_08 documents. Do not start public cutover
@@ -270,12 +279,21 @@ commands merely because the preparation work is complete.
   legacy-provider compatibility; focused tests; typecheck; full and policy
   regression; production build/audit; diff gate; independent A2 R1's sole S3
   finding fixed and R2-confirmed with no new S0/S1 defect
+- 2026-08-02 MWU-08.05 bounded-wait proof: optional integer `waitMs` 0..30000;
+  omission/zero compatibility; bounded live transition and active timeout;
+  completed/input/error/stopped paths; plain/structured MCP timeout metadata;
+  no duplicate worker/provider call; focused tests; typecheck; full and policy
+  regression; production build/audit; public/diff gates; fixed A2 R1 S3 proof
+  candidate and zero-finding focused R2
+- 2026-08-02 ChatGPT self-update recheck: public zero-input request/status tools
+  match local source; system-update tests, sanitized installed `UP_TO_DATE`
+  state, stable-endpoint configuration, and public commit reachability pass;
+  current GOAL_08 commits remain unpublished pending explicit push approval
 
 ## Exact next action
 
-Begin GOAL_08 MWU-08.05 only. Add optional bounded `waitMs` to the existing
-`get_agent_status` tool through `LocalAgentService.waitForStatus`, return
-explicit timeout metadata, and prove terminal/input/error/stop/timeout,
-omission, plain-MCP, and no-duplicate-worker/provider-call behavior. Do not
-repeat MWU-08.01/02/03/04, begin MWU-08.06, change model/profile defaults, or
-make an external submission without approval.
+Begin GOAL_08 MWU-08.06 only. Rerun P01-P08 on identical snapshots, perform
+signed-in normal-Chat acceptance under the external-action approval boundary,
+run the remaining regression/security/build gates, and converge requirements
+evidence and user docs. Do not repeat MWU-08.01/02/03/04/05, change model/
+profile defaults, or publish local commits without explicit approval.
