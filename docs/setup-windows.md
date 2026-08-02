@@ -181,6 +181,20 @@ An update does not create a Scheduled Task, daemon, service, queue, dashboard
 button, or automatic upgrade policy. The existing setup/recovery owner remains
 responsible for installation and restart.
 
+### Maintainer End-To-End Acceptance
+
+A no-op `UP_TO_DATE` result proves request and status wiring but not service
+replacement. To verify the complete ChatGPT path, publish one real reviewed
+commit from a separate worktree while the managed clean `main` checkout remains
+at its preceding commit. Confirm that `origin/main` is exactly one fast-forward
+commit ahead, explicitly ask ChatGPT to call `update_dpkr_helix`, then use
+`get_dpkr_helix_update_status` after reconnecting.
+
+Acceptance requires the status target, managed source `HEAD`, tracking ref, and
+advertised remote ref to match; local and public health, doctor, and the hosted
+platform checks must also pass. Do not rewind the managed checkout, force-push,
+or create a meaningless runtime change merely to manufacture an update target.
+
 ## Stable HTTPS Endpoint
 
 Quick Tunnel is convenient for setup and testing, but its hostname changes
