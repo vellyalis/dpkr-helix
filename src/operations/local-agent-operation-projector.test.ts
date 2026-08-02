@@ -67,6 +67,23 @@ try {
     /secret provider failure detail/,
   );
 
+  const inputRecord = { ...record, id: "agt_input" };
+  projector.created(inputRecord);
+  projector.inputRequired({
+    ...inputRecord,
+    status: "idle",
+    disposition: "needs_input",
+    question: "Which target should be changed?",
+  });
+  const blocked = store.findRunBySource("local_agent", "codex", inputRecord.id);
+  assert.ok(blocked);
+  assert.deepEqual([blocked.state, blocked.assuranceStage], ["blocked", "working"]);
+  assert.equal(store.listEvents(blocked.id).some((event) => event.type === "agent.input_required"), true);
+  projector.statusChanged({ ...inputRecord, status: "starting" });
+  assert.equal(store.getRun(blocked.id)?.state, "running");
+  projector.resultAvailable({ ...inputRecord, status: "idle", disposition: "completed", latestResponse: "Done." });
+  assert.equal(store.getRun(blocked.id)?.state, "completed");
+
   const activeBeforeUnknown = store.listActiveRuns().length;
   projector.created({ ...record, id: "agt_unknown", provider: "unknown" });
   assert.equal(store.listActiveRuns().length, activeBeforeUnknown);

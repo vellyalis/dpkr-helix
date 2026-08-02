@@ -5,9 +5,10 @@
 ## Status
 
 `IN_PROGRESS` — MWU-08.01 baseline/configuration selection, MWU-08.02 shared
-repository context/fingerprint, and MWU-08.03 model-visible final review are
-complete. The measured current `gpt-5.5` medium setting is retained; MWU-08.04
-structured Codex outcomes are next.
+repository context/fingerprint, MWU-08.03 model-visible final review, and
+MWU-08.04 structured Codex outcomes are complete. The measured current
+`gpt-5.5` medium setting is retained; MWU-08.05 bounded agent-status wait is
+next.
 
 ## Goal
 
@@ -138,7 +139,7 @@ directory, or creating a new development root.
 | --- | --- | --- | --- |
 | H1: profile model/effort and prompt/tool metadata limit task quality | Context setting | same snapshots pass more often without product code | Compared; current setting retained, M03 defect recorded |
 | H2: weak start/end contracts cause missed context and untrustworthy completion | Mechanism | fewer unrelated changes and stale-verification claims | Accepted through bounded start context and model-visible review freshness |
-| H3: polling and unstructured blocking cause avoidable turns and guesses | Mechanism/UX | fewer status calls and fewer assumption-driven edits | Current bottleneck; structured outcomes are next, then bounded wait |
+| H3: polling and unstructured blocking cause avoidable turns and guesses | Mechanism/UX | fewer status calls and fewer assumption-driven edits | Structured outcomes accepted; bounded wait is the current bottleneck |
 | H4: cancellation is the main quality bottleneck | Lifecycle mechanism | task success changes materially when cancel exists | Deferred; current evidence supports operational hygiene only |
 | H5: more agents, services, indexes, or reverse notifications improve quality | Architecture | frequent tasks pass more often despite added owners | Rejected without new evidence |
 
@@ -717,6 +718,23 @@ profile/model-default change.
 - add input-required observation and operation projection;
 - extend MCP/card/dashboard views;
 - prove same-session continuation and legacy-provider behavior.
+
+MWU-08.04 closed on 2026-08-02. Codex turns now use the installed SDK's
+per-turn JSON schema and fail closed on malformed output. The existing
+local-agent row owns nullable disposition/question state through additive
+migration v8; `needs_input` projects the existing operation to blocked/waiting
+without verification claims, and continuation clears the question while
+retaining the agent and provider-session identities. MCP, Apps cards,
+dashboard, admin serialization, and CLI render the question separately.
+Non-Codex adapters retain their previous unstructured result behavior.
+
+Focused boundary, persistence, restart, continuation, operation, MCP, and UI
+fixtures pass together with typecheck, full and policy regression, production
+build/audit, and diff checks. Independent A2 R1 identified one S3 test-coverage
+gap for exact outcome bounds; the focused fix proves accepted limits,
+over-limit rejection, and invalid cross-field combinations, and R2 confirms
+the finding resolved with no new S0/S1 defect. No dependency, service, store,
+daemon, model/profile default, publication, or external account state changed.
 
 ### MWU-08.05 — Bounded wait
 

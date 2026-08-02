@@ -20,7 +20,7 @@ Codex must select the first non-DONE goal whose dependencies are DONE.
 | GOAL_05 Codex Handoff | DONE | GOAL_03, GOAL_04 | Reusable local-agent service and explicit structured MCP delegation |
 | GOAL_06 Live Operations and Control Center UI | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05 | Canonical operation projection, live run evidence, coherent Projects/Runs/Agents/System UI |
 | GOAL_07 Integration and Hardening | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05, GOAL_06 | End-to-end UX, reliability, security, docs, visual/accessibility, compatibility proof |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | GOAL_07 | MWU-08.01/02/03 complete; MWU-08.04 structured outcomes next |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | GOAL_07 | MWU-08.01/02/03/04 complete; MWU-08.05 bounded wait next |
 | GOAL_09 Public Release Readiness | DONE | GOAL_07 | Clean-history source release published and publicly verified |
 
 GOAL_02 and GOAL_03 may be implemented in either order after GOAL_01. Do not work on both in the same worktree unless explicitly orchestrated with non-overlapping write ownership.
@@ -1150,8 +1150,18 @@ and current-worktree changes plus explicit verification freshness for an
 optional, policy-authorized same-workspace agent. Fresh/edit/stale/reverify/
 fresh, legacy unknown, failure states, UTF-8/file bounds, compatibility,
 policy ordering, full/policy regression, typecheck, build, production audit,
-public/diff gates, and independent A2 R1 pass with zero findings. MWU-08.04 is
-next.
+public/diff gates, and independent A2 R1 pass with zero findings.
+
+MWU-08.04 closed on 2026-08-02. Codex now uses its SDK per-turn JSON schema for
+bounded `completed` / `needs_input` outcomes; malformed output fails as an
+agent error rather than prose fallback. Additive nullable migration v8 extends
+the existing local-agent store, input-required projection blocks the existing
+operation without verification claims, and continuation clears the question
+while preserving the agent and provider-session identities. MCP, card,
+dashboard, admin, and CLI projections expose the outcome without changing
+legacy-provider behavior. Focused and full tests, policy regression, typecheck,
+production build/audit, diff validation, and independent A2 review through R2
+pass. R1's sole S3 boundary-test finding is resolved. MWU-08.05 is next.
 
 ## GOAL_09 public-release preparation
 

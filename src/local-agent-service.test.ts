@@ -79,6 +79,7 @@ const authorizationEvents: string[] = [];
 const availabilityChecks: string[] = [];
 const cleanedPromptFiles: string[] = [];
 const observations: string[] = [];
+let structuredOutcome: { disposition: "completed" | "needs_input"; report: string; question?: string } | undefined;
 
 const baseOptions: LocalAgentServiceOptions = {
   config,
@@ -104,6 +105,7 @@ const baseOptions: LocalAgentServiceOptions = {
       provider,
       providerSessionId: "thread_2",
       finalResponse: "done",
+      outcome: structuredOutcome,
       items: [],
     };
   },
@@ -128,6 +130,7 @@ const baseOptions: LocalAgentServiceOptions = {
     statusChanged: (record) => observations.push(`status:${record.status}`),
     assistantMessage: (_record, text) => observations.push(`message:${text}`),
     resultAvailable: (record) => observations.push(`result:${record.latestResponse}`),
+    inputRequired: (record) => observations.push(`input:${record.question}`),
   },
 };
 
@@ -186,6 +189,7 @@ const completed = service.getStatus(started.id);
 assert.equal(completed.status, "idle");
 assert.equal(completed.providerSessionId, "thread_2");
 assert.equal(completed.latestResponse, "done");
+assert.equal(completed.disposition, undefined);
 assert.deepEqual(cleanedPromptFiles, ["prompt-2.txt"]);
 assert.equal(providerInputs.length, 1);
 assert.equal(providerInputs[0]?.provider, "codex");
@@ -436,3 +440,14 @@ try {
 } finally {
   await rm(workerFixtureDirectory, { recursive: true, force: true });
 }
+
+structuredOutcome = { disposition: "needs_input", report: "Inspected both targets.", question: "Which target?" };
+await service.resume({ id: started.id, prompt: "Check targets." });
+await service.runWorker(started.id, spawned.at(-1)!.promptFile);
+assert.equal(service.getStatus(started.id).question, "Which target?");
+structuredOutcome = { disposition: "completed", report: "Updated the selected target." };
+const continuedStructured = await service.resume({ id: started.id, prompt: "Use the first target." });
+assert.equal(continuedStructured.providerSessionId, "thread_2");
+assert.equal(continuedStructured.question, undefined);
+await service.runWorker(started.id, spawned.at(-1)!.promptFile);
+assert.equal(service.getStatus(started.id).disposition, "completed");

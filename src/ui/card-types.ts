@@ -50,6 +50,8 @@ export interface AgentCardView {
   thinking?: string;
   status: "starting" | "running" | "idle" | "error" | "stopped";
   latestResponse?: string;
+  disposition?: "completed" | "needs_input";
+  question?: string;
   error?: string;
   resultAvailable: boolean;
   verificationStatus: "pending" | "not_available";

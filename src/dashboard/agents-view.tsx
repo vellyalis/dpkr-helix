@@ -83,6 +83,7 @@ export function AgentsView(props: AgentsViewProps): React.JSX.Element {
       <section className="operations-summary agents-summary" aria-label="Agent summary">
         <Summary label="Providers available" value={`${availableProviders}/${props.status?.providers.length ?? 0}`} />
         <Summary label="Running" value={summary.running} state={summary.running ? "signal" : undefined} />
+        <Summary label="Input required" value={summary.inputRequired} state={summary.inputRequired ? "review" : undefined} />
         <Summary label="Results available" value={summary.resultAvailable} state={summary.resultAvailable ? "review" : undefined} />
         <Summary label="Failed or stale" value={summary.failed + summary.stale} state={summary.failed + summary.stale ? "danger" : undefined} />
       </section>
@@ -277,9 +278,10 @@ function AgentInspector(props: {
         </dl>
       </section>
       <section className="inspector-section agent-response-preview">
-        <h3>{session.error ? "Safe failure summary" : "Final response preview"}</h3>
-        <pre>{session.error ?? session.latestResponse ?? "No final response recorded."}</pre>
-        <p>Provider output is a result, not verification evidence.</p>
+        <h3>{session.error ? "Safe failure summary" : session.disposition === "needs_input" ? "Input required" : "Final response preview"}</h3>
+        <pre>{session.error ?? session.question ?? session.latestResponse ?? "No final response recorded."}</pre>
+        {session.disposition === "needs_input" && session.latestResponse ? <p>{session.latestResponse}</p> : null}
+        <p>{session.disposition === "needs_input" ? "Continue this same agent session with the answer." : "Provider output is a result, not verification evidence."}</p>
       </section>
       <div className="inspector-actions">
         <button type="button" className="button secondary" onClick={() => void props.onCopy("Agent ID", session.id)}>Copy agent ID</button>
@@ -318,7 +320,7 @@ function AgentStateBadge({ state }: { state: AgentPresentationState }): React.JS
     ? "success"
     : state === "failed"
       ? "danger"
-      : state === "stale"
+      : state === "stale" || state === "input_required"
         ? "warning"
         : "neutral";
   return <StatusBadge state={badgeState} label={agentStateLabel(state)} />;
@@ -346,6 +348,7 @@ function AgentTableSkeleton(): React.JSX.Element {
 
 function agentStateLabel(state: AgentPresentationState): string {
   if (state === "result_available") return "Result available";
+  if (state === "input_required") return "Input required";
   if (state === "stale") return "Stale after restart";
   return state[0]!.toUpperCase() + state.slice(1);
 }

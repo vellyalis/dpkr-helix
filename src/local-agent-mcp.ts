@@ -24,11 +24,25 @@ export interface LocalAgentView {
   thinking?: string;
   status: LocalAgentRecord["status"];
   latestResponse?: string;
+  disposition?: LocalAgentRecord["disposition"];
+  question?: string;
   error?: string;
   resultAvailable: boolean;
   verificationStatus: "pending" | "not_available";
   createdAt: string;
   updatedAt: string;
+}
+
+export function createLocalAgentCardSummary(agent: LocalAgentView) {
+  return {
+    status: agent.status,
+    profile: agent.profileName,
+    provider: agent.provider,
+    disposition: agent.disposition,
+    inputRequired: agent.disposition === "needs_input",
+    resultAvailable: agent.resultAvailable,
+    verificationStatus: agent.verificationStatus,
+  };
 }
 
 export const localAgentViewOutputSchema = z.object({
@@ -40,6 +54,8 @@ export const localAgentViewOutputSchema = z.object({
   thinking: z.string().optional(),
   status: z.enum(["starting", "running", "idle", "error", "stopped"]),
   latestResponse: z.string().optional(),
+  disposition: z.enum(["completed", "needs_input"]).optional(),
+  question: z.string().optional(),
   error: z.string().optional(),
   resultAvailable: z.boolean(),
   verificationStatus: z.enum(["pending", "not_available"]),
@@ -62,6 +78,7 @@ export function createLocalAgentActionOutput(
       `${verb} local agent ${agent.id}.`,
       formatLocalAgentLine(agent),
       agent.latestResponse,
+      agent.question ? `Input required: ${agent.question}` : undefined,
       agent.error ? `Error: ${agent.error}` : undefined,
       agent.resultAvailable ? "Result available — verification pending." : undefined,
     ].filter((line): line is string => Boolean(line)).join("\n"),
@@ -74,12 +91,13 @@ export function createLocalAgentListOutput(
 ): {
   result: string;
   agents: LocalAgentView[];
-  summary: { total: number; active: number; resultAvailable: number };
+  summary: { total: number; active: number; inputRequired: number; resultAvailable: number };
 } {
   const agents = records.map((record) => toLocalAgentView(record, false));
   const summary = {
     total: agents.length,
     active: agents.filter((agent) => agent.status === "starting" || agent.status === "running").length,
+    inputRequired: agents.filter((agent) => agent.disposition === "needs_input").length,
     resultAvailable: agents.filter((agent) => agent.resultAvailable).length,
   };
   return {
@@ -98,7 +116,7 @@ function toLocalAgentView(
   record: LocalAgentRecord,
   includeOutput: boolean,
 ): LocalAgentView {
-  const resultAvailable = Boolean(record.latestResponse);
+  const resultAvailable = record.disposition !== "needs_input" && Boolean(record.latestResponse);
   return {
     id: record.id,
     workspaceId: record.workspaceId,
@@ -108,6 +126,8 @@ function toLocalAgentView(
     thinking: record.thinking,
     status: record.status,
     latestResponse: includeOutput ? record.latestResponse : undefined,
+    disposition: record.disposition,
+    question: includeOutput ? record.question : undefined,
     error: includeOutput ? record.error : undefined,
     resultAvailable,
     verificationStatus: resultAvailable ? "pending" : "not_available",
@@ -119,5 +139,6 @@ function toLocalAgentView(
 function formatLocalAgentLine(agent: LocalAgentView): string {
   const model = agent.model ? ` model=${agent.model}` : "";
   const thinking = agent.thinking ? ` thinking=${agent.thinking}` : "";
-  return `${agent.id} ${agent.status} ${agent.profileName} (${agent.provider}${model}${thinking})`;
+  const disposition = agent.disposition ? ` disposition=${agent.disposition}` : "";
+  return `${agent.id} ${agent.status}${disposition} ${agent.profileName} (${agent.provider}${model}${thinking})`;
 }

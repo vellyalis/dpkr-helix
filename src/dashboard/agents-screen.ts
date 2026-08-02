@@ -4,6 +4,7 @@ import type { ProjectView } from "../projects/project-types.js";
 
 export type AgentPresentationState =
   | "running"
+  | "input_required"
   | "result_available"
   | "failed"
   | "stale"
@@ -19,6 +20,7 @@ export interface AgentScreenRecord {
 
 export interface AgentSummary {
   running: number;
+  inputRequired: number;
   resultAvailable: number;
   failed: number;
   stale: number;
@@ -59,12 +61,14 @@ export function buildAgentScreenRecords(
 export function summarizeAgents(records: AgentScreenRecord[]): AgentSummary {
   return records.reduce<AgentSummary>((summary, record) => {
     if (record.state === "running") summary.running += 1;
+    if (record.state === "input_required") summary.inputRequired += 1;
     if (record.state === "result_available") summary.resultAvailable += 1;
     if (record.state === "failed") summary.failed += 1;
     if (record.state === "stale") summary.stale += 1;
     return summary;
   }, {
     running: 0,
+    inputRequired: 0,
     resultAvailable: 0,
     failed: 0,
     stale: 0,
@@ -84,6 +88,8 @@ export function filterAgentRecords(
     session.provider,
     session.model,
     session.thinking,
+    session.disposition,
+    session.question,
     session.workspaceId,
     session.workspaceRoot,
     project?.name,
@@ -107,6 +113,7 @@ export function agentPresentationState(
   }
   if (session.status === "error" || linkedRun?.state === "failed") return "failed";
   if (ACTIVE_AGENT_STATES.has(session.status)) return "running";
+  if (session.disposition === "needs_input") return "input_required";
   if (
     session.latestResponse !== undefined
     || linkedRun?.assuranceStage === "result_available"

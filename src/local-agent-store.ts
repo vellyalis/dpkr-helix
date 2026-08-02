@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { openDatabase, type DatabaseHandle } from "./db/client.js";
 import type { ServerConfig } from "./config.js";
+import type { LocalAgentDisposition } from "./local-agent-outcome.js";
 import { canonicalizePathAllowMissingSync } from "./roots.js";
 
 export type LocalAgentStatus = "starting" | "running" | "idle" | "error" | "stopped";
@@ -17,6 +18,8 @@ export interface LocalAgentRecord {
   providerSessionId?: string;
   status: LocalAgentStatus;
   latestResponse?: string;
+  disposition?: LocalAgentDisposition;
+  question?: string;
   error?: string;
   createdAt: string;
   updatedAt: string;
@@ -47,6 +50,8 @@ interface LocalAgentRow {
   provider_session_id: string | null;
   status: string;
   latest_response: string | null;
+  disposition: string | null;
+  question: string | null;
   error: string | null;
   created_at: string;
   updated_at: string;
@@ -173,6 +178,8 @@ export class LocalAgentStore {
           provider_session_id = ?,
           status = ?,
           latest_response = ?,
+          disposition = ?,
+          question = ?,
           error = ?,
           updated_at = ?
          where id = ?`,
@@ -187,6 +194,8 @@ export class LocalAgentStore {
         updated.providerSessionId ?? null,
         updated.status,
         updated.latestResponse ?? null,
+        updated.disposition ?? null,
+        updated.question ?? null,
         updated.error ?? null,
         updated.updatedAt,
         updated.id,
@@ -212,6 +221,7 @@ export function createLocalAgentStore(config: ServerConfig): LocalAgentStore {
 }
 
 function rowToLocalAgentRecord(row: LocalAgentRow): LocalAgentRecord {
+  const disposition = readDisposition(row.disposition);
   return {
     id: row.id,
     workspaceId: row.workspace_id ?? undefined,
@@ -223,6 +233,8 @@ function rowToLocalAgentRecord(row: LocalAgentRow): LocalAgentRecord {
     providerSessionId: row.provider_session_id ?? undefined,
     status: readStatus(row.status),
     latestResponse: row.latest_response ?? undefined,
+    disposition,
+    question: disposition === "needs_input" ? row.question?.trim() || undefined : undefined,
     error: row.error ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -244,6 +256,10 @@ function readStatus(status: string): LocalAgentStatus {
 
 function escapeLike(value: string): string {
   return value.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_");
+}
+
+function readDisposition(value: string | null): LocalAgentDisposition | undefined {
+  return value === "completed" || value === "needs_input" ? value : undefined;
 }
 
 function workspaceRootKey(path: string): string {

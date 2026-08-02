@@ -2780,7 +2780,7 @@ input::placeholder {
 
 .agents-summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--ds-space-2);
   margin-bottom: var(--ds-space-3);
 }

@@ -20,6 +20,7 @@ const requiredEventTypes = [
   "agent.status_changed",
   "agent.message",
   "agent.result_available",
+  "agent.input_required",
   "verification.started",
   "verification.completed",
   "review.finding",

@@ -42,7 +42,11 @@ export function getToolDisplay(card: ToolResultCard): ToolDisplay {
     case "get_agent_status":
       return {
         icon: toolIcons.agent,
-        title: card.agent?.resultAvailable ? "Agent result available" : "Agent status",
+        title: card.agent?.disposition === "needs_input"
+          ? "Agent input required"
+          : card.agent?.resultAvailable
+            ? "Agent result available"
+            : "Agent status",
         label: agentLabel(card),
         tone: card.agent?.error ? "edit" : "agent",
       };
@@ -175,6 +179,7 @@ export function getToolHeaderSummary(card: ToolResultCard): ToolHeaderSummary {
     const parts = [
       typeof summary.status === "string" ? summary.status : undefined,
       countLabel(summaryNumber(summary, "active"), "active"),
+      countLabel(summaryNumber(summary, "inputRequired"), "input required", "input required"),
       countLabel(summaryNumber(summary, "resultAvailable"), "result"),
     ].filter((part): part is string => Boolean(part));
     return parts.length > 0 ? { kind: "text", text: parts.join(" · ") } : { kind: "empty" };
@@ -273,9 +278,13 @@ function processLabel(card: ToolResultCard): string | undefined {
   return card.path;
 }
 
-function countLabel(count: number | undefined, noun: string): string | undefined {
+function countLabel(
+  count: number | undefined,
+  noun: string,
+  pluralNoun = `${noun}s`,
+): string | undefined {
   if (count === undefined) return undefined;
-  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+  return `${count} ${count === 1 ? noun : pluralNoun}`;
 }
 
 function availabilitySummary(count: number | undefined, label: string): string | undefined {

@@ -295,3 +295,26 @@ and Git rather than duplicated here.
 - No dependency, service, store, daemon, profile/model default, publication, or
   external state changed. GOAL_08 remains `IN_PROGRESS`; MWU-08.04 structured
   Codex outcomes are next.
+
+## 2026-08-02 — GOAL_08 structured Codex outcomes accepted
+
+- MWU-08.04 uses the installed Codex SDK per-turn JSON schema for bounded
+  `completed` and `needs_input` outcomes; malformed output records an agent
+  error and is never reinterpreted as prose completion.
+- Additive migration v8 extends the existing local-agent session row with
+  nullable disposition/question fields. Legacy rows remain unstructured and
+  non-Codex provider adapters retain their existing behavior.
+- Input-required state persists one bounded question, projects the existing
+  operation to blocked/waiting without verification claims, and renders
+  distinctly across MCP, Apps cards, dashboard, admin serialization, CLI, and
+  retained operation events.
+- `continue_agent` clears the question before the worker starts, preserves the
+  agent and provider-session identities, and returns the same operation run to
+  running before a later completed result.
+- Focused tests, exact boundary/cross-field checks, typecheck, full and policy
+  regression, production build/audit, and diff validation pass. Independent A2
+  R1's sole S3 test-coverage finding was fixed; focused R2 confirms resolution
+  with no new S0/S1 defect.
+- No dependency, service, store, daemon, model/profile default, publication, or
+  external account state changed. Real-provider and signed-in host acceptance
+  remain explicitly deferred to MWU-08.06; MWU-08.05 bounded wait is next.

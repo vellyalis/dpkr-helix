@@ -52,7 +52,7 @@ try {
   runtime = undefined;
 
   const migrated = readMigrationSnapshot(stateDir, legacyWorkspaceId);
-  assert.deepEqual(migrated.versions, [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(migrated.versions, [1, 2, 3, 4, 5, 6, 7, 8]);
   assert.equal(migrated.versions.at(-1), LATEST_SCHEMA_VERSION);
   assert.deepEqual(migrated.legacyWorkspace, {
     id: legacyWorkspaceId,
@@ -119,7 +119,7 @@ try {
     persistedWorkspaceId,
     projectId: project.id,
   });
-  assert.deepEqual(afterReconciliation.versions, [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(afterReconciliation.versions, [1, 2, 3, 4, 5, 6, 7, 8]);
   assert.deepEqual(afterReconciliation.project, {
     id: project.id,
     slug: "restart-proof",

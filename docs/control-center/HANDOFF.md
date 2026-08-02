@@ -5,9 +5,10 @@ Last synchronized: 2026-08-02
 ## Current position
 
 - Completed work units: GOAL_08 MWU-08.01 configuration selection, MWU-08.02
-  shared repository context/tree fingerprint, and MWU-08.03 model-visible
-  review/freshness. The measured current `gpt-5.5` medium setting is retained;
-  MWU-08.04 structured Codex outcomes are next.
+  shared repository context/tree fingerprint, MWU-08.03 model-visible
+  review/freshness, and MWU-08.04 structured Codex outcomes. The measured
+  current `gpt-5.5` medium setting is retained; MWU-08.05 bounded agent-status
+  wait is next.
 - GOAL_01 through GOAL_07: DONE.
 - GOAL_08 Codex-Parity Coding Quality: `IN_PROGRESS`; P01-P08 manifests,
   deterministic snapshots, metadata prompts, and the result contract are frozen.
@@ -102,7 +103,14 @@ Last synchronized: 2026-08-02
 - Independent A2 R1 findings for nested workspace scope, text compatibility,
   and untracked-binary accuracy were fixed. Focused R2 found no fix-induced
   S0-S1 candidate. MWU-08.03 independent A2 R1 then returned zero findings.
-  No delegated agents or long-running processes remain active.
+- Codex now uses the installed SDK per-turn JSON schema for bounded completed
+  or input-required outcomes. Nullable migration v8, the existing store and
+  operation projection, and MCP/UI/CLI views preserve a distinct resumable
+  question without verification claims; continuation keeps the agent and
+  provider-session identities.
+- MWU-08.04 A2 R1's sole S3 boundary-test finding was fixed; focused R2 confirms
+  it resolved with no new S0/S1 defect. No delegated agents or long-running
+  processes remain active.
 
 ## Completed before this work unit
 
@@ -112,11 +120,11 @@ Last synchronized: 2026-08-02
 - GOAL_08 defines the measured same-snapshot parity suite, model/profile
   selection, bounded start context, review freshness, structured user input,
   and bounded wait behavior.
-- GOAL_08's completed units are MWU-08.01, MWU-08.02, and MWU-08.03. P01-P08
+- GOAL_08's completed units are MWU-08.01, MWU-08.02, MWU-08.03, and MWU-08.04. P01-P08
   and the result template are frozen; the current baseline, rejected medium
   candidate, rejected High hard subset, metadata audit, bounded start context,
-  and model-visible review freshness are recorded. The measured current
-  setting is retained. MWU-08.04 is the active next unit.
+  model-visible review freshness, and structured outcome behavior are recorded.
+  The measured current setting is retained. MWU-08.05 is the active next unit.
 
 ## GOAL_09 completed release
 
@@ -185,8 +193,9 @@ Last synchronized: 2026-08-02
    current remote.
 5. Confirm GOAL_09 remains `DONE`; do not repeat its one-time clean-root cutover.
 6. Confirm the operational-comfort checkpoint and current local/public health.
-7. Continue GOAL_08 at MWU-08.04; do not recreate or rerun MWU-08.01 evidence,
-   MWU-08.02 repository-context work, or MWU-08.03 review/freshness work.
+7. Continue GOAL_08 at MWU-08.05; do not recreate or rerun MWU-08.01 evidence,
+   MWU-08.02 repository-context work, MWU-08.03 review/freshness work, or
+   MWU-08.04 structured-outcome work.
    WS-UPD-01 is complete on `main` and in the installed runtime.
 
 Do not recreate GOAL_01 through GOAL_08 documents. Do not start public cutover
@@ -254,11 +263,19 @@ commands merely because the preparation work is complete.
   first-text/card compatibility; focused tests; typecheck; full and policy
   regression; production build/audit; public/diff gates; independent A2 R1
   with zero findings
+- 2026-08-02 MWU-08.04 structured-outcome proof: Codex per-turn output schema;
+  exact/over-limit and invalid cross-field checks; malformed-output error;
+  nullable v8 persistence/restart; distinct blocked/waiting projection without
+  verification claims; same-agent and same-provider-session continuation;
+  legacy-provider compatibility; focused tests; typecheck; full and policy
+  regression; production build/audit; diff gate; independent A2 R1's sole S3
+  finding fixed and R2-confirmed with no new S0/S1 defect
 
 ## Exact next action
 
-Begin GOAL_08 MWU-08.04 at the existing Codex SDK runtime, LocalAgentService,
-local-agent store, and operation/MCP/dashboard projection owners. Add structured
-`completed` / `needs_input` outcomes and prove same-session continuation. Do not
-repeat MWU-08.01/02/03, change model/profile defaults, or make an external
-submission without approval.
+Begin GOAL_08 MWU-08.05 only. Add optional bounded `waitMs` to the existing
+`get_agent_status` tool through `LocalAgentService.waitForStatus`, return
+explicit timeout metadata, and prove terminal/input/error/stop/timeout,
+omission, plain-MCP, and no-duplicate-worker/provider-call behavior. Do not
+repeat MWU-08.01/02/03/04, begin MWU-08.06, change model/profile defaults, or
+make an external submission without approval.

@@ -31,6 +31,8 @@ try {
   const updated = store.update(created.id, {
     status: "idle",
     latestResponse: "done",
+    disposition: "needs_input",
+    question: "Which target should be changed?",
     providerSessionId: "thread_123",
     thinking: "medium",
   });
@@ -40,8 +42,14 @@ try {
   assert.equal(updated.workspaceRoot, join(aliasRoot, "project"));
   assert.equal(store.get("thread_123")?.id, created.id);
   assert.equal(store.get(created.id)?.thinking, "medium");
+  assert.equal(store.get(created.id)?.disposition, "needs_input");
+  assert.equal(store.get(created.id)?.question, "Which target should be changed?");
   assert.equal(store.get(created.id)?.workspaceRoot, join(aliasRoot, "project"));
-  assert.equal(store.update(created.id, { latestResponse: undefined }).latestResponse, undefined);
+  assert.equal(store.update(created.id, {
+    latestResponse: undefined,
+    disposition: undefined,
+    question: undefined,
+  }).latestResponse, undefined);
   assert.deepEqual(
     store.list({ workspaceRoot: join(root, "project") }).map((agent) => agent.latestResponse),
     [undefined],

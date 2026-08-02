@@ -15,7 +15,7 @@ try {
       .prepare("select version from devspace_schema_migrations order by version")
       .pluck()
       .all(),
-    [1, 2, 3, 4, 5, 6, 7],
+    [1, 2, 3, 4, 5, 6, 7, 8],
   );
   assert.deepEqual(
     tableColumns(fresh.sqlite, "registered_projects"),
@@ -61,12 +61,14 @@ try {
   assert.equal(tableColumns(fresh.sqlite, "operation_runs").length, 23);
   assert.equal(tableColumns(fresh.sqlite, "operation_evidence").length, 7);
   assert.equal(tableColumns(fresh.sqlite, "operation_evidence").includes("basis_fingerprint"), true);
+  assert.equal(tableColumns(fresh.sqlite, "local_agent_sessions").includes("disposition"), true);
+  assert.equal(tableColumns(fresh.sqlite, "local_agent_sessions").includes("question"), true);
   fresh.close();
 
   const freshAgain = openDatabase(freshStateDir);
   assert.equal(
     freshAgain.sqlite.prepare("select count(*) from devspace_schema_migrations").pluck().get(),
-    7,
+    8,
   );
   freshAgain.close();
 

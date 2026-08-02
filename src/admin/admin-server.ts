@@ -290,11 +290,13 @@ async function directoryAvailable(path: string): Promise<boolean> {
 
 function sanitizeAgentSession<T extends {
   latestResponse?: string;
+  question?: string;
   error?: string;
 }>(session: T): T {
   return {
     ...session,
     latestResponse: safeAgentPreview(session.latestResponse),
+    question: safeAgentPreview(session.question),
     error: safeAgentPreview(session.error),
   };
 }

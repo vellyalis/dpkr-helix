@@ -17,10 +17,10 @@ Last synchronized: 2026-08-02
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; GOAL_08 remains the canonical next-program
   contract
-- Current program unit: GOAL_08 MWU-08.04 structured Codex outcomes are next.
-  MWU-08.01 configuration selection, MWU-08.02 shared repository context, and
-  MWU-08.03 model-visible final review are complete; the measured current
-  `gpt-5.5` medium setting is retained.
+- Current program unit: GOAL_08 MWU-08.05 bounded agent-status wait is next.
+  MWU-08.01 configuration selection, MWU-08.02 shared repository context,
+  MWU-08.03 model-visible final review, and MWU-08.04 structured Codex outcomes
+  are complete; the measured current `gpt-5.5` medium setting is retained.
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
@@ -36,7 +36,7 @@ Last synchronized: 2026-08-02
 | GOAL_05 Codex Handoff | DONE | structured local-agent handoff |
 | GOAL_06 Live Operations Dashboard | DONE | canonical live/retained operation views |
 | GOAL_07 Integration and Hardening | DONE | distribution, recovery, security, acceptance |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01/02/03 complete; current setting retained; MWU-08.04 is next |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01/02/03/04 complete; current setting retained; MWU-08.05 is next |
 | GOAL_09 Public Release Readiness | DONE | clean-history source release published and publicly verified |
 
 ## Goal model — GOAL_09
@@ -86,6 +86,7 @@ publishing the compatibility package accidentally.
 | MWU-08.01 model/profile setting | measured current `gpt-5.5` medium baseline: Web 8/8, local 4/8 | `gpt-5.6-sol` medium: Web 6/8, local 5/8; conditional high hard subset: Web 1/4, local 3/4; mandatory regressions and mixed delegated execution prevent adoption |
 | MWU-08.02 repository start context | existing WorkspaceRegistry/repository-diff owners plus one workspace-scoped temporary-index fingerprint; 200 path and 100 script-name bounds | whole-Git-root staging crosses nested workspace boundaries; another Git reader/store creates a second owner; changing the first text/card payload breaks compatibility |
 | MWU-08.03 model-visible final review | existing review checkpoint, repository-diff, process-session, and operation-evidence owners; 128-KiB UTF-8 patch and 200 turn-file bounds; exact fingerprint freshness | caller-supplied outcomes manufacture evidence; agent lookup before policy/checkpoint boundaries leaks state; a second evidence store or review service creates another owner |
+| MWU-08.04 structured Codex outcome | installed Codex SDK per-turn schema plus existing LocalAgentService/store and operation/MCP/UI projections; nullable disposition/question and same-session continuation | prose parsing silently manufactures completion; a second message/store/notification owner duplicates lifecycle state; changing non-Codex adapters without native schema breaks compatibility |
 
 ## Workstream portfolio
 
@@ -101,7 +102,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
-| WS-QA-08 measured coding parity | IN_PROGRESS | MWU-08.01/02/03 complete; MWU-08.04 structured Codex outcomes are next |
+| WS-QA-08 measured coding parity | IN_PROGRESS | MWU-08.01/02/03/04 complete; MWU-08.05 bounded agent-status wait is next |
 
 ## Architecture and complexity decision
 
@@ -332,6 +333,23 @@ MWU-08.03 model-visible review proof:
   audit, public/diff gates, and independent A2 R1 pass with zero findings and
   zero unresolved adjudicated BLOCK.
 
+MWU-08.04 structured-outcome proof:
+
+- Codex runtime fake-thread proof observes the per-turn JSON schema, normalized
+  completed and input-required outcomes, and fail-closed malformed prose;
+- exact report/question limits, over-limit rejection, and invalid cross-field
+  combinations are directly asserted;
+- additive migration v8 and restart fixtures preserve legacy nullable rows and
+  the existing local-agent store remains the only durable owner;
+- service, operation, MCP, dashboard, card, admin, and CLI fixtures prove a
+  distinct blocked/waiting question without verification claims and same-agent,
+  same-provider-session continuation after clearing the question;
+- existing provider-adapter fixtures pass without changing non-Codex behavior;
+  and
+- focused tests, typecheck, full and policy regression, production build/audit,
+  diff validation, and independent A2 R1/R2 pass. R1's sole S3 boundary-test
+  finding is resolved with no new S0/S1 defect.
+
 Cutover outcome:
 
 - Source publication is complete and GOAL_09 is closed.
@@ -358,11 +376,12 @@ Cutover outcome:
 | candidate medium and high settings regress mandatory safety or continuation behavior | adoption blockers; both candidates rejected | retain the measured current setting and never trade efficiency for a mandatory pass |
 | should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
 | repository context and verification-basis capture observe a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/review or re-verification produces a new fingerprint, exact equality is required for `fresh`, and locks or double fingerprinting remain deferred without a measured inconsistency |
+| live Codex and signed-in ChatGPT have not exercised the new structured outcome in this unit | acceptance evidence deferred, not claimed | keep automated SDK/schema and lifecycle proof for MWU-08.04; run real-provider and signed-in host acceptance in MWU-08.06 under its approval boundary |
 
 ## Next executable action
 
-Begin GOAL_08 MWU-08.04 at the existing Codex SDK runtime, LocalAgentService,
-local-agent store, and operation/MCP/dashboard projection owners. Add the
-structured `completed` / `needs_input` outcome contract and same-session
-continuation proof without changing model/profile defaults, provider behavior
-outside the accepted scope, or external state.
+Begin GOAL_08 MWU-08.05 only. Extend the existing `get_agent_status` tool with
+optional bounded `waitMs` through `LocalAgentService.waitForStatus`, return
+explicit timeout metadata, and prove terminal, input-required, error, stop,
+timeout, omission, plain-MCP, and no-duplicate-worker/provider-call behavior.
+Do not begin MWU-08.06 or change provider/model/profile defaults.

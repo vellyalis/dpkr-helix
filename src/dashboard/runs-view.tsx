@@ -1522,9 +1522,8 @@ function eventLabel(type: StoredOperationEvent["type"]): string {
 
 function eventDetails(event: StoredOperationEvent): string {
   if (event.type === "process.output") return event.payload.text;
-  if (event.type === "agent.message" || event.type === "agent.result_available") {
-    return event.payload.text;
-  }
+  if (event.type === "agent.message" || event.type === "agent.result_available") return event.payload.text;
+  if (event.type === "agent.input_required") return event.payload.question;
   return JSON.stringify(event.payload, null, 2);
 }
 
@@ -1537,7 +1536,7 @@ function eventRefreshesRunSnapshot(event: StoredOperationEvent): boolean {
     || event.type === "process.started"
     || event.type === "process.exited"
     || event.type === "agent.status_changed"
-    || event.type === "agent.result_available"
+    || event.type === "agent.result_available" || event.type === "agent.input_required"
     || event.type === "verification.started"
     || event.type === "verification.completed";
 }

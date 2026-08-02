@@ -48,6 +48,7 @@ async function testDatabaseConfiguration(stateDir: string): Promise<void> {
       { version: 5, name: "workspace-handoffs" },
       { version: 6, name: "operation-projection" },
       { version: 7, name: "verification-basis-fingerprint" },
+      { version: 8, name: "local-agent-outcomes" },
     ]);
   } finally {
     database.close();

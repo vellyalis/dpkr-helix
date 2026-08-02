@@ -464,6 +464,11 @@ async function runAgentsShow(args: string[]): Promise<void> {
   const record = await service.waitForStatus(id);
 
   console.log(formatAgentLine(record));
+  if (record.disposition === "needs_input" && record.question) {
+    if (record.latestResponse) console.log(record.latestResponse);
+    console.log(`Input required: ${record.question}`);
+    return;
+  }
   if (record.latestResponse) {
     console.log(record.latestResponse);
     return;

@@ -28,7 +28,7 @@ assert.match(status.result, /Result available — verification pending/);
 assert.doesNotMatch(status.result, /verified/i);
 
 const list = createLocalAgentListOutput([record]);
-assert.deepEqual(list.summary, { total: 1, active: 0, resultAvailable: 1 });
+assert.deepEqual(list.summary, { total: 1, active: 0, inputRequired: 0, resultAvailable: 1 });
 assert.equal(list.agents[0]?.latestResponse, undefined);
 assert.equal(list.agents[0]?.error, undefined);
 assert.equal("providerSessionId" in (list.agents[0] ?? {}), false);

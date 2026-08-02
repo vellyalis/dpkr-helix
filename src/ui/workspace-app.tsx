@@ -449,6 +449,7 @@ function renderAgentCard(card: ToolResultCard, display: ToolDisplay): void {
       renderKeyValue("Profile", agent.profileName),
       renderKeyValue("Provider", agent.provider),
     );
+    if (agent.disposition) record.append(renderKeyValue("Outcome", agent.disposition));
     if (agent.model) record.append(renderKeyValue("Model", agent.model));
     if (agent.thinking) record.append(renderKeyValue("Thinking", agent.thinking));
     if (agent.resultAvailable) {
@@ -458,6 +459,12 @@ function renderAgentCard(card: ToolResultCard, display: ToolDisplay): void {
       record.append(element("pre", {
         className: "text-payload agent-response",
         text: agent.latestResponse,
+      }));
+    }
+    if (agent.question) {
+      record.append(element("pre", {
+        className: "text-payload agent-response",
+        text: `Input required: ${agent.question}`,
       }));
     }
     if (agent.error) {

@@ -42,6 +42,11 @@ const migrations: Migration[] = [
     name: "verification-basis-fingerprint",
     up: migrateVerificationBasisFingerprint,
   },
+  {
+    version: 8,
+    name: "local-agent-outcomes",
+    up: migrateLocalAgentOutcomes,
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = migrations.at(-1)?.version ?? 0;
@@ -282,6 +287,12 @@ function migrateOperationProjection(sqlite: Database.Database): void {
 
 function migrateVerificationBasisFingerprint(sqlite: Database.Database): void {
   addColumnIfMissing(sqlite, "operation_evidence", "basis_fingerprint", "text");
+}
+
+function migrateLocalAgentOutcomes(sqlite: Database.Database): void {
+  migrateLocalAgentSessions(sqlite);
+  addColumnIfMissing(sqlite, "local_agent_sessions", "disposition", "text");
+  addColumnIfMissing(sqlite, "local_agent_sessions", "question", "text");
 }
 
 function migrateLocalAgentSessions(sqlite: Database.Database): void {

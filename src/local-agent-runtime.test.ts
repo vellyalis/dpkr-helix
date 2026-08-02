@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
-import type { RunResult, ThreadOptions } from "@openai/codex-sdk";
+import type { RunResult, ThreadOptions, TurnOptions } from "@openai/codex-sdk";
 import {
   CodexSdkLocalAgentRuntime,
   createCodexSdkLocalAgentRuntime,
 } from "./local-agent-runtime.js";
+import { MAX_LOCAL_AGENT_QUESTION_CHARACTERS, MAX_LOCAL_AGENT_REPORT_CHARACTERS, validateLocalAgentOutcome } from "./local-agent-outcome.js";
 
 const emptyTurn = (finalResponse: string): RunResult => ({
   finalResponse,
@@ -13,12 +14,15 @@ const emptyTurn = (finalResponse: string): RunResult => ({
 
 class FakeThread {
   prompts: string[] = [];
+  turnOptions: Array<TurnOptions | undefined> = [];
 
   constructor(readonly id: string | null) {}
 
-  async run(prompt: string): Promise<RunResult> {
+  async run(prompt: string, options?: TurnOptions): Promise<RunResult> {
     this.prompts.push(prompt);
-    return emptyTurn(`response:${prompt}`);
+    this.turnOptions.push(options);
+    if (prompt === "invalid") return emptyTurn("unstructured prose");
+    return emptyTurn(JSON.stringify(prompt === "continue" ? { disposition: "needs_input", report: "inspected", question: "Which target?" } : { disposition: "completed", report: `response:${prompt}`, question: null }));
   }
 }
 
@@ -51,8 +55,10 @@ const readOnly = await runtime.run({
 assert.equal(readOnly.provider, "codex");
 assert.equal(readOnly.providerSessionId, "new-thread");
 assert.equal(readOnly.finalResponse, "response:inspect only");
+assert.equal(readOnly.outcome?.disposition, "completed");
 assert.deepEqual(observedMessages, ["response:inspect only"]);
 assert.deepEqual(codex.startThreadInstance.prompts, ["inspect only"]);
+assert.equal(typeof codex.startThreadInstance.turnOptions[0]?.outputSchema, "object");
 assert.deepEqual(codex.started[0], {
   workingDirectory: "/tmp/project",
   sandboxMode: "read-only",
@@ -88,7 +94,8 @@ const resumed = await runtime.run({
 });
 
 assert.equal(resumed.providerSessionId, "resumed-thread");
-assert.equal(resumed.finalResponse, "response:continue");
+assert.equal(resumed.finalResponse, "inspected");
+assert.equal(resumed.outcome?.question, "Which target?");
 assert.deepEqual(codex.resumeThreadInstance.prompts, ["continue"]);
 assert.deepEqual(codex.resumed, [
   {
@@ -105,3 +112,15 @@ assert.deepEqual(codex.resumed, [
 
 const created = await createCodexSdkLocalAgentRuntime(undefined, () => new FakeCodex());
 assert.equal(created.provider, "codex");
+
+await assert.rejects(runtime.run({ prompt: "invalid", workspace: "/tmp/project" }), /invalid structured local-agent outcome/);
+
+assert.equal(validateLocalAgentOutcome({ disposition: "completed", report: "x".repeat(MAX_LOCAL_AGENT_REPORT_CHARACTERS) }).report.length, MAX_LOCAL_AGENT_REPORT_CHARACTERS);
+assert.equal(validateLocalAgentOutcome({ disposition: "needs_input", report: "", question: "x".repeat(MAX_LOCAL_AGENT_QUESTION_CHARACTERS) }).question?.length, MAX_LOCAL_AGENT_QUESTION_CHARACTERS);
+for (const invalid of [
+  { disposition: "completed", report: "" },
+  { disposition: "completed", report: "done", question: "extra" },
+  { disposition: "needs_input", report: "", question: " " },
+  { disposition: "completed", report: "x".repeat(MAX_LOCAL_AGENT_REPORT_CHARACTERS + 1) },
+  { disposition: "needs_input", report: "", question: "x".repeat(MAX_LOCAL_AGENT_QUESTION_CHARACTERS + 1) },
+]) assert.throws(() => validateLocalAgentOutcome(invalid), /invalid structured local-agent outcome/);

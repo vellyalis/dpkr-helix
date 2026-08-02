@@ -119,6 +119,7 @@ import {
 import { renderLocalAgentTaskEnvelope } from "./local-agent-handoff.js";
 import {
   createLocalAgentActionOutput,
+  createLocalAgentCardSummary,
   createLocalAgentListOutput,
   LOCAL_AGENT_READ_TOOL_ANNOTATIONS,
   LOCAL_AGENT_RUN_TOOL_ANNOTATIONS,
@@ -1139,13 +1140,7 @@ function registerLocalAgentTools(
           tool: toolNames.delegateTask,
           card: {
             agent: output.agent,
-            summary: {
-              status: output.agent.status,
-              profile: output.agent.profileName,
-              provider: output.agent.provider,
-              resultAvailable: output.agent.resultAvailable,
-              verificationStatus: output.agent.verificationStatus,
-            },
+            summary: createLocalAgentCardSummary(output.agent),
             payload: { content: [textBlock(output.result)] },
           },
         },
@@ -1160,7 +1155,7 @@ function registerLocalAgentTools(
     {
       title: "Get agent status",
       description:
-        "Read one local-agent session status and its latest final response or error. A provider final response is reported as result available with verification pending, not as verified implementation.",
+        "Read one local-agent session status, structured input question, latest final response, or error. Input-required work remains resumable and is not reported as verification pending; a completed provider result is still not verified implementation.",
       inputSchema: {
         id: z.string().trim().min(1).max(200),
       },
@@ -1179,13 +1174,7 @@ function registerLocalAgentTools(
           tool: toolNames.getAgentStatus,
           card: {
             agent: output.agent,
-            summary: {
-              status: output.agent.status,
-              profile: output.agent.profileName,
-              provider: output.agent.provider,
-              resultAvailable: output.agent.resultAvailable,
-              verificationStatus: output.agent.verificationStatus,
-            },
+            summary: createLocalAgentCardSummary(output.agent),
             payload: { content: [textBlock(output.result)] },
           },
         },
@@ -1209,6 +1198,7 @@ function registerLocalAgentTools(
         summary: z.object({
           total: z.number().int().nonnegative(),
           active: z.number().int().nonnegative(),
+          inputRequired: z.number().int().nonnegative(),
           resultAvailable: z.number().int().nonnegative(),
         }),
       }),
@@ -1242,7 +1232,7 @@ function registerLocalAgentTools(
     {
       title: "Continue agent",
       description:
-        "Explicitly continue an existing local-agent session through its persisted provider session ID. Current project policy and provider availability are checked before prompt, state, or worker side effects.",
+        "Explicitly answer or continue an existing local-agent session through its persisted provider session ID. The prior input question is cleared before the same agent returns to running. Current project policy and provider availability are checked before prompt, state, or worker side effects.",
       inputSchema: {
         id: z.string().trim().min(1).max(200),
         prompt: z.string().trim().min(1).max(32_000),
@@ -1264,13 +1254,7 @@ function registerLocalAgentTools(
           tool: toolNames.continueAgent,
           card: {
             agent: output.agent,
-            summary: {
-              status: output.agent.status,
-              profile: output.agent.profileName,
-              provider: output.agent.provider,
-              resultAvailable: output.agent.resultAvailable,
-              verificationStatus: output.agent.verificationStatus,
-            },
+            summary: createLocalAgentCardSummary(output.agent),
             payload: { content: [textBlock(output.result)] },
           },
         },
@@ -2394,6 +2378,7 @@ export function createMcpServer(
               || !isSameCanonicalPath(agent.workspaceRoot, workspaceRoot)
               || agent.status !== "idle"
               || agent.latestResponse === undefined
+              || agent.disposition === "needs_input"
               || !isLocalAgentProvider(agent.provider)
             ) {
               throw new Error(

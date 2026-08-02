@@ -50,6 +50,7 @@ assert.equal(agentPresentationState(
   { ...baseSession, status: "idle", latestResponse: "done" },
   { ...baseRun, state: "completed", assuranceStage: "result_available" },
 ), "result_available");
+assert.equal(agentPresentationState({ ...baseSession, status: "idle", disposition: "needs_input", question: "Which target?" }, { ...baseRun, state: "blocked" }), "input_required");
 assert.equal(agentPresentationState(
   { ...baseSession, status: "error" },
   { ...baseRun, state: "failed" },
@@ -98,6 +99,7 @@ assert.equal(records[0]?.project?.name, "Repo");
 assert.equal(records[0]?.resumable, true);
 assert.deepEqual(summarizeAgents(records), {
   running: 1,
+  inputRequired: 0,
   resultAvailable: 1,
   failed: 0,
   stale: 0,

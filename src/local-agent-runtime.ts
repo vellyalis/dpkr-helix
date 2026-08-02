@@ -5,7 +5,13 @@ import type {
   RunResult,
   SandboxMode,
   ThreadOptions,
+  TurnOptions,
 } from "@openai/codex-sdk";
+import {
+  LOCAL_AGENT_OUTCOME_JSON_SCHEMA,
+  parseLocalAgentOutcome,
+  type LocalAgentOutcome,
+} from "./local-agent-outcome.js";
 
 export type LocalAgentWriteMode = "read_only" | "allowed" | "full_access";
 
@@ -23,6 +29,7 @@ export interface LocalAgentRunResult {
   provider: string;
   providerSessionId: string | null;
   finalResponse: string;
+  outcome?: LocalAgentOutcome;
   items: unknown[];
 }
 
@@ -33,7 +40,7 @@ export interface LocalAgentRuntime {
 
 interface CodexThreadLike {
   readonly id: string | null;
-  run(prompt: string): Promise<RunResult>;
+  run(prompt: string, options?: TurnOptions): Promise<RunResult>;
 }
 
 interface CodexClientLike {
@@ -78,13 +85,17 @@ export class CodexSdkLocalAgentRuntime implements LocalAgentRuntime {
     const thread = input.providerSessionId
       ? this.codex.resumeThread(input.providerSessionId, options)
       : this.codex.startThread(options);
-    const turn = await thread.run(input.prompt);
-    emitLocalAgentAssistantMessage(input, turn.finalResponse);
+    const turn = await thread.run(input.prompt, {
+      outputSchema: LOCAL_AGENT_OUTCOME_JSON_SCHEMA,
+    });
+    const outcome = parseLocalAgentOutcome(turn.finalResponse);
+    emitLocalAgentAssistantMessage(input, outcome.report);
 
     return {
       provider: this.provider,
       providerSessionId: thread.id,
-      finalResponse: turn.finalResponse,
+      finalResponse: outcome.report,
+      outcome,
       items: turn.items,
     };
   }

@@ -27,6 +27,7 @@ import {
   formatAvailableLocalAgentTargets,
   resolveLocalAgentTarget,
 } from "./local-agent-targets.js";
+import { validateLocalAgentOutcome } from "./local-agent-outcome.js";
 import { assertNoForbiddenSensitiveContent } from "./sensitive-content.js";
 import type {
   LocalAgentRunInput,
@@ -77,6 +78,7 @@ export interface LocalAgentObservation {
   statusChanged(record: LocalAgentRecord): void;
   assistantMessage(record: LocalAgentRecord, text: string): void;
   resultAvailable(record: LocalAgentRecord): void;
+  inputRequired(record: LocalAgentRecord): void;
 }
 
 export interface LocalAgentServiceOptions {
@@ -283,6 +285,8 @@ export class LocalAgentService {
             model: input.model ?? existing.model,
             thinking: input.thinking ?? existing.thinking,
             latestResponse: undefined,
+            disposition: undefined,
+            question: undefined,
             error: undefined,
           });
           this.observe(() => this.observation?.statusChanged(updated!));
@@ -323,14 +327,27 @@ export class LocalAgentService {
             const result = profile
               ? await this.runProfile(profile, record, prompt)
               : await this.runRawProvider(record, prompt);
+            const outcome = result.outcome
+              ? validateLocalAgentOutcome(result.outcome)
+              : undefined;
+            if (outcome) {
+              assertNoForbiddenSensitiveContent("Local-agent outcome", [
+                ["report", outcome.report],
+                ["question", outcome.question ?? ""],
+              ]);
+            }
             const completed = this.store.update(record.id, {
               providerSessionId: result.providerSessionId ?? undefined,
               status: "idle",
-              latestResponse: result.finalResponse,
+              latestResponse: outcome ? outcome.report : result.finalResponse,
+              disposition: outcome?.disposition,
+              question: outcome?.question,
               error: undefined,
             });
             this.observe(() => this.observation?.statusChanged(completed));
-            this.observe(() => this.observation?.resultAvailable(completed));
+            this.observe(() => outcome?.disposition === "needs_input"
+              ? this.observation?.inputRequired(completed)
+              : this.observation?.resultAvailable(completed));
           } catch (error) {
             const failed = this.store.update(record.id, {
               status: "error",

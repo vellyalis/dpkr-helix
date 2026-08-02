@@ -132,6 +132,8 @@ export const localAgentSessions = sqliteTable(
     providerSessionId: text("provider_session_id"),
     status: text("status").notNull(),
     latestResponse: text("latest_response"),
+    disposition: text("disposition"),
+    question: text("question"),
     error: text("error"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),

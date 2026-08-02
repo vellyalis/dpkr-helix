@@ -36,6 +36,12 @@ export class LocalAgentOperationProjector implements LocalAgentObservation {
     this.isolate(() => {
       const run = this.ensureActiveRun(record);
       if (!run) return;
+      if (
+        run.state === "blocked"
+        && (record.status === "starting" || record.status === "running")
+      ) {
+        this.runs.transitionState(run.id, "running", "local_agent_continued");
+      }
       this.recordStatus(run.id, record);
       if (record.status === "error" || record.status === "stopped") {
         this.flushMessage(run.id, record.id);
@@ -89,7 +95,7 @@ export class LocalAgentOperationProjector implements LocalAgentObservation {
   resultAvailable(record: LocalAgentRecord): void {
     this.isolate(() => {
       const run = this.ensureActiveRun(record);
-      if (!run || record.latestResponse === undefined) return;
+      if (!run || record.latestResponse === undefined || record.disposition === "needs_input") return;
       this.flushMessage(run.id, record.id);
       const safe = boundAgentText(record.latestResponse);
       this.runs.recordEvent(run.id, {
@@ -110,6 +116,30 @@ export class LocalAgentOperationProjector implements LocalAgentObservation {
         "local_agent_result_available",
       );
       this.runs.transitionState(run.id, "completed");
+    });
+  }
+
+  inputRequired(record: LocalAgentRecord): void {
+    this.isolate(() => {
+      const run = this.ensureActiveRun(record);
+      if (!run || record.disposition !== "needs_input" || !record.question) return;
+      this.flushMessage(run.id, record.id);
+      const safe = boundAgentText(record.question);
+      this.runs.recordEvent(run.id, {
+        type: "agent.input_required",
+        timestamp: this.now(),
+        level: "warning",
+        summary: "Local agent requires user input.",
+        payload: {
+          agentId: record.id,
+          question: safe.text,
+          truncated: safe.truncated,
+        },
+      }, {
+        phase: "waiting",
+        currentAction: "Waiting for user input",
+      });
+      this.runs.transitionState(run.id, "blocked", "local_agent_input_required");
     });
   }
 
@@ -151,7 +181,10 @@ export class LocalAgentOperationProjector implements LocalAgentObservation {
         agentId: record.id,
         status: record.status,
       },
-    });
+    }, record.status === "starting" || record.status === "running" ? {
+      phase: "working",
+      currentAction: "Local agent is running",
+    } : {});
   }
 
   private flushMessage(runId: string, agentId: string): void {

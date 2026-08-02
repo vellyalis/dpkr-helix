@@ -123,9 +123,9 @@ assert.deepEqual(
 assert.deepEqual(
   getToolHeaderSummary({
     tool: "list_agents",
-    summary: { active: 1, resultAvailable: 2 },
+    summary: { active: 1, inputRequired: 1, resultAvailable: 2 },
   }),
-  { kind: "text", text: "1 active · 2 results" },
+  { kind: "text", text: "1 active · 1 input required · 2 results" },
 );
 
 assert.deepEqual(

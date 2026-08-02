@@ -130,6 +130,11 @@ export interface OperationEventPayloadMap {
     text: string;
     truncated: boolean;
   };
+  "agent.input_required": {
+    agentId: string;
+    question: string;
+    truncated: boolean;
+  };
   "verification.started": {
     type: VerificationType;
   };

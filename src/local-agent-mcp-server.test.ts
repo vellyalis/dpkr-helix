@@ -361,6 +361,12 @@ try {
     assert.equal(typeof reviewBundle?.currentFingerprint, "string");
     assert.equal(reviewBundle?.verification?.items?.every(({ freshness }) => freshness === "missing"), true);
 
+    store.update("agt_1", { disposition: "needs_input", question: "Which supported target should be changed?", latestResponse: "Inspected both targets." });
+    const question = asTextToolResult(await client.callTool({ name: "get_agent_status", arguments: { id: "agt_1" } }));
+    assert.match(question.content[0]?.text ?? "", /Input required: Which supported target/);
+    assert.doesNotMatch(question.content[0]?.text ?? "", /verification pending/i);
+    assert.equal((question.structuredContent?.agent as { disposition?: string }).disposition, "needs_input");
+
     const continued = asTextToolResult(await client.callTool({
       name: "continue_agent",
       arguments: { id: "agt_1", prompt: "Continue with focused tests." },
@@ -368,6 +374,7 @@ try {
     assert.equal(continued.isError, undefined);
     assert.match(continued.content[0]?.text ?? "", /Continued local agent agt_1/);
     assert.equal(store.get("agt_1")?.providerSessionId, "thread_1");
+    assert.equal(store.get("agt_1")?.question, undefined);
     assert.equal(prompts.at(-1), "Continue with focused tests.");
   } finally {
     await client.close();
