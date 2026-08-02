@@ -17,9 +17,10 @@ Last synchronized: 2026-08-02
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; GOAL_08 remains the canonical next-program
   contract
-- Current program unit: GOAL_08 MWU-08.03 model-visible final review is next.
-  MWU-08.01 configuration selection and MWU-08.02 shared repository context
-  are complete; the measured current `gpt-5.5` medium setting is retained.
+- Current program unit: GOAL_08 MWU-08.04 structured Codex outcomes are next.
+  MWU-08.01 configuration selection, MWU-08.02 shared repository context, and
+  MWU-08.03 model-visible final review are complete; the measured current
+  `gpt-5.5` medium setting is retained.
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
@@ -35,7 +36,7 @@ Last synchronized: 2026-08-02
 | GOAL_05 Codex Handoff | DONE | structured local-agent handoff |
 | GOAL_06 Live Operations Dashboard | DONE | canonical live/retained operation views |
 | GOAL_07 Integration and Hardening | DONE | distribution, recovery, security, acceptance |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01/02 complete; current setting retained; MWU-08.03 is next |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01/02/03 complete; current setting retained; MWU-08.04 is next |
 | GOAL_09 Public Release Readiness | DONE | clean-history source release published and publicly verified |
 
 ## Goal model — GOAL_09
@@ -84,6 +85,7 @@ publishing the compatibility package accidentally.
 | MCP session retention | active-request protection plus a 64-session inactive LRU bound | 24-hour time-only retention allowed hosts that omit DELETE to grow heap without bound; shorter global timeouts can break legitimate reused sessions |
 | MWU-08.01 model/profile setting | measured current `gpt-5.5` medium baseline: Web 8/8, local 4/8 | `gpt-5.6-sol` medium: Web 6/8, local 5/8; conditional high hard subset: Web 1/4, local 3/4; mandatory regressions and mixed delegated execution prevent adoption |
 | MWU-08.02 repository start context | existing WorkspaceRegistry/repository-diff owners plus one workspace-scoped temporary-index fingerprint; 200 path and 100 script-name bounds | whole-Git-root staging crosses nested workspace boundaries; another Git reader/store creates a second owner; changing the first text/card payload breaks compatibility |
+| MWU-08.03 model-visible final review | existing review checkpoint, repository-diff, process-session, and operation-evidence owners; 128-KiB UTF-8 patch and 200 turn-file bounds; exact fingerprint freshness | caller-supplied outcomes manufacture evidence; agent lookup before policy/checkpoint boundaries leaks state; a second evidence store or review service creates another owner |
 
 ## Workstream portfolio
 
@@ -99,7 +101,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
-| WS-QA-08 measured coding parity | IN_PROGRESS | MWU-08.01/02 complete; MWU-08.03 model-visible final review is next |
+| WS-QA-08 measured coding parity | IN_PROGRESS | MWU-08.01/02/03 complete; MWU-08.04 structured Codex outcomes are next |
 
 ## Architecture and complexity decision
 
@@ -312,6 +314,24 @@ MWU-08.02 repository-context proof:
   gates, and independent A2 review through focused R2 pass with zero unresolved
   adjudicated BLOCK.
 
+MWU-08.03 model-visible review proof:
+
+- append-only schema migration v7 adds one nullable basis fingerprint to the
+  existing operation-evidence table; legacy evidence remains readable;
+- typed process completion captures the workspace fingerprint before exposing
+  the completed process result, while capture/projection failure cannot change
+  the canonical process exit result;
+- `show_changes` preserves the existing first text and Apps card and adds a
+  bounded model-visible bundle with explicit current-tree, binary, truncation,
+  unavailable, and verification-freshness states;
+- project policy and same-workspace/canonical-root checks reject invalid agent
+  associations before evidence exposure or checkpoint mutation;
+- focused fixtures prove 128-KiB UTF-8 and 200-file bounds, fresh/edit/stale/
+  reverify/fresh, legacy unknown, failed/running/missing, and compatibility; and
+- typecheck, full regression, policy regression, production build, production
+  audit, public/diff gates, and independent A2 R1 pass with zero findings and
+  zero unresolved adjudicated BLOCK.
+
 Cutover outcome:
 
 - Source publication is complete and GOAL_09 is closed.
@@ -337,11 +357,12 @@ Cutover outcome:
 | Web delegation remains managed `gpt-5.5` medium under a `GPT-5.6 Sol` controller | measured attribution boundary | preserve the mixed configuration label; do not claim end-to-end candidate coverage or change the managed profile without approval |
 | candidate medium and high settings regress mandatory safety or continuation behavior | adoption blockers; both candidates rejected | retain the measured current setting and never trade efficiency for a mandatory pass |
 | should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
-| repository context observes a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/refresh produces a new context, and locks or double fingerprinting remain deferred without a measured inconsistency |
+| repository context and verification-basis capture observe a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/review or re-verification produces a new fingerprint, exact equality is required for `fresh`, and locks or double fingerprinting remain deferred without a measured inconsistency |
 
 ## Next executable action
 
-Begin GOAL_08 MWU-08.03 at the existing review-checkpoint, process-verification,
-operation-evidence, and `show_changes` owners. Add the nullable verification
-basis fingerprint and bounded model-visible review contract without changing
-the accepted repository context, model/profile defaults, or external state.
+Begin GOAL_08 MWU-08.04 at the existing Codex SDK runtime, LocalAgentService,
+local-agent store, and operation/MCP/dashboard projection owners. Add the
+structured `completed` / `needs_input` outcome contract and same-session
+continuation proof without changing model/profile defaults, provider behavior
+outside the accepted scope, or external state.

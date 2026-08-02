@@ -215,6 +215,7 @@ export const operationEvidence = sqliteTable(
     timestamp: text("timestamp"),
     sourceEventSequence: integer("source_event_sequence"),
     summary: text("summary"),
+    basisFingerprint: text("basis_fingerprint"),
   },
   (table) => [primaryKey({ columns: [table.runId, table.type] })],
 );

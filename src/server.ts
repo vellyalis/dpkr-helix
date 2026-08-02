@@ -70,10 +70,13 @@ import { OperationRunService } from "./operations/operation-run-service.js";
 import { requestOperationStop } from "./operations/operation-stop.js";
 import { OperationStore } from "./operations/operation-store.js";
 import { OperationVerificationProjector } from "./operations/verification-projector.js";
+import { readCurrentRepositoryFingerprint } from "./operations/repository-diff.js";
 import { createReviewCheckpointManager } from "./review-checkpoints.js";
+import { registerReviewTool } from "./review-tool.js";
 import { repositoryContextOutputSchema } from "./repository-context-output.js";
 import { shutdownHttpServer } from "./server-shutdown.js";
 import { formatPathForPrompt } from "./skills.js";
+import { isSameCanonicalPath } from "./roots.js";
 import {
   ProjectRegistry,
   ProjectSelectorError,
@@ -880,6 +883,7 @@ function registerCodexProcessTools(
   processSessions: ProcessSessionManager,
   resolveVerification?: (input: {
     workspaceId: string;
+    workspaceRoot: string;
     agentId: string;
     type: ProcessVerificationTarget["type"];
   }) => ProcessVerificationTarget,
@@ -945,32 +949,35 @@ function registerCodexProcessTools(
     }) => {
       const startedAt = performance.now();
       const workspace = workspaces.getWorkspace(workspaceId);
-      const verificationTarget = verification
-        ? resolveVerification?.({
-            workspaceId,
-            agentId: verification.agentId,
-            type: verification.type,
-          })
-        : undefined;
-      if (verification && !verificationTarget) {
-        throw new Error("Operation verification is unavailable.");
-      }
       const snapshot = await runAuthorizedWorkspaceProcess(
         workspaces,
         workspace,
         workingDirectory,
-        (cwd) => processSessions.start({
-          workspaceId,
-          command: cmd,
-          cwd,
-          workspaceRoot: workspace.root,
-          tty,
-          columns,
-          rows,
-          yieldTimeMs,
-          maxOutputTokens,
-          verification: verificationTarget,
-        }),
+        (cwd) => {
+          const verificationTarget = verification
+            ? resolveVerification?.({
+                workspaceId,
+                workspaceRoot: workspace.root,
+                agentId: verification.agentId,
+                type: verification.type,
+              })
+            : undefined;
+          if (verification && !verificationTarget) {
+            throw new Error("Operation verification is unavailable.");
+          }
+          return processSessions.start({
+            workspaceId,
+            command: cmd,
+            cwd,
+            workspaceRoot: workspace.root,
+            tty,
+            columns,
+            rows,
+            yieldTimeMs,
+            maxOutputTokens,
+            verification: verificationTarget,
+          });
+        },
       );
 
       logToolCall(config, {
@@ -2046,59 +2053,15 @@ export function createMcpServer(
   }
 
   if (config.widgets === "changes") {
-    registerAppTool(
+    registerReviewTool({
       server,
-      "show_changes",
-      {
-        title: "Show changes",
-        description:
-          "Show aggregate file changes for an open workspace. If the current turn successfully modified files, call this exactly once after the final related file change and before your final response so the user can inspect the combined diff for the turn. Do not call it after every individual file change, and do not skip it because prior file-change tools already displayed per-tool diffs.",
-        inputSchema: {
-          workspaceId: z
-            .string()
-            .describe("Workspace identifier returned by open_workspace."),
-        },
-        outputSchema: resultOutputSchema(),
-        ...toolWidgetDescriptorMeta(config, "show_changes"),
-        annotations: { readOnlyHint: true },
-      },
-      async ({ workspaceId }) => {
-        const startedAt = performance.now();
-        const workspace = workspaces.getWorkspace(workspaceId);
-        const review = await reviewCheckpoints.reviewChanges({
-          workspaceId,
-          root: workspace.root,
-          since: "last_shown",
-          markReviewed: true,
-        });
-
-        const content = [textBlock(review.result)];
-        logToolCall(config, {
-          tool: "show_changes",
-          workspaceId,
-          success: true,
-          durationMs: Math.round(performance.now() - startedAt),
-        });
-
-        return {
-          content,
-          _meta: {
-            tool: "show_changes",
-            card: {
-              workspaceId,
-              summary: review.summary,
-              files: review.files,
-              payload: {
-                patch: review.patch,
-              },
-            },
-          },
-          structuredContent: {
-            result: contentText(content),
-          },
-        };
-      },
-    );
+      workspaces,
+      reviewCheckpoints,
+      toolMeta: toolWidgetDescriptorMeta(config, "show_changes"),
+      localAgents,
+      operationStore,
+      logToolCall: (fields) => logToolCall(config, fields),
+    });
   }
 
   if (config.toolMode === "full") {
@@ -2424,10 +2387,11 @@ export function createMcpServer(
       workspaces,
       processSessions,
       localAgents && operationStore
-        ? ({ workspaceId, agentId, type }) => {
+        ? ({ workspaceId, workspaceRoot, agentId, type }) => {
             const agent = localAgents.getStatus(agentId);
             if (
               agent.workspaceId !== workspaceId
+              || !isSameCanonicalPath(agent.workspaceRoot, workspaceRoot)
               || agent.status !== "idle"
               || agent.latestResponse === undefined
               || !isLocalAgentProvider(agent.provider)
@@ -2448,6 +2412,7 @@ export function createMcpServer(
               || (
                 run.assuranceStage !== "result_available"
                 && run.assuranceStage !== "verification_pending"
+                && run.assuranceStage !== "verified"
               )
             ) {
               throw new Error(
@@ -2543,7 +2508,10 @@ export function createServer(
       );
     },
   });
-  processSessions = new ProcessSessionManager({ projection: processProjector });
+  processSessions = new ProcessSessionManager({
+    projection: processProjector,
+    captureVerificationBasisFingerprint: readCurrentRepositoryFingerprint,
+  });
   operationRuns.reconcileActiveRuns();
   const verificationReconciliation = verificationProjector.reconcileInterrupted();
   if (verificationReconciliation.failedRunIds.length > 0) {

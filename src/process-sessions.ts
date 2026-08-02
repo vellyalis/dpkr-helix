@@ -10,6 +10,7 @@ const MAX_POLL_YIELD_MS = 110_000;
 const DEFAULT_MAX_OUTPUT_TOKENS = 10_000;
 const DEFAULT_BUFFER_CHARACTERS = 1_000_000;
 const COMPLETED_SESSION_TTL_MS = 5 * 60 * 1_000;
+const VERIFICATION_FINGERPRINT_TIMEOUT_MS = 10_000;
 const DEFAULT_COLUMNS = 80;
 const DEFAULT_ROWS = 24;
 
@@ -67,12 +68,14 @@ interface ProcessSession {
   rows: number;
   buffer: HeadTailBuffer;
   running: boolean;
+  finalizing: boolean;
   exitCode?: number;
   signal?: string;
   exitPromise: Promise<void>;
   resolveExit: () => void;
   cleanupTimer?: NodeJS.Timeout;
   verification?: ProcessVerificationTarget;
+  workspaceRoot?: string;
 }
 
 export type ProcessOutputStream = "stdout" | "stderr" | "combined";
@@ -107,13 +110,15 @@ export interface ProcessSessionProjection {
     signal?: string;
     wallTimeMs: number;
     verification?: ProcessVerificationTarget;
-  }): void;
+    basisFingerprint?: string;
+  }): void | Promise<void>;
 }
 
 interface ProcessSessionManagerOptions {
   maxBufferCharacters?: number;
   completedSessionTtlMs?: number;
   projection?: ProcessSessionProjection;
+  captureVerificationBasisFingerprint?: (workspaceRoot: string) => Promise<string | undefined>;
 }
 
 function boundedInteger(value: number | undefined, fallback: number, maximum: number): number {
@@ -261,12 +266,16 @@ export class ProcessSessionManager {
   private readonly maxBufferCharacters: number;
   private readonly completedSessionTtlMs: number;
   private readonly projection?: ProcessSessionProjection;
+  private readonly captureVerificationBasisFingerprint?: (
+    workspaceRoot: string,
+  ) => Promise<string | undefined>;
   private nextSessionId = 1;
 
   constructor(options: ProcessSessionManagerOptions = {}) {
     this.maxBufferCharacters = options.maxBufferCharacters ?? DEFAULT_BUFFER_CHARACTERS;
     this.completedSessionTtlMs = options.completedSessionTtlMs ?? COMPLETED_SESSION_TTL_MS;
     this.projection = options.projection;
+    this.captureVerificationBasisFingerprint = options.captureVerificationBasisFingerprint;
   }
 
   async start(input: StartCommandInput): Promise<ProcessSnapshot> {
@@ -304,7 +313,7 @@ export class ProcessSessionManager {
       session.process.resize(session.columns, session.rows);
     }
 
-    const interruptRequested = chars.includes("\u0003") && session.running;
+    const interruptRequested = chars.includes("\u0003") && session.running && !session.finalizing;
     if (interruptRequested) {
       this.project(() => this.projection?.stopRequested({
         sessionId: session.id,
@@ -330,7 +339,7 @@ export class ProcessSessionManager {
 
   terminate(workspaceId: string, sessionId: number): boolean {
     const session = this.getOwnedSession(workspaceId, sessionId);
-    if (session.running) {
+    if (session.running && !session.finalizing) {
       const projected = this.projection?.stopRequested({
         sessionId: session.id,
         workspaceId: session.workspaceId,
@@ -357,7 +366,7 @@ export class ProcessSessionManager {
   shutdown(): void {
     for (const session of this.sessions.values()) {
       if (session.cleanupTimer) clearTimeout(session.cleanupTimer);
-      if (session.running) {
+      if (session.running && !session.finalizing) {
         this.project(() => this.projection?.stopRequested({
           sessionId: session.id,
           workspaceId: session.workspaceId,
@@ -406,9 +415,11 @@ export class ProcessSessionManager {
       rows: terminalSize(input.rows, DEFAULT_ROWS),
       buffer: new HeadTailBuffer(this.maxBufferCharacters),
       running: true,
+      finalizing: false,
       exitPromise,
       resolveExit,
       verification: input.verification,
+      workspaceRoot: input.workspaceRoot,
     };
   }
 
@@ -479,19 +490,42 @@ export class ProcessSessionManager {
   }
 
   private finish(session: ProcessSession, exitCode?: number, signal?: string): void {
-    if (!session.running) return;
+    if (!session.running || session.finalizing) return;
+    session.finalizing = true;
+    session.process = undefined;
+    void this.finalize(session, exitCode, signal);
+  }
+
+  private async finalize(
+    session: ProcessSession,
+    exitCode?: number,
+    signal?: string,
+  ): Promise<void> {
+    let basisFingerprint: string | undefined;
+    if (
+      session.verification
+      && session.workspaceRoot
+      && this.captureVerificationBasisFingerprint
+    ) {
+      basisFingerprint = await this.captureBasisFingerprint(session.workspaceRoot);
+    }
+
     session.running = false;
     session.exitCode = exitCode;
     session.signal = signal;
-    session.resolveExit();
-    this.project(() => this.projection?.exited({
-      sessionId: session.id,
-      workspaceId: session.workspaceId,
-      exitCode,
-      signal,
-      wallTimeMs: Date.now() - session.startedAt,
-      verification: session.verification,
-    }));
+    try {
+      await this.projectAsync(() => this.projection?.exited({
+        sessionId: session.id,
+        workspaceId: session.workspaceId,
+        exitCode,
+        signal,
+        wallTimeMs: Date.now() - session.startedAt,
+        verification: session.verification,
+        basisFingerprint,
+      }));
+    } finally {
+      session.resolveExit();
+    }
     session.cleanupTimer = setTimeout(
       () => this.sessions.delete(session.id),
       this.completedSessionTtlMs,
@@ -549,6 +583,30 @@ export class ProcessSessionManager {
       project();
     } catch {
       // Operation projection must never change the canonical process lifecycle.
+    }
+  }
+
+  private async projectAsync(project: () => void | Promise<void>): Promise<void> {
+    try {
+      await project();
+    } catch {
+      // Operation projection must never change the canonical process lifecycle.
+    }
+  }
+
+  private async captureBasisFingerprint(workspaceRoot: string): Promise<string | undefined> {
+    const capture = this.captureVerificationBasisFingerprint;
+    if (!capture) return undefined;
+    let timer: number | undefined;
+    try {
+      return await Promise.race([
+        capture(workspaceRoot).catch(() => undefined),
+        new Promise<undefined>((resolve) => {
+          timer = setTimeout(resolve, VERIFICATION_FINGERPRINT_TIMEOUT_MS);
+        }),
+      ]);
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
 

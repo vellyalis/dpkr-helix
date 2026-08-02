@@ -4,9 +4,10 @@ Last synchronized: 2026-08-02
 
 ## Current position
 
-- Completed work units: GOAL_08 MWU-08.01 configuration selection and
-  MWU-08.02 shared repository context/tree fingerprint. The measured current
-  `gpt-5.5` medium setting is retained; MWU-08.03 model-visible review is next.
+- Completed work units: GOAL_08 MWU-08.01 configuration selection, MWU-08.02
+  shared repository context/tree fingerprint, and MWU-08.03 model-visible
+  review/freshness. The measured current `gpt-5.5` medium setting is retained;
+  MWU-08.04 structured Codex outcomes are next.
 - GOAL_01 through GOAL_07: DONE.
 - GOAL_08 Codex-Parity Coding Quality: `IN_PROGRESS`; P01-P08 manifests,
   deterministic snapshots, metadata prompts, and the result contract are frozen.
@@ -94,9 +95,14 @@ Last synchronized: 2026-08-02
   the existing owners and a workspace-scoped temporary-index fingerprint. The
   first text/card contract is unchanged; plain MCP receives a second context
   block and structured clients receive `repositoryContext`.
+- `show_changes` now preserves its first text and Apps card while adding a
+  bounded model-visible review bundle. Optional same-workspace agent evidence
+  is policy/root checked before checkpoint mutation, and exact captured/current
+  fingerprint equality is the only `fresh` verification state.
 - Independent A2 R1 findings for nested workspace scope, text compatibility,
   and untracked-binary accuracy were fixed. Focused R2 found no fix-induced
-  S0-S1 candidate. No delegated agents or long-running processes remain active.
+  S0-S1 candidate. MWU-08.03 independent A2 R1 then returned zero findings.
+  No delegated agents or long-running processes remain active.
 
 ## Completed before this work unit
 
@@ -106,10 +112,11 @@ Last synchronized: 2026-08-02
 - GOAL_08 defines the measured same-snapshot parity suite, model/profile
   selection, bounded start context, review freshness, structured user input,
   and bounded wait behavior.
-- GOAL_08's completed units are MWU-08.01 and MWU-08.02. P01-P08 and the result template are
-  frozen; the current baseline, rejected medium candidate, rejected High hard
-  subset, and metadata audit are recorded. The measured current setting is
-  retained. MWU-08.03 is the active next unit.
+- GOAL_08's completed units are MWU-08.01, MWU-08.02, and MWU-08.03. P01-P08
+  and the result template are frozen; the current baseline, rejected medium
+  candidate, rejected High hard subset, metadata audit, bounded start context,
+  and model-visible review freshness are recorded. The measured current
+  setting is retained. MWU-08.04 is the active next unit.
 
 ## GOAL_09 completed release
 
@@ -178,9 +185,9 @@ Last synchronized: 2026-08-02
    current remote.
 5. Confirm GOAL_09 remains `DONE`; do not repeat its one-time clean-root cutover.
 6. Confirm the operational-comfort checkpoint and current local/public health.
-7. Continue GOAL_08 at MWU-08.03; do not recreate or rerun MWU-08.01 evidence
-   or MWU-08.02 repository-context work. WS-UPD-01 is complete on `main` and in
-   the installed runtime.
+7. Continue GOAL_08 at MWU-08.04; do not recreate or rerun MWU-08.01 evidence,
+   MWU-08.02 repository-context work, or MWU-08.03 review/freshness work.
+   WS-UPD-01 is complete on `main` and in the installed runtime.
 
 Do not recreate GOAL_01 through GOAL_08 documents. Do not start public cutover
 commands merely because the preparation work is complete.
@@ -239,10 +246,19 @@ commands merely because the preparation work is complete.
   index/HEAD/ref/status/content no-mutation checks; plain/structured MCP
   compatibility; focused tests; typecheck; full regression; build; public/diff
   gates; and independent A2 review through focused R2
+- 2026-08-02 MWU-08.03 review/freshness proof: append-only v7 migration and
+  legacy-null persistence; canonical typed-process fingerprint capture; 128-KiB
+  UTF-8 patch and 200-file bounds; explicit binary/unavailable/truncation and
+  fresh/stale/unknown/failed/running/missing states; policy-before-agent lookup;
+  unknown/cross-workspace/wrong-root rejection before checkpoint mutation;
+  first-text/card compatibility; focused tests; typecheck; full and policy
+  regression; production build/audit; public/diff gates; independent A2 R1
+  with zero findings
 
 ## Exact next action
 
-Begin GOAL_08 MWU-08.03 at the existing review-checkpoint, process-verification,
-operation-evidence, and `show_changes` owners. Add nullable basis fingerprints
-and the bounded model-visible review contract. Do not repeat MWU-08.01/02,
-change model/profile defaults, or make an external submission without approval.
+Begin GOAL_08 MWU-08.04 at the existing Codex SDK runtime, LocalAgentService,
+local-agent store, and operation/MCP/dashboard projection owners. Add structured
+`completed` / `needs_input` outcomes and prove same-session continuation. Do not
+repeat MWU-08.01/02/03, change model/profile defaults, or make an external
+submission without approval.

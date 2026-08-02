@@ -4,9 +4,10 @@
 
 ## Status
 
-`IN_PROGRESS` — MWU-08.01 baseline/configuration selection and MWU-08.02 shared
-repository context/fingerprint are complete. The measured current `gpt-5.5`
-medium setting is retained; MWU-08.03 model-visible final review is next.
+`IN_PROGRESS` — MWU-08.01 baseline/configuration selection, MWU-08.02 shared
+repository context/fingerprint, and MWU-08.03 model-visible final review are
+complete. The measured current `gpt-5.5` medium setting is retained; MWU-08.04
+structured Codex outcomes are next.
 
 ## Goal
 
@@ -136,8 +137,8 @@ directory, or creating a new development root.
 | Hypothesis | Candidate type | Expected observation | Decision |
 | --- | --- | --- | --- |
 | H1: profile model/effort and prompt/tool metadata limit task quality | Context setting | same snapshots pass more often without product code | Compared; current setting retained, M03 defect recorded |
-| H2: weak start/end contracts cause missed context and untrustworthy completion | Mechanism | fewer unrelated changes and stale-verification claims | Current bottleneck; start context accepted, MWU-08.03 end contract next |
-| H3: polling and unstructured blocking cause avoidable turns and guesses | Mechanism/UX | fewer status calls and fewer assumption-driven edits | Implement after the review contract |
+| H2: weak start/end contracts cause missed context and untrustworthy completion | Mechanism | fewer unrelated changes and stale-verification claims | Accepted through bounded start context and model-visible review freshness |
+| H3: polling and unstructured blocking cause avoidable turns and guesses | Mechanism/UX | fewer status calls and fewer assumption-driven edits | Current bottleneck; structured outcomes are next, then bounded wait |
 | H4: cancellation is the main quality bottleneck | Lifecycle mechanism | task success changes materially when cancel exists | Deferred; current evidence supports operational hygiene only |
 | H5: more agents, services, indexes, or reverse notifications improve quality | Architecture | frequent tasks pass more often despite added owners | Rejected without new evidence |
 
@@ -684,6 +685,30 @@ fixed; R2 found no fix-induced S0-S1 candidate. MWU-08.02 is complete.
   association;
 - implement freshness and truncation states;
 - prove stale-after-edit behavior and compatibility.
+
+Progress on 2026-08-02: typed process verification now captures the current
+workspace tree fingerprint at canonical process completion and persists it in
+the existing operation-evidence owner through append-only migration v7. A
+verified run can re-enter verification after an edit, replacing the prior
+evidence basis only when the new typed process completes.
+
+`show_changes` preserves its original first text and MCP Apps card while adding
+a second bounded model-visible text block and typed `reviewBundle`. The bundle
+contains at most 200 turn files, at most 128 KiB of UTF-8 patch text, explicit
+binary/truncation/unavailable metadata, the current workspace changes and
+fingerprint, and optional evidence for an explicitly supplied same-workspace
+agent. Policy authorization and canonical workspace/root checks precede agent
+evidence lookup and review-checkpoint mutation. Exact fingerprint equality is
+the only `fresh` state; edit and re-verification fixtures prove
+fresh/stale/fresh, while legacy, failed, running, and missing evidence remain
+explicit.
+
+Focused fixtures, full regression, policy regression, typecheck, production
+build, production audit, public-release/diff checks, and independent A2 R1
+pass. The independent review inspected requirements, ownership, lifecycle,
+failure, security, bounds, and proof coverage and returned zero findings.
+MWU-08.03 is complete without a new dependency, service, store, daemon, or
+profile/model-default change.
 
 ### MWU-08.04 — Structured Codex outcomes
 

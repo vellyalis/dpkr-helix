@@ -469,6 +469,7 @@ export class OperationStore {
     if (evidence.summary !== undefined) {
       assertBoundedSafeText(this.limits, "evidence summary", evidence.summary);
     }
+    assertGitFingerprint(evidence.basisFingerprint);
     const current = this.requireRun(runId);
     if (
       evidence.sourceEventSequence !== undefined &&
@@ -480,13 +481,14 @@ export class OperationStore {
     this.database.sqlite
       .prepare(
         `insert into operation_evidence (
-          run_id, type, state, timestamp, source_event_sequence, summary
-        ) values (?, ?, ?, ?, ?, ?)
+          run_id, type, state, timestamp, source_event_sequence, summary, basis_fingerprint
+        ) values (?, ?, ?, ?, ?, ?, ?)
         on conflict(run_id, type) do update set
           state = excluded.state,
           timestamp = excluded.timestamp,
           source_event_sequence = excluded.source_event_sequence,
-          summary = excluded.summary`,
+          summary = excluded.summary,
+          basis_fingerprint = excluded.basis_fingerprint`,
       )
       .run(
         runId,
@@ -495,6 +497,7 @@ export class OperationStore {
         evidence.timestamp ?? null,
         evidence.sourceEventSequence ?? null,
         evidence.summary?.trim() ?? null,
+        evidence.basisFingerprint ?? null,
       );
     return { ...evidence, summary: evidence.summary?.trim() };
   }
@@ -692,6 +695,7 @@ interface OperationEvidenceRow {
   timestamp: string | null;
   source_event_sequence: number | null;
   summary: string | null;
+  basis_fingerprint: string | null;
 }
 
 function rowToRun(row: OperationRunRow): StoredOperationRun {
@@ -743,6 +747,7 @@ function rowToEvidence(row: OperationEvidenceRow): OperationEvidence {
     timestamp: row.timestamp ?? undefined,
     sourceEventSequence: row.source_event_sequence ?? undefined,
     summary: row.summary ?? undefined,
+    basisFingerprint: row.basis_fingerprint ?? undefined,
   };
 }
 
@@ -881,5 +886,11 @@ function assertIdentifier(name: string, value: string | undefined): void {
 function assertTimestamp(name: string, value: string): void {
   if (byteLength(value) > 64 || !Number.isFinite(Date.parse(value))) {
     throw new Error(`Operation ${name} must be a valid bounded timestamp.`);
+  }
+}
+
+function assertGitFingerprint(value: string | undefined): void {
+  if (value !== undefined && !/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(value)) {
+    throw new Error("Operation evidence basis fingerprint must be a Git tree object ID.");
   }
 }

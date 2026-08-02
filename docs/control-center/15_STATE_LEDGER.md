@@ -273,3 +273,25 @@ and Git rather than duplicated here.
   checks, and independent A2 review through focused R2 pass. R1's three
   requirement-linked findings were fixed; no adjudicated BLOCK remains.
 - GOAL_08 remains `IN_PROGRESS`; MWU-08.03 model-visible final review is next.
+
+## 2026-08-02 — GOAL_08 model-visible review freshness accepted
+
+- MWU-08.03 adds one nullable verification-basis fingerprint to the existing
+  operation-evidence owner through append-only schema migration v7; legacy rows
+  remain readable and do not manufacture freshness.
+- Typed process verification captures the workspace tree at canonical process
+  completion. Exact stored/current fingerprint equality is the only `fresh`
+  state, and a verified run can re-enter verification after an edit.
+- `show_changes` preserves its original first text and Apps card while adding a
+  model-visible bundle bounded to 128 KiB of UTF-8 patch text and 200 turn files,
+  with explicit current-tree, binary, truncation, unavailable, and evidence
+  states.
+- Policy authorization plus same-workspace and canonical-root checks precede
+  optional agent evidence exposure and review-checkpoint mutation.
+- Focused fixtures prove fresh/edit/stale/reverify/fresh, legacy unknown,
+  failed/running/missing, UTF-8/file bounds, binary/unavailable behavior, and
+  text/card compatibility. Typecheck, full and policy regression, production
+  build/audit, public/diff gates, and independent A2 R1 pass with zero findings.
+- No dependency, service, store, daemon, profile/model default, publication, or
+  external state changed. GOAL_08 remains `IN_PROGRESS`; MWU-08.04 structured
+  Codex outcomes are next.

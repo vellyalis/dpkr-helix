@@ -84,6 +84,19 @@ export function canonicalizePathAllowMissingSync(path: string): string {
   }
 }
 
+export function isSameCanonicalPath(first: string, second: string): boolean {
+  const firstKey = canonicalPathKey(first);
+  const secondKey = canonicalPathKey(second);
+  return firstKey === secondKey;
+}
+
+function canonicalPathKey(path: string): string {
+  const canonical = canonicalizePathAllowMissingSync(path);
+  return process.platform === "win32"
+    ? canonical.toLocaleLowerCase("en-US")
+    : canonical;
+}
+
 async function canonicalizePathAllowMissing(path: string): Promise<string> {
   let current = resolve(expandHomePath(path));
   const missingSegments: string[] = [];

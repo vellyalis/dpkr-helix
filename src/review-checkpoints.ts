@@ -19,6 +19,7 @@ export interface ReviewFile {
   type: "change" | "rename-pure" | "rename-changed" | "new" | "deleted";
   additions: number;
   removals: number;
+  binary: boolean;
 }
 
 export interface ReviewChangesResult {
@@ -150,10 +151,19 @@ function parseNumstat(output: string): ReviewFile[] {
     const parts = header.split("\t");
     const additions = parseStatNumber(parts[0]);
     const removals = parseStatNumber(parts[1]);
+    const binary = parts[0] === "-" || parts[1] === "-";
 
     if (parts.length >= 3) {
       const path = parts[2] ?? "";
-      if (path) files.push({ path, type: fileType(path, undefined, additions, removals), additions, removals });
+      if (path) {
+        files.push({
+          path,
+          type: fileType(path, undefined, additions, removals),
+          additions,
+          removals,
+          binary,
+        });
+      }
       continue;
     }
 
@@ -167,6 +177,7 @@ function parseNumstat(output: string): ReviewFile[] {
       type: fileType(path, previousPath, additions, removals),
       additions,
       removals,
+      binary,
     });
   }
 

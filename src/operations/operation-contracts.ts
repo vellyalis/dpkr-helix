@@ -62,6 +62,7 @@ export interface OperationEvidence {
   timestamp?: string;
   sourceEventSequence?: number;
   summary?: string;
+  basisFingerprint?: string;
 }
 
 export interface OperationEventPayloadMap {

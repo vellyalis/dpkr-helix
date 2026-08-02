@@ -33,6 +33,7 @@ export interface ProcessSessionOperationProjectorOptions {
     completed(
       target: ProcessVerificationTarget,
       state: "passed" | "failed",
+      basisFingerprint?: string,
     ): boolean;
   };
 }
@@ -174,6 +175,7 @@ export class ProcessSessionOperationProjector implements ProcessSessionProjectio
     signal?: string;
     wallTimeMs: number;
     verification?: ProcessVerificationTarget;
+    basisFingerprint?: string;
   }): void {
     const key = runKey(input.workspaceId, input.sessionId);
     const runId = this.runIds.get(key);
@@ -221,6 +223,7 @@ export class ProcessSessionOperationProjector implements ProcessSessionProjectio
       this.options.verification?.completed(
         verificationTarget,
         input.exitCode === 0 && input.signal === undefined ? "passed" : "failed",
+        input.basisFingerprint,
       );
     }
     this.runIds.delete(key);

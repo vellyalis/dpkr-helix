@@ -37,6 +37,11 @@ const migrations: Migration[] = [
     name: "operation-projection",
     up: migrateOperationProjection,
   },
+  {
+    version: 7,
+    name: "verification-basis-fingerprint",
+    up: migrateVerificationBasisFingerprint,
+  },
 ];
 
 export const LATEST_SCHEMA_VERSION = migrations.at(-1)?.version ?? 0;
@@ -275,6 +280,10 @@ function migrateOperationProjection(sqlite: Database.Database): void {
   `);
 }
 
+function migrateVerificationBasisFingerprint(sqlite: Database.Database): void {
+  addColumnIfMissing(sqlite, "operation_evidence", "basis_fingerprint", "text");
+}
+
 function migrateLocalAgentSessions(sqlite: Database.Database): void {
   sqlite.exec(`
     create table if not exists local_agent_sessions (
@@ -308,7 +317,7 @@ function migrateLocalAgentSessions(sqlite: Database.Database): void {
 
 function addColumnIfMissing(
   sqlite: Database.Database,
-  table: "workspace_sessions" | "local_agent_sessions",
+  table: "workspace_sessions" | "local_agent_sessions" | "operation_evidence",
   column: string,
   definition: string,
 ): void {

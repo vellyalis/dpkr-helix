@@ -7,6 +7,7 @@ import {
   assertAllowedPath,
   assertCanonicalAllowedPath,
   expandHomePath,
+  isSameCanonicalPath,
   resolveAllowedPath,
 } from "./roots.js";
 
@@ -48,6 +49,8 @@ await mkdir(nestedRoot);
 await symlink(physicalRoot, aliasRoot, process.platform === "win32" ? "junction" : "dir");
 await symlink(outsideRoot, escapeRoot, process.platform === "win32" ? "junction" : "dir");
 try {
+  assert.equal(isSameCanonicalPath(physicalRoot, aliasRoot), true);
+  assert.equal(isSameCanonicalPath(physicalRoot, outsideRoot), false);
   assert.equal(
     await assertCanonicalAllowedPath(await realpath(nestedRoot), [aliasRoot]),
     join(aliasRoot, "nested"),

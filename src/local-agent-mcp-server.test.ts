@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { loadConfig } from "./config.js";
@@ -16,6 +18,7 @@ import type {
   LocalAgentRecord,
 } from "./local-agent-store.js";
 import { ProcessSessionManager } from "./process-sessions.js";
+import { OperationStore } from "./operations/operation-store.js";
 import { ProjectRegistry } from "./projects/project-registry.js";
 import { SqliteProjectStore } from "./projects/project-store.js";
 import { createReviewCheckpointManager } from "./review-checkpoints.js";
@@ -33,6 +36,7 @@ interface TextToolResult {
 class FakeStore {
   readonly records = new Map<string, LocalAgentRecord>();
   createCount = 0;
+  getCount = 0;
 
   list(scope: LocalAgentListScope = {}): LocalAgentRecord[] {
     return Array.from(this.records.values()).filter((record) => {
@@ -43,6 +47,7 @@ class FakeStore {
   }
 
   get(id: string): LocalAgentRecord | undefined {
+    this.getCount += 1;
     return this.records.get(id);
   }
 
@@ -76,6 +81,7 @@ class FakeStore {
 }
 
 const root = await mkdtemp(join(tmpdir(), "devspace-agent-mcp-server-test-"));
+const execFileAsync = promisify(execFile);
 
 try {
   const allowedRoot = join(root, "allowed");
@@ -84,6 +90,12 @@ try {
   const stateDir = join(root, "state");
   await mkdir(developRoot, { recursive: true });
   await mkdir(inspectRoot, { recursive: true });
+  await execFileAsync("git", ["init"], { cwd: developRoot });
+  await execFileAsync("git", ["config", "user.email", "devspace@example.com"], { cwd: developRoot });
+  await execFileAsync("git", ["config", "user.name", "DevSpace Test"], { cwd: developRoot });
+  await writeFile(join(developRoot, "README.md"), "baseline\n");
+  await execFileAsync("git", ["add", "README.md"], { cwd: developRoot });
+  await execFileAsync("git", ["commit", "-m", "Initial commit"], { cwd: developRoot });
 
   const config = loadConfig({
     DEVSPACE_CONFIG_DIR: join(root, "config"),
@@ -92,7 +104,8 @@ try {
     DEVSPACE_WORKTREE_ROOT: join(root, "worktrees"),
     DEVSPACE_AGENT_DIR: join(root, "agent"),
     DEVSPACE_SUBAGENTS: "1",
-    DEVSPACE_WIDGETS: "full",
+    DEVSPACE_TOOL_MODE: "codex",
+    DEVSPACE_WIDGETS: "changes",
     DEVSPACE_OAUTH_OWNER_TOKEN: "test-owner-token-that-is-long-enough",
     PORT: "1",
   });
@@ -115,6 +128,12 @@ try {
   const workspaces = new WorkspaceRegistry(config, workspaceStore, projects);
   const developWorkspace = (await workspaces.openWorkspace(developRoot)).workspace;
   const inspectWorkspace = (await workspaces.openWorkspace(inspectRoot)).workspace;
+  const reviewCheckpoints = createReviewCheckpointManager();
+  await reviewCheckpoints.initializeWorkspace({
+    workspaceId: developWorkspace.id,
+    root: developWorkspace.root,
+  });
+  const operationStore = new OperationStore(stateDir);
   const store = new FakeStore();
   const prompts: string[] = [];
   const spawns: Array<{ id: string; promptFile: string }> = [];
@@ -161,11 +180,13 @@ try {
     projects,
     workspaces,
     handoffs,
-    createReviewCheckpointManager(),
+    reviewCheckpoints,
     new ProcessSessionManager(),
     [{ name: "codex", available: true }],
     [],
     localAgents,
+    undefined,
+    operationStore,
   );
   const client = new Client({ name: "devspace-agent-test", version: "0.0.0" });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -173,7 +194,7 @@ try {
   try {
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
     const tools = await client.listTools();
-    for (const name of ["delegate_task", "get_agent_status", "list_agents", "continue_agent"]) {
+    for (const name of ["delegate_task", "get_agent_status", "list_agents", "continue_agent", "exec_command", "show_changes"]) {
       assert.ok(tools.tools.some((tool) => tool.name === name), `${name} should be registered`);
     }
     assert.deepEqual(
@@ -204,6 +225,18 @@ try {
     assert.deepEqual(spawns, [{ id: "agt_1", promptFile: "prompt-1.txt" }]);
     assert.match(prompts[0] ?? "", /Goal:\nImplement the change\./);
     assert.match(prompts[0] ?? "", /Acceptance criteria:\n- The service is shared\./);
+
+    const getsBeforeDeniedVerification = store.getCount;
+    const deniedVerification = asTextToolResult(await client.callTool({
+      name: "exec_command",
+      arguments: {
+        workspaceId: inspectWorkspace.id,
+        cmd: "node --version",
+        verification: { agentId: "agt_1", type: "tests" },
+      },
+    }));
+    assert.equal(deniedVerification.isError, true);
+    assert.equal(store.getCount, getsBeforeDeniedVerification);
 
     const mutationsBeforeInvalid = store.createCount;
     const unsafeEnvelope = asTextToolResult(await client.callTool({
@@ -303,6 +336,31 @@ try {
     assert.equal((listed.structuredContent?.summary as { total?: number } | undefined)?.total, 1);
     assert.equal(JSON.stringify(listed.structuredContent).includes("Initial result."), false);
 
+    store.records.set("agt_wrong_root", {
+      ...store.get("agt_1")!,
+      id: "agt_wrong_root",
+      workspaceRoot: inspectRoot,
+    });
+    await writeFile(join(developRoot, "README.md"), "baseline\nchanged\n");
+    const wrongRootReview = asTextToolResult(await client.callTool({
+      name: "show_changes",
+      arguments: { workspaceId: developWorkspace.id, agentId: "agt_wrong_root" },
+    }));
+    assert.equal(wrongRootReview.isError, true);
+    const review = asTextToolResult(await client.callTool({
+      name: "show_changes",
+      arguments: { workspaceId: developWorkspace.id, agentId: "agt_1" },
+    }));
+    assert.equal(review.isError, undefined);
+    assert.match(review.content[0]?.text ?? "", /Changed 1 file/);
+    assert.match(review.content[1]?.text ?? "", /^Review bundle: /);
+    const reviewBundle = review.structuredContent?.reviewBundle as {
+      currentFingerprint?: string;
+      verification?: { items?: Array<{ freshness?: string }> };
+    } | undefined;
+    assert.equal(typeof reviewBundle?.currentFingerprint, "string");
+    assert.equal(reviewBundle?.verification?.items?.every(({ freshness }) => freshness === "missing"), true);
+
     const continued = asTextToolResult(await client.callTool({
       name: "continue_agent",
       arguments: { id: "agt_1", prompt: "Continue with focused tests." },
@@ -315,6 +373,7 @@ try {
     await client.close();
     await server.close();
     localAgents.close();
+    operationStore.close();
   }
 
   const disabledConfig = loadConfig({

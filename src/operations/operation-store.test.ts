@@ -191,6 +191,7 @@ try {
       timestamp: "2026-07-29T00:00:05.000Z",
       sourceEventSequence: 4,
       summary: "Focused tests passed.",
+      basisFingerprint: "1".repeat(40),
     }).state,
     "passed",
   );
@@ -255,6 +256,7 @@ try {
     [3, 4, 5],
   );
   assert.equal(reopened.getEvidence(run.id)[0]?.state, "passed");
+  assert.equal(reopened.getEvidence(run.id)[0]?.basisFingerprint, "1".repeat(40));
 
   const completed = (id: string, second: number) => {
     const created = reopened.createRun({

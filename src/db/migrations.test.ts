@@ -15,7 +15,7 @@ try {
       .prepare("select version from devspace_schema_migrations order by version")
       .pluck()
       .all(),
-    [1, 2, 3, 4, 5, 6],
+    [1, 2, 3, 4, 5, 6, 7],
   );
   assert.deepEqual(
     tableColumns(fresh.sqlite, "registered_projects"),
@@ -59,13 +59,14 @@ try {
     "payload_bytes",
   ]);
   assert.equal(tableColumns(fresh.sqlite, "operation_runs").length, 23);
-  assert.equal(tableColumns(fresh.sqlite, "operation_evidence").length, 6);
+  assert.equal(tableColumns(fresh.sqlite, "operation_evidence").length, 7);
+  assert.equal(tableColumns(fresh.sqlite, "operation_evidence").includes("basis_fingerprint"), true);
   fresh.close();
 
   const freshAgain = openDatabase(freshStateDir);
   assert.equal(
     freshAgain.sqlite.prepare("select count(*) from devspace_schema_migrations").pluck().get(),
-    6,
+    7,
   );
   freshAgain.close();
 
@@ -139,7 +140,7 @@ try {
   );
   assert.equal(tableColumns(upgraded.sqlite, "operation_runs").length, 23);
   assert.equal(tableColumns(upgraded.sqlite, "operation_events").length, 9);
-  assert.equal(tableColumns(upgraded.sqlite, "operation_evidence").length, 6);
+  assert.equal(tableColumns(upgraded.sqlite, "operation_evidence").length, 7);
   upgraded.close();
 
   const failingV6StateDir = join(root, "failing-v6");

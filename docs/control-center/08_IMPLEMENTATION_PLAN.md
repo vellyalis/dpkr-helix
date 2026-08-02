@@ -20,7 +20,7 @@ Codex must select the first non-DONE goal whose dependencies are DONE.
 | GOAL_05 Codex Handoff | DONE | GOAL_03, GOAL_04 | Reusable local-agent service and explicit structured MCP delegation |
 | GOAL_06 Live Operations and Control Center UI | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05 | Canonical operation projection, live run evidence, coherent Projects/Runs/Agents/System UI |
 | GOAL_07 Integration and Hardening | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05, GOAL_06 | End-to-end UX, reliability, security, docs, visual/accessibility, compatibility proof |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | GOAL_07 | MWU-08.01/02 complete; MWU-08.03 model-visible review next |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | GOAL_07 | MWU-08.01/02/03 complete; MWU-08.04 structured outcomes next |
 | GOAL_09 Public Release Readiness | DONE | GOAL_07 | Clean-history source release published and publicly verified |
 
 GOAL_02 and GOAL_03 may be implemented in either order after GOAL_01. Do not work on both in the same worktree unless explicitly orchestrated with non-overlapping write ownership.
@@ -1141,7 +1141,17 @@ bounded repository context through the existing workspace/repository-diff
 owners and one shared workspace-scoped temporary-index fingerprint primitive.
 Clean/dirty/detached/non-Git/missing/truncated/nested fixtures, no-mutation
 proof, typecheck, full tests, build, public/diff gates, and focused independent
-A2 review pass. MWU-08.03 is next.
+A2 review pass.
+
+MWU-08.03 closed on 2026-08-02. Typed process completion records a nullable
+workspace-tree basis fingerprint in the existing operation evidence owner.
+`show_changes` preserves its first text and Apps card while adding bounded turn
+and current-worktree changes plus explicit verification freshness for an
+optional, policy-authorized same-workspace agent. Fresh/edit/stale/reverify/
+fresh, legacy unknown, failure states, UTF-8/file bounds, compatibility,
+policy ordering, full/policy regression, typecheck, build, production audit,
+public/diff gates, and independent A2 R1 pass with zero findings. MWU-08.04 is
+next.
 
 ## GOAL_09 public-release preparation
 

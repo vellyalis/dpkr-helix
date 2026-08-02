@@ -1,17 +1,29 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { ProcessSessionManager } from "../process-sessions.js";
 import { OperationRunService } from "./operation-run-service.js";
 import { OperationStore } from "./operation-store.js";
 import { OperationVerificationProjector } from "./verification-projector.js";
+import { readCurrentRepositoryFingerprint } from "./repository-diff.js";
 import {
   ProcessSessionOperationProjector,
   resolveProcessSessionCapabilities,
 } from "./process-session-projector.js";
 
 const stateDir = await mkdtemp(join(tmpdir(), "devspace-process-projector-test-"));
+const workspaceRoot = join(stateDir, "workspace");
+const execFileAsync = promisify(execFile);
+await mkdir(workspaceRoot);
+await execFileAsync("git", ["init"], { cwd: workspaceRoot });
+await execFileAsync("git", ["config", "user.email", "devspace@example.com"], { cwd: workspaceRoot });
+await execFileAsync("git", ["config", "user.name", "DevSpace Test"], { cwd: workspaceRoot });
+await writeFile(join(workspaceRoot, "README.md"), "baseline\n");
+await execFileAsync("git", ["add", "README.md"], { cwd: workspaceRoot });
+await execFileAsync("git", ["commit", "-m", "Initial commit"], { cwd: workspaceRoot });
 const store = new OperationStore(stateDir);
 let manager: ProcessSessionManager;
 const service = new OperationRunService(store, {
@@ -29,6 +41,7 @@ const projector = new ProcessSessionOperationProjector(service, {
 manager = new ProcessSessionManager({
   projection: projector,
   completedSessionTtlMs: 5_000,
+  captureVerificationBasisFingerprint: readCurrentRepositoryFingerprint,
 });
 const node = process.platform === "win32"
   ? `"${process.execPath}"`
@@ -89,7 +102,8 @@ try {
   );
   const verified = await manager.start({
     workspaceId: "workspace-projection",
-    cwd: process.cwd(),
+    cwd: workspaceRoot,
+    workspaceRoot,
     command: `${node} -e "console.log('verified-command')"`,
     yieldTimeMs: 2_000,
     verification: {
@@ -106,6 +120,31 @@ try {
       state,
     })),
     [{ type: "tests", state: "passed" }],
+  );
+  assert.equal(
+    store.getEvidence(agentRun.value.id)[0]?.basisFingerprint,
+    await readCurrentRepositoryFingerprint(workspaceRoot),
+  );
+  const firstBasis = store.getEvidence(agentRun.value.id)[0]?.basisFingerprint;
+  await writeFile(join(workspaceRoot, "README.md"), "baseline\nchanged\n");
+  const reverified = await manager.start({
+    workspaceId: "workspace-projection",
+    cwd: workspaceRoot,
+    workspaceRoot,
+    command: `${node} -e "console.log('reverified-command')"`,
+    yieldTimeMs: 2_000,
+    verification: {
+      runId: agentRun.value.id,
+      workspaceId: "workspace-projection",
+      type: "tests",
+    },
+  });
+  assert.equal(reverified.exitCode, 0);
+  assert.equal(store.getRun(agentRun.value.id)?.assuranceStage, "verified");
+  assert.notEqual(store.getEvidence(agentRun.value.id)[0]?.basisFingerprint, firstBasis);
+  assert.equal(
+    store.getEvidence(agentRun.value.id)[0]?.basisFingerprint,
+    await readCurrentRepositoryFingerprint(workspaceRoot),
   );
 
   const safeProjection = new ProcessSessionOperationProjector(service);
@@ -204,19 +243,20 @@ try {
     yieldTimeMs: 5,
   });
   assert.equal(stoppable.running, true);
-  assert.equal(stoppable.sessionId, 3);
+  assert.equal(typeof stoppable.sessionId, "number");
+  const stoppableSessionId = stoppable.sessionId!;
   const stoppingRun = store.findRunBySource(
     "process_session",
     "mcp",
-    "process:3",
+    `process:${stoppableSessionId}`,
   );
   assert.ok(stoppingRun);
   assert.equal(stoppingRun.stoppable, true);
-  manager.terminate("workspace-projection", 3);
+  manager.terminate("workspace-projection", stoppableSessionId);
   assert.equal(store.getRun(stoppingRun.id)?.stoppable, false);
   const stopped = await manager.write({
     workspaceId: "workspace-projection",
-    sessionId: 3,
+    sessionId: stoppableSessionId,
     yieldTimeMs: 2_000,
   });
   assert.equal(stopped.running, false);

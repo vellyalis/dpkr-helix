@@ -41,6 +41,7 @@ export class OperationVerificationProjector {
       if (
         run.assuranceStage !== "result_available"
         && run.assuranceStage !== "verification_pending"
+        && run.assuranceStage !== "verified"
       ) {
         return false;
       }
@@ -93,6 +94,7 @@ export class OperationVerificationProjector {
   completed(
     target: OperationVerificationTarget,
     state: Extract<EvidenceState, "passed" | "failed">,
+    basisFingerprint?: string,
   ): boolean {
     try {
       const run = this.requireEligibleTarget(target, "verifying");
@@ -123,6 +125,7 @@ export class OperationVerificationProjector {
         timestamp,
         sourceEventSequence: event.value.sequence,
         summary: `${verificationLabel(target.type)} verification ${state}.`,
+        basisFingerprint,
       });
       const transitioned = this.runs.transitionAssurance(
         run.id,

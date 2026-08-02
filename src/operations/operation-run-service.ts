@@ -41,7 +41,7 @@ const ASSURANCE_TRANSITIONS: Readonly<
   result_available: new Set(["verification_pending", "verifying", "verified"]),
   verification_pending: new Set(["verifying", "verified"]),
   verifying: new Set(["verification_pending", "verified"]),
-  verified: new Set(),
+  verified: new Set(["verifying"]),
   not_applicable: new Set(),
 };
 

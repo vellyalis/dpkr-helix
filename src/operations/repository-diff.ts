@@ -156,6 +156,20 @@ export async function readRepositoryContext(
   }
 }
 
+export async function readCurrentRepositoryFingerprint(
+  workspaceRoot: string,
+): Promise<string | undefined> {
+  try {
+    const eligibility = await getGitEligibility(workspaceRoot);
+    if (!eligibility.ok || !eligibility.gitRoot) return undefined;
+    return (
+      await createWorkingTreeFingerprint(eligibility.gitRoot, workspaceRoot)
+    ).fingerprint;
+  } catch {
+    return undefined;
+  }
+}
+
 async function readAvailableRepositoryDiffSummary(
   workspaceRoot: string,
   refreshedAt: string,
