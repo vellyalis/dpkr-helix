@@ -77,9 +77,9 @@ The Runs screen makes direct MCP, DevSpace-managed process, and local-agent work
 
 Goals control dependency and acceptance scope. Each DevSpace session performs one small timeout-resistant Micro Work Unit and resumes from HANDOFF. Small execution units must not reduce the final product Goal.
 
-GOAL_01 through GOAL_07 are completed product baselines. GOAL_08 is an additive
-quality extension in progress; MWU-08.01 through MWU-08.05 are complete and
-MWU-08.06 parity convergence is next.
+GOAL_01 through GOAL_08 are completed product baselines. GOAL_08's six Micro
+Work Units, frozen-suite parity gate, and signed-in normal-Chat acceptance are
+complete; Web plus dpkr helix passes 8/8 versus retained local Codex 5/8.
 GOAL_09 completed the reviewed clean-history source publication without
 changing runtime owners or the installed path.
 

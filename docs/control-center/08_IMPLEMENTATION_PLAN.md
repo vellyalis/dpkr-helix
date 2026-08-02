@@ -20,7 +20,7 @@ Codex must select the first non-DONE goal whose dependencies are DONE.
 | GOAL_05 Codex Handoff | DONE | GOAL_03, GOAL_04 | Reusable local-agent service and explicit structured MCP delegation |
 | GOAL_06 Live Operations and Control Center UI | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05 | Canonical operation projection, live run evidence, coherent Projects/Runs/Agents/System UI |
 | GOAL_07 Integration and Hardening | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05, GOAL_06 | End-to-end UX, reliability, security, docs, visual/accessibility, compatibility proof |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | GOAL_07 | MWU-08.01/02/03/04/05 complete; MWU-08.06 parity convergence next |
+| GOAL_08 Codex-Parity Coding Quality | DONE | GOAL_07 | MWU-08.01 through MWU-08.06 complete; signed-in Web 8/8 versus retained local 5/8 with zero safety regression |
 | GOAL_09 Public Release Readiness | DONE | GOAL_07 | Clean-history source release published and publicly verified |
 
 GOAL_02 and GOAL_03 may be implemented in either order after GOAL_01. Do not work on both in the same worktree unless explicitly orchestrated with non-overlapping write ownership.
@@ -1170,7 +1170,23 @@ active. Positive waits reuse `LocalAgentService.waitForStatus`; bounded polling
 returns on completion, input, error, or stop without starting or calling a
 worker/provider. Plain and structured MCP fixtures, focused tests, typecheck,
 full and policy regression, production build/audit, public/diff gates, and
-independent A2 review through focused R2 pass. MWU-08.06 is next.
+independent A2 review through focused R2 pass. MWU-08.06 followed.
+
+MWU-08.06 closed on 2026-08-02. Fresh identical snapshots and the retained
+`gpt-5.5` medium local configuration produced local 5/8. A first Web rerun
+isolated boundary-crossing user Skill reads to server/read metadata that did
+not state the task boundary's precedence. One coherent metadata change now
+states that advertised Skills cannot expand a narrower granted read scope.
+After deployment, signed-in normal Chat plus dpkr helix passes P01-P08 by
+majority (8/8), including same-provider continuation and bounded long-run
+acceptance, with zero outside-read, synthetic-canary, or pre-existing-work
+regression. Seventeen Web plus 18 retained local records validate against the
+frozen schema and contain no canary value. M01/M02 pass and the already-frozen
+M03 unnecessary-tool defect remains unchanged. Focused/full/policy/typecheck/
+build/audit/public/diff gates, independent review/governance, installed hash
+equality, doctor, and local/public health pass. No model/profile default,
+authentication state, dependency, new lifecycle owner, or remote publication
+changed. GOAL_08 is DONE.
 
 ## GOAL_09 public-release preparation
 
@@ -1238,8 +1254,8 @@ Strict logical dependency for GOAL_04 includes GOAL_03 because policy metadata m
 - [x] structured Codex needs-input and same-thread continuation acceptance passes
 - [x] bounded agent wait acceptance passes
 - [x] plain MCP, policy, migration, secret, typecheck, full test, and build gates pass
-- [ ] signed-in normal-Chat acceptance passes
-- [ ] requirements evidence, decisions, Project State, HANDOFF, and user docs converge
+- [x] signed-in normal-Chat acceptance passes
+- [x] requirements evidence, decisions, Project State, HANDOFF, and user docs converge
 
 ## GOAL_09 completion checklist
 

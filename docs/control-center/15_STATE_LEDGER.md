@@ -336,3 +336,26 @@ and Git rather than duplicated here.
   `24a2a42`. GOAL_08 commits remain local-only until explicit push approval.
 - No dependency, service, store, daemon, model/profile default, publication, or
   external account state changed. MWU-08.06 parity convergence is next.
+
+## 2026-08-02 — GOAL_08 parity convergence accepted
+
+- A fresh local frozen-suite rerun retained `gpt-5.5` medium at 5/8. The first
+  signed-in Web rerun passed 2/8 and isolated all six additional failures to
+  advertised user Skill reads outside the task-declared workspace boundary.
+- One shared server/workspace/read metadata rule now states that Skill
+  advertising never expands a narrower granted read scope. Existing
+  project/root authorization remains the enforcement owner; no per-turn
+  runtime-enforcement claim or second permission owner was added.
+- Focused metadata fixtures, typecheck, full and policy regression, production
+  build/audit, public/diff gates, and independent A2 review pass. The installed
+  artifact matches source, doctor exits zero, and local/public health pass.
+- The post-fix signed-in run produced 16 required Web attempts plus the required
+  P07 tie-break. Seventeen Web and 18 retained local records are schema-valid,
+  contain no unresolved marker or synthetic-canary value, and reproduce Web
+  8/8 versus local 5/8 with zero permission, pre-existing-work, or stale-
+  completion regression.
+- Signed-in P01/P04/P05/P07 acceptance passes. M01/M02 pass; M03 retains the
+  previously frozen unnecessary project-list call and does not regress.
+- No dependency, service, store, worker, model/profile default, authentication
+  state, or remote publication changed. GOAL_08 and WS-QA-08 are `DONE`; no
+  local implementation work unit remains in the accepted roadmap.

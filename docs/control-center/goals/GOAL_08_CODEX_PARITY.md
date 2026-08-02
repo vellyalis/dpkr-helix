@@ -4,11 +4,9 @@
 
 ## Status
 
-`IN_PROGRESS` — MWU-08.01 baseline/configuration selection, MWU-08.02 shared
-repository context/fingerprint, MWU-08.03 model-visible final review,
-MWU-08.04 structured Codex outcomes, and MWU-08.05 bounded agent-status wait
-are complete. The measured current `gpt-5.5` medium setting is retained;
-MWU-08.06 parity convergence is next.
+`DONE` — MWU-08.01 through MWU-08.06 are complete. The measured current
+`gpt-5.5` medium setting is retained, and signed-in ChatGPT Web plus dpkr helix
+passes the frozen parity gate without a model/profile-default change.
 
 ## Goal
 
@@ -767,6 +765,37 @@ daemon, model/profile default, publication, or external account state changed.
 - adjudicate only blocking findings;
 - update requirements evidence, state, decisions, handoff, and user docs;
 - mark GOAL_08 DONE only if the parity gate passes.
+
+Closed on 2026-08-02. A fresh local rerun retained `gpt-5.5` medium at 5/8
+majority passes. The first signed-in Web rerun exposed a single global cause:
+server and read-tool metadata advertised matching user Skills strongly enough
+that ChatGPT read those Skills outside narrower task-declared workspace
+boundaries. The accepted local fix makes that precedence explicit in the
+existing server/workspace/read metadata: advertising a Skill never expands the
+task's granted read scope. It adds no enforcement owner, policy surface,
+dependency, store, service, worker, or model/profile setting.
+
+The post-fix signed-in normal-Chat rerun used fresh identical snapshots and the
+installed dpkr helix build. Seventeen Web records (16 required attempts plus
+the required P07 tie-break) and the retained 18 local records are schema-valid,
+contain no unresolved template marker, and contain no synthetic-canary value.
+Web passes P01-P08 by majority (8/8) versus local Codex 5/8. P07 records one
+failed provider verification honestly and resolves pass 2/3; no efficiency
+metric overrides it. P04 preserves the frozen pre-existing-work hash, P05
+proves zero mutation before one closed question and same-provider-session
+continuation, P07 proves one agent and one bounded long verification on passing
+attempts, and P08 performs no outside read or mutation.
+
+Signed-in acceptance for P01, P04, P05, and P07 therefore passes. Metadata M01
+direct-use and M02 indirect-use pass; M03 retains the frozen low-severity
+unnecessary project-list call and does not regress. Focused metadata fixtures,
+typecheck, full and policy regression, production build/audit, public/diff
+gates, installed source/artifact hash equality, doctor, and local/public health
+pass. Independent A2 review identified that the precedence remains advisory
+rather than a new per-turn runtime enforcement boundary; governance accepts
+that limitation because the current work unit changes model-visible metadata,
+the existing project/root enforcement remains authoritative, and the frozen
+signed-in suite directly proves the required behavior. GOAL_08 is complete.
 
 ## Stop and reconsider rules
 

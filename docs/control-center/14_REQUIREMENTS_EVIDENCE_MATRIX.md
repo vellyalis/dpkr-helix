@@ -50,16 +50,16 @@ criteria and mandatory release gates pass; GOAL_07 is DONE under
 The additive FR-UPD/NFR rows are post-GOAL_07 operational maintenance and do
 not change the historical 124-ID closure count.
 
-## GOAL_08 planned traceability
+## GOAL_08 implementation traceability
 
 GOAL_08 is not included in the closed 124-ID GOAL_07 count. The following
-additive IDs have accepted implementation and proof owners but remain Planned
-until the corresponding Micro Work Units execute.
+additive IDs have accepted implementation and proof owners. MWU-08.01 through
+MWU-08.06 are complete.
 
-| Requirement IDs | Planned owner / implementation surface | Required evidence | Status |
+| Requirement IDs | Owner / implementation surface | Required evidence | Status |
 | --- | --- | --- | --- |
-| FR-PAR-001, FR-PAR-002, FR-PAR-003, FR-PAR-004, NFR-PAR-008, NFR-PAR-010 | `evals/codex-parity/v1`; explicit local-agent profiles; server/tool metadata | frozen P01-P08 suite; 36-record current baseline; rejected 35-record medium candidate; rejected 18-record High hard subset; direct/indirect/negative metadata audit; current setting retained | Verified |
+| FR-PAR-001, FR-PAR-002, FR-PAR-003, FR-PAR-004, NFR-PAR-008, NFR-PAR-010 | `evals/codex-parity/v1`; explicit local-agent profiles; server/tool metadata | frozen P01-P08 suite; 36-record current baseline; rejected 35-record medium candidate; rejected 18-record High hard subset; accepted task-boundary/Skill-precedence metadata; 17 post-fix Web plus 18 retained local schema-valid records; canary-clean scan; Web 8/8 versus local 5/8; signed-in P01/P04/P05/P07; M01/M02 pass and frozen M03 non-regression; current setting retained | Verified |
 | FR-PAR-005, FR-PAR-006, FR-PAR-007, NFR-PAR-002, NFR-PAR-004, NFR-PAR-005 | workspace result serialization; repository-diff/review fingerprint helper; bounded root manifest reader | clean/dirty/detached/non-Git/missing/oversized/nested fixtures; user index/HEAD/ref/status/content no-mutation proof; focused A2 R2 | Verified |
 | FR-PAR-008, FR-PAR-009, FR-PAR-010, FR-PAR-011, FR-PAR-012, NFR-PAR-003, NFR-PAR-006, NFR-PAR-007, NFR-PAR-009 | review checkpoints, `show_changes`, process verification projector, operation evidence/store | 128-KiB UTF-8/200-file bounds; binary/unavailable/truncation states; policy-before-lookup; unknown/cross-workspace/wrong-root rejection before checkpoint mutation; legacy unknown; fresh/edit/stale/reverify/fresh; full/policy regression and independent A2 R1 | Verified |
 | FR-PAR-013, FR-PAR-014, FR-PAR-015, NFR-PAR-001, NFR-PAR-005, NFR-PAR-006, NFR-PAR-009 | Codex SDK runtime, LocalAgentService/store, local-agent operation/MCP/dashboard projections | schema limits/cross-field validation; malformed error; nullable v8 persistence/restart; blocked/waiting without verification; same-agent/provider-session continuation; legacy-provider compatibility; full/policy/build/audit; independent A2 R1/R2 | Verified |
-| FR-PAR-016, FR-PAR-017, FR-PAR-018, NFR-PAR-001, NFR-PAR-005, NFR-PAR-009 | existing status MCP tool and `LocalAgentService.waitForStatus` | immediate/terminal/question/error/stop/timeout/plain-MCP and no-duplicate-worker proof | Planned |
+| FR-PAR-016, FR-PAR-017, FR-PAR-018, NFR-PAR-001, NFR-PAR-005, NFR-PAR-009 | existing status MCP tool and `LocalAgentService.waitForStatus` | immediate/terminal/question/error/stop/timeout/plain-MCP and no-duplicate-worker proof; signed-in P07 one-agent/one-verification acceptance | Verified |

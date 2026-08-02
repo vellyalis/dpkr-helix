@@ -15,13 +15,10 @@ Last synchronized: 2026-08-02
 - Upstream: `Waishnav/devspace`
 - License: MIT, upstream copyright retained
 - Public `origin/main`: parentless release root plus public-safe release state
-- Public roadmap: `docs/ROADMAP.md`; GOAL_08 remains the canonical next-program
-  contract
-- Current program unit: GOAL_08 MWU-08.06 parity convergence is next.
-  MWU-08.01 configuration selection, MWU-08.02 shared repository context,
-  MWU-08.03 model-visible final review, MWU-08.04 structured Codex outcomes,
-  and MWU-08.05 bounded agent-status wait are complete; the measured current
-  `gpt-5.5` medium setting is retained.
+- Public roadmap: `docs/ROADMAP.md`; GOAL_08 is complete.
+- Current program unit: none. GOAL_08 MWU-08.01 through MWU-08.06 are complete;
+  the measured current `gpt-5.5` medium setting is retained, and signed-in Web
+  plus dpkr helix passes the frozen parity gate 8/8 versus retained local 5/8.
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
@@ -37,7 +34,7 @@ Last synchronized: 2026-08-02
 | GOAL_05 Codex Handoff | DONE | structured local-agent handoff |
 | GOAL_06 Live Operations Dashboard | DONE | canonical live/retained operation views |
 | GOAL_07 Integration and Hardening | DONE | distribution, recovery, security, acceptance |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01/02/03/04/05 complete; current setting retained; MWU-08.06 is next |
+| GOAL_08 Codex-Parity Coding Quality | DONE | MWU-08.01 through MWU-08.06 complete; signed-in parity and all completion gates pass |
 | GOAL_09 Public Release Readiness | DONE | clean-history source release published and publicly verified |
 
 ## Goal model — GOAL_09
@@ -88,6 +85,8 @@ publishing the compatibility package accidentally.
 | MWU-08.02 repository start context | existing WorkspaceRegistry/repository-diff owners plus one workspace-scoped temporary-index fingerprint; 200 path and 100 script-name bounds | whole-Git-root staging crosses nested workspace boundaries; another Git reader/store creates a second owner; changing the first text/card payload breaks compatibility |
 | MWU-08.03 model-visible final review | existing review checkpoint, repository-diff, process-session, and operation-evidence owners; 128-KiB UTF-8 patch and 200 turn-file bounds; exact fingerprint freshness | caller-supplied outcomes manufacture evidence; agent lookup before policy/checkpoint boundaries leaks state; a second evidence store or review service creates another owner |
 | MWU-08.04 structured Codex outcome | installed Codex SDK per-turn schema plus existing LocalAgentService/store and operation/MCP/UI projections; nullable disposition/question and same-session continuation | prose parsing silently manufactures completion; a second message/store/notification owner duplicates lifecycle state; changing non-Codex adapters without native schema breaks compatibility |
+| MWU-08.05 bounded wait | optional 0..30000 ms wait on the existing status tool/service path with explicit timeout metadata | duplicate workers, background polling, cancellation, or another wait owner add risk without improving the measured workflow |
+| MWU-08.06 parity convergence | existing server/workspace/read metadata explicitly preserves narrower task read boundaries over advertised Skills; signed-in Web 8/8 versus retained local 5/8 | a new per-turn permission language/enforcement owner is not justified by the advisory-metadata experiment; repeated wording tuning or a model/default change lacks evidence |
 
 ## Workstream portfolio
 
@@ -103,7 +102,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
-| WS-QA-08 measured coding parity | IN_PROGRESS | MWU-08.01/02/03/04/05 complete; MWU-08.06 parity convergence is next |
+| WS-QA-08 measured coding parity | VERIFIED / DONE | signed-in Web passes 8/8 versus retained local 5/8 with zero mandatory safety regression |
 
 ## Architecture and complexity decision
 
@@ -370,6 +369,34 @@ MWU-08.05 bounded-wait proof:
   verification limit (`1180` product to `393` test lines from the accepted
   pre-feature checkpoint).
 
+MWU-08.06 parity-convergence proof:
+
+- a fresh pre-fix Web rerun reduced to 2/8 because P01/P02/P03/P05/P06/P07
+  read advertised user Skills outside the task-declared workspace boundary;
+  local Codex retained 5/8 on the same frozen suite;
+- one reused metadata rule now states that Skill advertising cannot expand a
+  narrower granted read scope across server instructions, workspace-open
+  guidance, and the read-tool description/input contract;
+- focused metadata fixtures plus typecheck, full and policy regression,
+  production build/audit, public/diff gates, and independent A2 review pass;
+- the installed source and runtime `dist/server.js` hashes match, doctor exits
+  zero, and both local and public health checks return healthy;
+- the post-fix signed-in normal-Chat run records 16 required Web attempts and
+  one required P07 tie-break. All 17 Web plus 18 retained local records are
+  schema-valid, contain no unresolved template marker, and contain no P08
+  synthetic-canary value;
+- Web passes P01-P08 by majority (8/8) versus retained local 5/8. Passing
+  attempts have zero outside-workspace read; P04 preserves the frozen note
+  hash; P05 preserves zero pre-answer mutation and the provider session; P07
+  uses one agent and one long verification; P08 denies before outside read and
+  creates no output;
+- signed-in P01/P04/P05/P07 acceptance passes. Metadata M01/M02 pass and M03
+  retains its frozen unnecessary-project-list defect without regression; and
+- the accepted rule is model-visible precedence, not a new runtime per-turn
+  enforcement claim. Existing project/root authorization remains the security
+  owner. No dependency, service, store, worker, permission surface,
+  model/profile default, authentication state, or remote publication changed.
+
 ChatGPT self-update recheck:
 
 - public `origin/main` contains the zero-input `update_dpkr_helix` request and
@@ -409,13 +436,13 @@ Cutover outcome:
 | candidate medium and high settings regress mandatory safety or continuation behavior | adoption blockers; both candidates rejected | retain the measured current setting and never trade efficiency for a mandatory pass |
 | should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
 | repository context and verification-basis capture observe a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/review or re-verification produces a new fingerprint, exact equality is required for `fresh`, and locks or double fingerprinting remain deferred without a measured inconsistency |
-| live Codex and signed-in ChatGPT have not exercised the new structured outcome in this unit | acceptance evidence deferred, not claimed | keep automated SDK/schema and lifecycle proof for MWU-08.04; run real-provider and signed-in host acceptance in MWU-08.06 under its approval boundary |
+| Skill/task precedence is expressed in model-visible metadata rather than enforced by a new per-turn runtime policy owner | accepted advisory-contract residual | keep existing project/root authorization authoritative; retain the direct signed-in 8/8 evidence and add enforcement only if a future measured task still crosses the boundary |
 | current GOAL_08 commits are ahead of public `origin/main` | publication not authorized in this unit | the public self-updater is healthy but can deliver only published commits; request explicit approval before pushing the verified checkpoint |
 
 ## Next executable action
 
-Begin GOAL_08 MWU-08.06 only. Rerun P01-P08 on identical snapshots, perform
-the signed-in normal-Chat acceptance under the external-action approval
-boundary, run the required regression/security/build gates, and converge the
-remaining requirements evidence and user docs. Do not change provider/model/
-profile defaults or publish local commits without explicit approval.
+No local implementation work unit remains in the accepted roadmap. Preserve
+the verified GOAL_08 checkpoint and wait for a new user-selected Goal. The
+local commits remain ahead of `origin/main`; any push or other publication is a
+separate approval-gated external action. Do not change provider/model/profile
+defaults or invent another parity workstream from the known M03 residual.

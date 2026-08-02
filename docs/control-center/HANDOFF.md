@@ -4,14 +4,13 @@ Last synchronized: 2026-08-02
 
 ## Current position
 
-- Completed work units: GOAL_08 MWU-08.01 configuration selection, MWU-08.02
-  shared repository context/tree fingerprint, MWU-08.03 model-visible
-  review/freshness, MWU-08.04 structured Codex outcomes, and MWU-08.05 bounded
-  agent-status wait. The measured current `gpt-5.5` medium setting is retained;
-  MWU-08.06 parity convergence is next.
+- Completed work units: GOAL_08 MWU-08.01 through MWU-08.06. The measured
+  current `gpt-5.5` medium setting is retained; signed-in Web plus dpkr helix
+  passes the frozen parity gate 8/8 versus retained local Codex 5/8.
 - GOAL_01 through GOAL_07: DONE.
-- GOAL_08 Codex-Parity Coding Quality: `IN_PROGRESS`; P01-P08 manifests,
-  deterministic snapshots, metadata prompts, and the result contract are frozen.
+- GOAL_08 Codex-Parity Coding Quality: `DONE`; P01-P08 manifests,
+  deterministic snapshots, metadata prompts, result contract, and final
+  signed-in acceptance evidence are frozen.
 - GOAL_09: `DONE`; the clean-history source repository is PUBLIC and public-clone
   acceptance passed.
 - Installed working directory: unchanged.
@@ -116,6 +115,16 @@ Last synchronized: 2026-08-02
   and structured MCP, and completion/input/error/stop returns without worker or
   provider duplication. MWU-08.05 A2 R1's S3 transition-proof candidate was
   fixed; focused R2 returned zero findings.
+- MWU-08.06 adds one reused metadata precedence rule: advertised Skills cannot
+  expand a narrower task-declared read boundary. The accepted contract is
+  advisory; existing project/root authorization remains the runtime owner.
+- The post-fix signed-in run produced 17 Web attempt records and reuses 18 local
+  records. All 35 are schema-valid and canary-clean; Web passes 8/8 versus local
+  5/8 with signed-in P01/P04/P05/P07 acceptance. M01/M02 pass and frozen M03
+  remains a non-regressing unnecessary project-list call.
+- The installed source/artifact hashes match; doctor, local/public health,
+  focused/full/policy/typecheck/build/audit/public/diff gates and independent
+  review/governance pass. No agent or long-running process remains active.
 - The public ChatGPT self-update tools remain present and match the current
   source. Isolated tests and installed sanitized status confirm the public
   commit is `UP_TO_DATE`; current GOAL_08 commits remain local-only until an
@@ -129,11 +138,12 @@ Last synchronized: 2026-08-02
 - GOAL_08 defines the measured same-snapshot parity suite, model/profile
   selection, bounded start context, review freshness, structured user input,
   and bounded wait behavior.
-- GOAL_08's completed units are MWU-08.01, MWU-08.02, MWU-08.03, MWU-08.04, and MWU-08.05. P01-P08
-  and the result template are frozen; the current baseline, rejected medium
-  candidate, rejected High hard subset, metadata audit, bounded start context,
-  model-visible review freshness, and structured outcome behavior are recorded.
-  The measured current setting is retained. MWU-08.06 is the active next unit.
+- GOAL_08's completed units are MWU-08.01 through MWU-08.06. P01-P08 and the
+  result template are frozen; the current baseline, rejected medium candidate,
+  rejected High hard subset, final boundary-metadata candidate, metadata audit,
+  bounded start context, model-visible review freshness, structured outcomes,
+  bounded wait, and signed-in parity acceptance are recorded. The measured
+  current setting is retained and GOAL_08 is DONE.
 
 ## GOAL_09 completed release
 
@@ -202,10 +212,9 @@ Last synchronized: 2026-08-02
    current remote.
 5. Confirm GOAL_09 remains `DONE`; do not repeat its one-time clean-root cutover.
 6. Confirm the operational-comfort checkpoint and current local/public health.
-7. Continue GOAL_08 at MWU-08.06; do not recreate or rerun MWU-08.01 evidence,
-   MWU-08.02 repository-context work, MWU-08.03 review/freshness work,
-   MWU-08.04 structured-outcome work, or MWU-08.05 bounded-wait work.
-   WS-UPD-01 is complete on `main` and in the installed runtime.
+7. Confirm GOAL_08 and GOAL_09 remain DONE; do not recreate or rerun their
+   frozen evidence without a new user-selected Goal. WS-UPD-01 is complete on
+   `main` and in the installed runtime.
 
 Do not recreate GOAL_01 through GOAL_08 documents. Do not start public cutover
 commands merely because the preparation work is complete.
@@ -292,8 +301,8 @@ commands merely because the preparation work is complete.
 
 ## Exact next action
 
-Begin GOAL_08 MWU-08.06 only. Rerun P01-P08 on identical snapshots, perform
-signed-in normal-Chat acceptance under the external-action approval boundary,
-run the remaining regression/security/build gates, and converge requirements
-evidence and user docs. Do not repeat MWU-08.01/02/03/04/05, change model/
-profile defaults, or publish local commits without explicit approval.
+No local implementation action remains in the accepted roadmap. Preserve the
+verified GOAL_08 checkpoint and wait for a new user-selected Goal. Local commits
+remain ahead of `origin/main`; do not push or otherwise publish them, change
+model/profile defaults, or expand the M03 residual into a new workstream without
+explicit user direction.

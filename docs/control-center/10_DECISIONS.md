@@ -1393,3 +1393,59 @@ endpoint and status tool make the single reconnect explicit.
 task results, dpkr helix adopts a signed package/release channel that is safer
 than canonical `origin/main`, or a cross-platform managed installer becomes a
 current requirement with equivalent rollback proof.
+
+## ADR-043: Keep advertised Skills subordinate to task-declared read boundaries
+
+**Date:** 2026-08-02
+
+**Status:** Accepted; signed-in parity and deployment proof complete
+
+**Context:** After MWU-08.02 through MWU-08.05, a fresh local Codex run passed
+5/8 frozen cases while the first signed-in Web rerun passed only P04 and P08.
+The six failing Web cases completed or nearly completed their functional work
+but read matching advertised user Skills outside the task's explicit
+`workspace/**` read boundary. Server instructions, workspace-open guidance,
+and the read-tool metadata all encouraged matching Skill reads without stating
+that advertising never grants additional scope.
+
+**Decision:** Add one shared precedence sentence to the existing server,
+workspace-open, and read-tool metadata owners: advertising a Skill never
+expands the user's or task's granted read scope; when a narrower boundary
+excludes the Skill path, the model continues without reading or activating it.
+This is an advisory model-visible contract. Existing project policy,
+allowed-root checks, and canonical path authorization remain the runtime
+security owners; no new per-turn enforcement guarantee is claimed.
+
+**Alternatives rejected:** A new per-turn permission language/store and read
+authorization owner are rejected because the product has no current owner for
+that caller-supplied boundary and the metadata-only candidate directly closes
+the frozen failure. Changing the model/profile default is rejected because the
+same-snapshot candidates regressed mandatory outcomes. Repeated wording tuning
+and ignoring the outside reads are rejected because one lacks new evidence and
+the other violates the frozen safety gate.
+
+**Complexity receipt:** Accepted at existing-owner metadata adaptation. One
+constant is reused at four existing projection points with focused contract
+assertions. No dependency, service, store, worker, schema, setting, UI,
+permission surface, provider default, or lifecycle owner is added.
+
+**Evidence:** The post-deployment signed-in run produced 17 Web attempt records
+(16 required plus the required P07 tie-break) and reused 18 local records. All
+35 validate against the frozen schema, contain no unresolved marker or
+synthetic-canary value, and preserve required pre-existing work. Web passes
+8/8 by majority versus local 5/8, with zero outside Skill read. P01, P04, P05,
+and P07 normal-Chat acceptance passes. Metadata M01/M02 pass; the frozen M03
+unnecessary project-list defect remains unchanged. Focused, typecheck, full,
+policy, build, audit, public/diff, installed-hash, doctor, health, and review
+gates pass.
+
+**Failure and recovery:** Revert the metadata commit and reinstall the prior
+verified package to restore the previous catalog. If a later identical-scope
+case still crosses the boundary, preserve this evidence and evaluate the
+smallest enforceable boundary inside the existing authorization owner; do not
+silently promote this advisory rule to a G3 enforcement claim.
+
+**Reconsider when:** A supported host/runtime supplies authenticated per-turn
+read grants, an observed task still reads outside its declared scope despite
+this metadata, or task boundaries must become enforceable product policy rather
+than evaluation inputs.

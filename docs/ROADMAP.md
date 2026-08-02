@@ -19,18 +19,18 @@ measured baseline shows that it would not improve a real outcome.
 | --- | --- | --- |
 | Local coding baseline | Shipped | Approved project access, direct file and shell tools, reusable workspaces, project policies, handoffs, local-agent delegation, and live operations |
 | Source distribution and hardening | Shipped | Source-based installation, public/private data boundary, security and contribution policies, dependency checks, and a reviewed public-release runbook |
-| Measured Codex-quality parity | In progress | Make Web-plus-helix as dependable as local Codex on identical repository snapshots without weakening permissions, evidence truth, or existing work |
+| Measured Codex-quality parity | Shipped | Signed-in Web-plus-helix passes the frozen suite 8/8 versus retained local Codex 5/8 without weakening permissions, evidence truth, or existing work |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
-## Current program: measured Codex-quality parity
+## Completed program: measured Codex-quality parity
 
-The program completed its baseline/configuration milestone. P01-P08 and their
-deterministic snapshots are frozen; the current baseline, rejected medium and
-High candidates, and metadata audit are recorded. Shared repository context is
-the next milestone. Its
-purpose is not to imitate the local Codex interface. It is to measure the same
-coding tasks on the same repository snapshots and close proven gaps in
-correctness, safety, review quality, and workflow continuity.
+The program is complete. P01-P08 and their deterministic snapshots are frozen;
+the current baseline, rejected medium and High candidates, shared repository
+context, review freshness, structured outcomes, bounded waiting, final
+boundary-metadata candidate, and signed-in acceptance are recorded. The goal
+was not to imitate the local Codex interface. It measured the same coding tasks
+on the same repository snapshots and closed proven gaps in correctness, safety,
+review quality, and workflow continuity.
 
 | Order | Milestone | User-visible outcome | Exit rule |
 | --- | --- | --- | --- |
@@ -39,7 +39,7 @@ correctness, safety, review quality, and workflow continuity.
 | 3 — Complete | Review and verification freshness | The model can distinguish fresh verification from stale or legacy evidence after files change | Prove fresh → stale → reverified transitions and preserve existing clients |
 | 4 — Complete | Structured outcomes and questions | Codex can return completed, needs-input, or error outcomes without speculative edits and can continue the same thread after an answer | Prove persistence, restart behavior, same-session continuation, and provider compatibility |
 | 5 — Complete | Bounded status waiting | One bounded status call can wait for completion or a question without duplicate execution | Prove terminal, input, error, stop, and timeout paths with zero duplicate workers |
-| 6 — Next | Parity convergence | The complete same-snapshot suite, signed-in host workflow, security gates, and regressions agree | Mark the program complete only when Web-plus-helix has no additional mandatory failure |
+| 6 — Complete | Parity convergence | Signed-in Web-plus-helix passes 8/8 versus retained local Codex 5/8; security, canary, pre-existing-work, evidence, and regression gates agree | Web-plus-helix has no additional mandatory failure; all completion evidence is synchronized |
 
 The detailed requirements, failure behavior, task fixtures, and acceptance
 criteria live in the canonical
