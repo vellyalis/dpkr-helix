@@ -2431,6 +2431,11 @@ export function createMcpServer(
     });
   }
 
+  server.server.oninitialized = () => {
+    // Clients install list-change handlers after sending `initialized`.
+    setTimeout(() => server.sendToolListChanged(), 0);
+  };
+
   return server;
 }
 
