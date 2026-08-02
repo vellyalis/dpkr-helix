@@ -4,9 +4,9 @@
 
 ## Status
 
-`IN_PROGRESS` — MWU-08.01 fixture freeze, current baseline, and the first
-same-effort candidate comparison are complete. The current setting is retained;
-the conditional hard-subset and metadata-audit decisions remain.
+`IN_PROGRESS` — MWU-08.01 baseline and configuration selection is complete.
+The measured current `gpt-5.5` medium setting is retained; MWU-08.02 shared
+repository context and fingerprint is the next work unit.
 
 ## Goal
 
@@ -135,8 +135,8 @@ directory, or creating a new development root.
 
 | Hypothesis | Candidate type | Expected observation | Decision |
 | --- | --- | --- | --- |
-| H1: profile model/effort and prompt/tool metadata limit task quality | Context setting | same snapshots pass more often without product code | Test first |
-| H2: weak start/end contracts cause missed context and untrustworthy completion | Mechanism | fewer unrelated changes and stale-verification claims | Current best product hypothesis |
+| H1: profile model/effort and prompt/tool metadata limit task quality | Context setting | same snapshots pass more often without product code | Compared; current setting retained, M03 defect recorded |
+| H2: weak start/end contracts cause missed context and untrustworthy completion | Mechanism | fewer unrelated changes and stale-verification claims | Current bottleneck; MWU-08.02 next |
 | H3: polling and unstructured blocking cause avoidable turns and guesses | Mechanism/UX | fewer status calls and fewer assumption-driven edits | Implement after the review contract |
 | H4: cancellation is the main quality bottleneck | Lifecycle mechanism | task success changes materially when cancel exists | Deferred; current evidence supports operational hygiene only |
 | H5: more agents, services, indexes, or reverse notifications improve quality | Architecture | frequent tasks pass more often despite added owners | Rejected without new evidence |
@@ -632,7 +632,25 @@ The measured current `gpt-5.5` medium configuration remains Current Best. No
 product feature, profile/model default, authentication setting, or publication
 changed.
 
-No product feature begins before this work unit closes.
+The conditional `gpt-5.6-sol` high comparison then ran only the frozen hard
+subset P01/P02/P05/P07. Eight required local attempts, eight required Web
+attempts, and the two required Web tie-breaks produced 18 schema-valid terminal
+records. Local Codex passes 3/4 by majority: P01, P02, and P05 pass, while both
+P07 attempts cross the workspace-read boundary. Web plus helix passes 1/4:
+P01 and P07 resolve fail 2/3, P02 fails twice, and P05 passes twice. P05 and
+P07 Web execution still used managed `gpt-5.5` medium agents beneath the
+visible `GPT-5.6 Sol` high controller, so those records remain a mixed
+configuration. High is rejected because it regresses mandatory Web safety and
+does not produce a material attributable gain over the Current Best.
+
+The frozen metadata audit passes M01 direct-use and M02 indirect-use, but M03
+should-not-use fails because the controller lists registered projects before
+restating a supplied sentence. This unnecessary tool-selection defect is
+recorded without changing server instructions, tool metadata, the managed
+profile, or model defaults. MWU-08.01 therefore closes with the current setting
+retained and the observed defects preserved for later parity convergence.
+
+No product feature began before this work unit closed.
 
 ### MWU-08.02 — Shared repository context and fingerprint
 

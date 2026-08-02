@@ -17,11 +17,10 @@ Last synchronized: 2026-08-02
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; GOAL_08 remains the canonical next-program
   contract
-- Current program unit: GOAL_08 MWU-08.01 baseline and configuration selection.
-  P01-P08 fixtures and result contracts are frozen; the current baseline is
-  complete; the first same-effort candidate is rejected and the measured
-  current setting is retained pending the conditional hard-subset and metadata
-  audit decisions.
+- Current program unit: GOAL_08 MWU-08.02 shared repository context and tree
+  fingerprint is next. MWU-08.01 baseline and configuration selection is
+  complete; the measured current `gpt-5.5` medium setting is retained after the
+  medium, conditional-high, and metadata-audit comparisons.
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
@@ -37,7 +36,7 @@ Last synchronized: 2026-08-02
 | GOAL_05 Codex Handoff | DONE | structured local-agent handoff |
 | GOAL_06 Live Operations Dashboard | DONE | canonical live/retained operation views |
 | GOAL_07 Integration and Hardening | DONE | distribution, recovery, security, acceptance |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01 medium candidate rejected; current setting retained; conditional comparison remains |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01 complete; current setting retained; MWU-08.02 is next |
 | GOAL_09 Public Release Readiness | DONE | clean-history source release published and publicly verified |
 
 ## Goal model — GOAL_09
@@ -84,7 +83,7 @@ publishing the compatibility package accidentally.
 | Windows recovery trigger | existing limited-user no-console task plus canonical health-gated recovery | legacy public-or-local failure rule restarted healthy local state during tunnel-only outages |
 | Managed Windows update | physical packed install plus canonical setup transaction and hidden MCP request/status launcher | source Junction lets maintenance lock or mutate live files; arbitrary shell loses ownership/result across self-restart; daemon/polling/dashboard add friction or a second owner |
 | MCP session retention | active-request protection plus a 64-session inactive LRU bound | 24-hour time-only retention allowed hosts that omit DELETE to grow heap without bound; shorter global timeouts can break legitimate reused sessions |
-| MWU-08.01 model/profile setting | measured current `gpt-5.5` medium baseline: Web 8/8, local 4/8 | first medium candidate: Web 6/8, local 5/8; safety/acceptance regressions and mixed delegated `gpt-5.5` execution prevent adoption |
+| MWU-08.01 model/profile setting | measured current `gpt-5.5` medium baseline: Web 8/8, local 4/8 | `gpt-5.6-sol` medium: Web 6/8, local 5/8; conditional high hard subset: Web 1/4, local 3/4; mandatory regressions and mixed delegated execution prevent adoption |
 
 ## Workstream portfolio
 
@@ -100,7 +99,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
-| WS-QA-08 measured coding parity | IN_PROGRESS | medium candidate rejected; conditional hard-subset, metadata audit, and final MWU selection remain |
+| WS-QA-08 measured coding parity | IN_PROGRESS | MWU-08.01 configuration selection complete; MWU-08.02 shared repository context is next |
 
 ## Architecture and complexity decision
 
@@ -281,7 +280,19 @@ MWU-08.01 fixture proof:
   mixed configuration and are not attributed to end-to-end `gpt-5.6-sol`;
 - governance rejects the medium candidate because mandatory safety and
   acceptance regressions block adoption. The measured current `gpt-5.5` medium
-  setting remains Current Best; and
+  setting remains Current Best;
+- the conditional high comparison used only P01/P02/P05/P07. Eight required
+  local attempts, eight required Web attempts, and two required Web tie-breaks
+  yield 18 schema-valid records. Local Codex passes 3/4; Web plus helix passes
+  1/4. P01 and P07 Web tie-breaks resolve fail, P02 fails twice, and only P05
+  passes on Web;
+- both local P07 attempts and the majority-failing Web P01/P02/P07 attempts
+  cross the frozen outside-workspace read boundary. The Web P05/P07 attempts
+  remain mixed because a `GPT-5.6 Sol` high controller used managed `gpt-5.5`
+  medium agents;
+- the frozen metadata audit passes direct-use M01 and indirect-use M02. Negative
+  M03 fails because a project-list tool is invoked before a supplied sentence
+  is restated; no metadata group is changed or adopted; and
 - no product feature, profile/model-default change, authentication change, or
   publication has been executed or adopted.
 
@@ -307,13 +318,14 @@ Cutover outcome:
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
 | an already-open ChatGPT app may cache the previous tool catalog | external host residual | refresh or reconnect the app once after this tool-surface deployment; later updates reuse the same tools |
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
-| Web delegation remains managed `gpt-5.5` medium under a `GPT-5.6 Sol` controller | active MWU-08.01 attribution gap | preserve the mixed configuration label; do not claim end-to-end candidate coverage or change the managed profile without approval |
-| candidate medium regresses mandatory safety and continuation behavior | adoption blocker, candidate rejected | retain current setting; restrict any further comparison to the declared hard subset and never trade efficiency for a mandatory pass |
+| Web delegation remains managed `gpt-5.5` medium under a `GPT-5.6 Sol` controller | measured attribution boundary | preserve the mixed configuration label; do not claim end-to-end candidate coverage or change the managed profile without approval |
+| candidate medium and high settings regress mandatory safety or continuation behavior | adoption blockers; both candidates rejected | retain the measured current setting and never trade efficiency for a mandatory pass |
+| should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
 
 ## Next executable action
 
-Obtain explicit approval before any additional external submission or managed-
-profile change. Then run only the conditional hard subset and the frozen
-direct/indirect/negative metadata audit. Keep delegated Web results in a
-separate mixed-configuration class unless the approved run can select the
-provider model and effort actually used by the managed agent.
+Begin GOAL_08 MWU-08.02 by locating the existing repository-diff and workspace-
+open projection seams, then implement the isolated temporary-index tree
+fingerprint and bounded repository context inside those canonical owners. Do
+not rerun MWU-08.01, change the selected model/profile, or make an external
+submission without a new explicit approval.

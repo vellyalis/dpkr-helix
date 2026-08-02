@@ -24,18 +24,18 @@ measured baseline shows that it would not improve a real outcome.
 
 ## Current program: measured Codex-quality parity
 
-The program is in progress at its baseline/configuration milestone. P01-P08 and
-their deterministic snapshots are frozen, and the current local-Codex versus
-Web-plus-helix baseline is recorded. Candidate comparison and configuration
-selection remain before any product feature or model-default change. Its
+The program completed its baseline/configuration milestone. P01-P08 and their
+deterministic snapshots are frozen; the current baseline, rejected medium and
+High candidates, and metadata audit are recorded. Shared repository context is
+the next milestone. Its
 purpose is not to imitate the local Codex interface. It is to measure the same
 coding tasks on the same repository snapshots and close proven gaps in
 correctness, safety, review quality, and workflow continuity.
 
 | Order | Milestone | User-visible outcome | Exit rule |
 | --- | --- | --- | --- |
-| 1 — In progress | Baseline and configuration selection | A documented comparison of local Codex and Web-plus-helix, with an evidence-based model/profile choice | Freeze the P01-P08 task suite and record both baselines before changing product behavior |
-| 2 — Planned | Shared repository context | Opened workspaces provide bounded, accurate repository context and a tree fingerprint | Prove clean, dirty, detached, non-Git, missing, and oversized cases without mutating index, checkout, or refs |
+| 1 — Complete | Baseline and configuration selection | Current `gpt-5.5` medium retained after same-snapshot medium, conditional-High, and metadata comparisons | Frozen suite and evidence-based selection recorded before product behavior changes |
+| 2 — Next | Shared repository context | Opened workspaces provide bounded, accurate repository context and a tree fingerprint | Prove clean, dirty, detached, non-Git, missing, and oversized cases without mutating index, checkout, or refs |
 | 3 — Planned | Review and verification freshness | The model can distinguish fresh verification from stale or legacy evidence after files change | Prove fresh → stale → reverified transitions and preserve existing clients |
 | 4 — Planned | Structured outcomes and questions | Codex can return completed, needs-input, or error outcomes without speculative edits and can continue the same thread after an answer | Prove persistence, restart behavior, same-session continuation, and provider compatibility |
 | 5 — Planned | Bounded status waiting | One bounded status call can wait for completion or a question without duplicate execution | Prove terminal, input, error, stop, and timeout paths with zero duplicate workers |

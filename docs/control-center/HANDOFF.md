@@ -4,10 +4,10 @@ Last synchronized: 2026-08-02
 
 ## Current position
 
-- Current work unit: GOAL_08 MWU-08.01 baseline and configuration selection;
-  the fixture freeze, current baseline, and first medium candidate comparison
-  are complete. The candidate is rejected and the measured current setting is
-  retained; the conditional hard-subset and metadata-audit decisions remain.
+- Completed work unit: GOAL_08 MWU-08.01 baseline and configuration selection.
+  The measured current `gpt-5.5` medium setting is retained after the medium,
+  conditional-high, and metadata-audit comparisons. MWU-08.02 shared repository
+  context and tree fingerprint is next.
 - GOAL_01 through GOAL_07: DONE.
 - GOAL_08 Codex-Parity Coding Quality: `IN_PROGRESS`; P01-P08 manifests,
   deterministic snapshots, metadata prompts, and the result contract are frozen.
@@ -81,6 +81,16 @@ Last synchronized: 2026-08-02
 - Five delegated Web attempts actually used managed `gpt-5.5` medium beneath
   the visible `GPT-5.6 Sol` medium controller. The evidence labels them as a
   mixed configuration. No profile/default/authentication setting changed.
+- The conditional `gpt-5.6-sol` high hard-subset comparison is complete: 18
+  used records validate; local Codex passes P01/P02/P05 and fails P07 for 3/4;
+  Web plus helix passes only P05 for 1/4 after required P01/P07 tie-breaks.
+- High is rejected because mandatory outside-workspace reads regress Web
+  P01/P02/P07 and local P07. Web P05/P07 remain mixed managed `gpt-5.5` medium
+  execution under the visible High controller.
+- Metadata M01 direct-use and M02 indirect-use pass. M03 should-not-use fails
+  because registered projects are listed before a supplied sentence is
+  restated. No metadata, product, profile/default, or authentication setting
+  changed.
 
 ## Completed before this work unit
 
@@ -90,11 +100,10 @@ Last synchronized: 2026-08-02
 - GOAL_08 defines the measured same-snapshot parity suite, model/profile
   selection, bounded start context, review freshness, structured user input,
   and bounded wait behavior.
-- GOAL_08's active unit is MWU-08.01. P01-P08 and the result template are
-  frozen; the current local-Codex versus Web-plus-helix baseline is recorded.
-  The first medium candidate is rejected and the measured current setting is
-  retained. Conditional hard-subset and metadata-audit evidence remain before
-  any product feature or model-default change.
+- GOAL_08's completed unit is MWU-08.01. P01-P08 and the result template are
+  frozen; the current baseline, rejected medium candidate, rejected High hard
+  subset, and metadata audit are recorded. The measured current setting is
+  retained. MWU-08.02 is the active next unit.
 
 ## GOAL_09 completed release
 
@@ -163,10 +172,9 @@ Last synchronized: 2026-08-02
    current remote.
 5. Confirm GOAL_09 remains `DONE`; do not repeat its one-time clean-root cutover.
 6. Confirm the operational-comfort checkpoint and current local/public health.
-7. Continue GOAL_08 at MWU-08.01 from the generated/frozen suite; do not
-   recreate its manifests, rerun the completed current baseline, or rerun the
-   rejected medium candidate. WS-UPD-01 is complete on `main` and in the
-   installed runtime.
+7. Continue GOAL_08 at MWU-08.02; do not recreate or rerun MWU-08.01 manifests,
+   baseline, rejected candidates, tie-breaks, or metadata audit. WS-UPD-01 is
+   complete on `main` and in the installed runtime.
 
 Do not recreate GOAL_01 through GOAL_08 documents. Do not start public cutover
 commands merely because the preparation work is complete.
@@ -216,11 +224,15 @@ commands merely because the preparation work is complete.
   use; clean generated-evidence canary scan; Web plus helix 6/8 and local Codex
   5/8; mixed delegated-provider metadata recorded; mandatory regression-based
   rejection; no product, profile/default, authentication, or publication change
+- 2026-08-02 MWU-08.01 closure proof: P01/P02/P05/P07 conditional High subset;
+  16 required attempts and two valid Web tie-breaks; 18 schema-valid records;
+  local 3/4 and Web 1/4; mandatory boundary-based rejection; metadata M01/M02
+  pass and negative M03 unnecessary-tool failure; current setting retained
 
 ## Exact next action
 
-Obtain explicit approval before any additional external submission or managed-
-profile change. Then run only the conditional hard subset and the frozen
-metadata audit. Keep delegated Web results in a separate mixed-configuration
-class unless the approved run controls the provider model and effort actually
-used by the managed agent.
+Begin GOAL_08 MWU-08.02 at the existing repository-diff and workspace-open
+projection owners. Implement and prove the isolated temporary-index tree
+fingerprint plus bounded repository context without mutating index, checkout,
+refs, or existing work. Do not change model/profile defaults or make an
+external submission without new explicit approval.
