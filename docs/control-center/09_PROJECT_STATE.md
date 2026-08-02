@@ -408,9 +408,12 @@ ChatGPT self-update recheck:
   at public commit `24a2a42`; and
 - the owner approved a normal fast-forward publication. Local HEAD, the
   tracking ref, and the advertised `origin/main` ref now match the verified
-  GOAL_08 documentation checkpoint `cbfb446`. The current ChatGPT session still
-  has its previous cached app tool catalog and must refresh the connection once
-  before the two update tools can be claimed as host-visible.
+  cross-platform repair checkpoint `0aaa59c`. The first publication CI exposed
+  equivalent path aliases being compared lexically; filesystem-realpath
+  canonicalization repaired the existing fingerprint owner, and hosted CI run
+  `30749192172` passes Ubuntu, macOS, and Windows. The current ChatGPT session
+  still has its previous cached app tool catalog and must refresh the connection
+  once before the two update tools can be claimed as host-visible.
 
 Cutover outcome:
 
@@ -428,7 +431,7 @@ Cutover outcome:
 | host capability changes by plan/workspace | external compatibility residual | README links current official host docs and avoids universal write claims |
 | public release cannot be recalled | realized publication boundary | source was published only after explicit owner approval and clean-clone proof |
 | machine-local ignored folders remain on this PC | local-only, expected | ignore rules plus public checker path gate |
-| filesystem aliases differ across operating systems | resolved | canonical comparison at security and query boundaries; logical workspace identity remains unchanged; Ubuntu/macOS/Windows CI passed |
+| filesystem aliases differ across operating systems | resolved | canonical comparison at security, query, and repository-fingerprint boundaries; logical workspace identity remains unchanged; hosted run `30749192172` passed Ubuntu/macOS/Windows |
 | Codex SDK compiled spawn shape may change | controlled | postinstall and production audit fail closed until the scoped repair is reviewed against the new shape |
 | this execution context could not register a replacement current-user task | accepted local deployment constraint | reuse the existing limited-user no-console task through canonical recovery; preserve helper-only rollback |
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |

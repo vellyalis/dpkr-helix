@@ -379,3 +379,23 @@ and Git rather than duplicated here.
   ChatGPT-initiated update availability.
 - No force push, tag, GitHub Release, npm publication, authentication change,
   model/profile-default change, or product implementation change occurred.
+
+## 2026-08-02 — Cross-platform repository path alias regression closed
+
+- The first GOAL_08 publication CI passed Ubuntu but failed macOS and Windows
+  at the same clean repository-context assertion. Both platforms returned
+  `unavailable` where the physical repository was valid.
+- The fingerprint helper compared lexical `resolve()` results before Git work.
+  Equivalent aliases such as macOS `/var` versus `/private/var` or a Windows
+  junction could therefore be misclassified as outside the repository. A local
+  junction probe reproduced the exact rejection and removed its temporary path.
+- The existing fingerprint owner now resolves both the Git root and workspace
+  root to their filesystem identities before containment and Git commands. No
+  dependency, configuration, fallback, permission, or lifecycle owner changed.
+- The same alias probe passes after the fix. Focused repository-diff tests,
+  typecheck, the full suite, build, and the current-tree public gate pass.
+- Source checkpoint `0aaa59c` was normally pushed. Hosted CI run `30749192172`
+  then passed Ubuntu, macOS, and Windows, including full tests, build, doctor,
+  and the Windows portable lifecycle test.
+- ChatGPT app catalog refresh remains the only update-surface acceptance step;
+  the mutating update tool remains explicit-request-only.

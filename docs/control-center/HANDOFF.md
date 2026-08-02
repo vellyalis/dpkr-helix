@@ -125,8 +125,14 @@ Last synchronized: 2026-08-02
 - The installed source/artifact hashes match; doctor, local/public health,
   focused/full/policy/typecheck/build/audit/public/diff gates and independent
   review/governance pass. No agent or long-running process remains active.
-- The verified GOAL_08 checkpoint is published on `origin/main` at `cbfb446`;
-  local HEAD, the tracking ref, and the advertised remote ref match.
+- The verified GOAL_08 checkpoint and its focused cross-platform path-identity
+  fix are published on `origin/main` through `0aaa59c`; local HEAD, the tracking
+  ref, and the advertised remote ref match.
+- The first publication run exposed a false outside-repository decision for
+  equivalent macOS and Windows path aliases. Filesystem-realpath
+  canonicalization repaired the existing fingerprint owner; the same local
+  junction reproduction now passes and hosted CI run `30749192172` passes
+  Ubuntu, macOS, and Windows through tests, build, doctor, and Windows lifecycle.
 - The public ChatGPT self-update tools remain present and match the current
   source. Isolated MCP/controller tests pass and the installed sanitized
   controller reports the update surface available. This ChatGPT session still
@@ -302,6 +308,11 @@ commands merely because the preparation work is complete.
   installed `UP_TO_DATE` state, stable-endpoint configuration, current-tree
   public gate, and public commit reachability pass; the approved fast-forward
   push published `cbfb446` to `origin/main`
+- 2026-08-02 cross-platform publication repair: the failing macOS/Windows
+  repository-context boundary was reproduced with a physical path alias,
+  repaired by canonicalizing the existing Git/workspace roots, and verified by
+  local focused/full/typecheck/build/public gates plus three-platform hosted CI
+  run `30749192172`; follow-up source commit `0aaa59c` is public
 
 ## Exact next action
 
