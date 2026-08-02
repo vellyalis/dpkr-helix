@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import { promisify } from "node:util";
@@ -68,8 +68,8 @@ export async function createWorkingTreeFingerprint(
   gitRoot: string,
   workspaceRoot = gitRoot,
 ): Promise<WorkingTreeFingerprint> {
-  const resolvedGitRoot = resolve(gitRoot);
-  const resolvedWorkspaceRoot = resolve(workspaceRoot);
+  const resolvedGitRoot = await realpath(resolve(gitRoot));
+  const resolvedWorkspaceRoot = await realpath(resolve(workspaceRoot));
   const relationship = relative(resolvedGitRoot, resolvedWorkspaceRoot);
   if (
     relationship === ".."
