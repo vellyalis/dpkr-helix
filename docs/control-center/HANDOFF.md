@@ -13,6 +13,9 @@ Last synchronized: 2026-08-02
   signed-in acceptance evidence are frozen.
 - GOAL_09: `DONE`; the clean-history source repository is PUBLIC and public-clone
   acceptance passed.
+- GOAL_10: `DONE`; the standard MCP catalog-change signal is implemented, the
+  one-time legacy ChatGPT catalog migration was automated, and live read-only
+  status invocation passed.
 - Installed working directory: unchanged.
 - Remote history replacement and visibility change were completed with explicit
   owner approval. No tag, GitHub Release, or npm publication was created.
@@ -134,10 +137,12 @@ Last synchronized: 2026-08-02
   junction reproduction now passes and hosted CI run `30749192172` passes
   Ubuntu, macOS, and Windows through tests, build, doctor, and Windows lifecycle.
 - The public ChatGPT self-update tools remain present and match the current
-  source. Isolated MCP/controller tests pass and the installed sanitized
-  controller reports the update surface available. This ChatGPT session still
-  has the previous cached tool catalog, so one app connection refresh is
-  required before claiming ChatGPT-side invocation of the two update tools.
+  source. Isolated MCP/controller tests pass, the installed sanitized
+  controller reports `UP_TO_DATE` at `3fa1c49`, and hosted CI run `30752498799`
+  passes Ubuntu, macOS, and Windows. ChatGPT Web did not honor the standard MCP
+  catalog notification for newly added names, so the approved developer-mode
+  connection update was automated in the signed-in browser. The refreshed live
+  catalog exposes both tools and a fresh chat invoked the read-only status tool.
 
 ## Completed before this work unit
 
@@ -313,13 +318,18 @@ commands merely because the preparation work is complete.
   repaired by canonicalizing the existing Git/workspace roots, and verified by
   local focused/full/typecheck/build/public gates plus three-platform hosted CI
   run `30749192172`; follow-up source commit `0aaa59c` is public
+- 2026-08-02 automatic catalog convergence: source commit `3fa1c49` sends one
+  standard tool-list-change notification after initialization; a real SDK
+  client re-listed both update tools; focused/full/typecheck/build/audit/public
+  gates and hosted three-platform CI run `30752498799` pass. Live ChatGPT Web
+  retained the old catalog until its approved developer-mode connection update
+  was automated, then exposed both tools and returned `UP_TO_DATE` through
+  `get_dpkr_helix_update_status` in a fresh chat
 
 ## Exact next action
 
-Refresh or reconnect the dpkr helix app once so ChatGPT rediscovers the MCP tool
-catalog. In a fresh ChatGPT turn, verify that
-`get_dpkr_helix_update_status` and `update_dpkr_helix` are both exposed, then
-call only the read-only status tool. The mutating update tool remains explicit-
-request-only. No local implementation action remains in the accepted roadmap;
-do not change model/profile defaults or expand the M03 residual into a new
-workstream without explicit user direction.
+No implementation action remains in GOAL_10. On the owner's next explicit dpkr
+helix update request, use `update_dpkr_helix`, allow the expected reconnect, and
+report the sanitized result with `get_dpkr_helix_update_status`. The mutating
+tool remains explicit-request-only. Do not change model/profile defaults or
+expand the M03 residual into a new workstream without explicit user direction.

@@ -16,9 +16,10 @@ Last synchronized: 2026-08-02
 - License: MIT, upstream copyright retained
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; GOAL_08 is complete.
-- Current program unit: none. GOAL_08 MWU-08.01 through MWU-08.06 are complete;
-  the measured current `gpt-5.5` medium setting is retained, and signed-in Web
-  plus dpkr helix passes the frozen parity gate 8/8 versus retained local 5/8.
+- Current program unit: none. GOAL_08 MWU-08.01 through MWU-08.06 and GOAL_10
+  catalog convergence are complete; the measured current `gpt-5.5` medium
+  setting is retained, and signed-in Web plus dpkr helix passes the frozen
+  parity gate 8/8 versus retained local 5/8.
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
@@ -36,6 +37,33 @@ Last synchronized: 2026-08-02
 | GOAL_07 Integration and Hardening | DONE | distribution, recovery, security, acceptance |
 | GOAL_08 Codex-Parity Coding Quality | DONE | MWU-08.01 through MWU-08.06 complete; signed-in parity and all completion gates pass |
 | GOAL_09 Public Release Readiness | DONE | clean-history source release published and publicly verified |
+| GOAL_10 ChatGPT Update Catalog Convergence | DONE | standard MCP notification implemented; one-time legacy ChatGPT catalog migration automated and live read-only invocation passed |
+
+## Goal model — GOAL_10
+
+**Subject:** the managed dpkr helix MCP connection and its ChatGPT-visible
+self-update surface.
+
+**Desired value:** after the one-time legacy migration, ChatGPT can request and
+observe future dpkr helix updates through stable dedicated tools without asking
+the owner to refresh the Plugins page, replace the conversation, or compose
+local update commands.
+
+**Accepted outcome:** dpkr helix advertises tool-list-change support and sends
+one standard notification after each MCP connection initializes. A real SDK
+client re-listed the catalog once and observed both update tools. Live ChatGPT
+Web evidence showed that its developer-mode catalog does not currently honor
+that notification for newly added names, so the already approved account-side
+**Update** and fresh-chat bootstrap were automated in the signed-in browser.
+The refreshed catalog exposed both tools, and a new ChatGPT chat called
+`get_dpkr_helix_update_status` and returned `UP_TO_DATE`. Ordinary later updates
+reuse the same two names and require only the expected service reconnect.
+
+**Responsibility boundary:** dpkr helix owns truthful MCP metadata and the
+verified update transaction; the MCP host owns its cached catalog; the owner
+retains approval of external account changes and every mutating update request.
+No runtime browser controller, daemon, permission, credential, or automatic
+upgrade policy was added.
 
 ## Goal model — GOAL_09
 
@@ -411,9 +439,12 @@ ChatGPT self-update recheck:
   cross-platform repair checkpoint `0aaa59c`. The first publication CI exposed
   equivalent path aliases being compared lexically; filesystem-realpath
   canonicalization repaired the existing fingerprint owner, and hosted CI run
-  `30749192172` passes Ubuntu, macOS, and Windows. The current ChatGPT session
-  still has its previous cached app tool catalog and must refresh the connection
-  once before the two update tools can be claimed as host-visible.
+  `30749192172` passes Ubuntu, macOS, and Windows. Follow-up commit `3fa1c49`
+  emits the standard post-initialization tool-list-change notification and
+  hosted CI run `30752498799` passes Ubuntu, macOS, and Windows. The one-time
+  ChatGPT developer-mode catalog update was then automated; its live catalog
+  exposed both tools and a fresh chat returned `UP_TO_DATE` through the read-
+  only status tool.
 
 Cutover outcome:
 
@@ -435,20 +466,18 @@ Cutover outcome:
 | Codex SDK compiled spawn shape may change | controlled | postinstall and production audit fail closed until the scoped repair is reviewed against the new shape |
 | this execution context could not register a replacement current-user task | accepted local deployment constraint | reuse the existing limited-user no-console task through canonical recovery; preserve helper-only rollback |
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
-| an already-open ChatGPT app may cache the previous tool catalog | external host residual | refresh or reconnect the app once after this tool-surface deployment; later updates reuse the same tools |
+| ChatGPT Web does not currently honor MCP tool-list-change for newly added names | external host behavior, one-time migration closed | automate the approved developer-mode connection update during legacy migration; keep the two update tool names stable so later self-updates need only reconnect |
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
 | Web delegation remains managed `gpt-5.5` medium under a `GPT-5.6 Sol` controller | measured attribution boundary | preserve the mixed configuration label; do not claim end-to-end candidate coverage or change the managed profile without approval |
 | candidate medium and high settings regress mandatory safety or continuation behavior | adoption blockers; both candidates rejected | retain the measured current setting and never trade efficiency for a mandatory pass |
 | should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
 | repository context and verification-basis capture observe a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/review or re-verification produces a new fingerprint, exact equality is required for `fresh`, and locks or double fingerprinting remain deferred without a measured inconsistency |
 | Skill/task precedence is expressed in model-visible metadata rather than enforced by a new per-turn runtime policy owner | accepted advisory-contract residual | keep existing project/root authorization authoritative; retain the direct signed-in 8/8 evidence and add enforcement only if a future measured task still crosses the boundary |
-| current ChatGPT session caches the tool catalog from before the self-update surface was discovered | host refresh pending | refresh or reconnect the dpkr helix app once, then verify both update tools and call the read-only status tool before claiming end-to-end ChatGPT invocation |
 
 ## Next executable action
 
-Refresh or reconnect the dpkr helix app once so ChatGPT rediscovers the MCP tool
-catalog. In a fresh turn, verify `get_dpkr_helix_update_status` and
-`update_dpkr_helix` are exposed and call only the read-only status tool. The
-mutating tool still requires an explicit update request. No local implementation
-work unit remains in the accepted roadmap; do not change provider/model/profile
-defaults or invent another parity workstream from the known M03 residual.
+No implementation action remains in GOAL_10. On the owner's next explicit dpkr
+helix update request, use `update_dpkr_helix`, allow the expected reconnect, and
+report the sanitized result through `get_dpkr_helix_update_status`. Do not change
+provider/model/profile defaults or invent another parity workstream from the
+known M03 residual.

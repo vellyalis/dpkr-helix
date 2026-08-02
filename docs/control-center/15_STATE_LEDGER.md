@@ -399,3 +399,24 @@ and Git rather than duplicated here.
   and the Windows portable lifecycle test.
 - ChatGPT app catalog refresh remains the only update-surface acceptance step;
   the mutating update tool remains explicit-request-only.
+
+## 2026-08-02 — GOAL_10 automatic ChatGPT update bootstrap closed
+
+- dpkr helix now sends one standard MCP tool-list-change notification after a
+  connection initializes. A real SDK client re-listed once and observed both
+  self-update tools; immediate and microtask variants were rejected because
+  they raced client handler registration.
+- Focused MCP/update tests, typecheck, full tests, build, production audit,
+  public/diff gates, and hosted CI run `30752498799` passed at source commit
+  `3fa1c49` on Ubuntu, macOS, and Windows.
+- Live ChatGPT Web proved it does not currently apply that notification to a
+  legacy developer-mode catalog: before host refresh it reported that no direct
+  update-status function was available.
+- After explicit owner approval, the developer-mode connection update and fresh
+  verification chat were automated in the signed-in browser. The live catalog
+  exposed both tools with their correct annotations, and ChatGPT invoked
+  `get_dpkr_helix_update_status` and returned `UP_TO_DATE`.
+- Ordinary future self-updates reuse the same tool names and need only the
+  expected reconnect. The mutating tool remains explicit-request-only; no
+  daemon, browser controller, permission, credential, model/profile default, or
+  automatic upgrade policy was added.

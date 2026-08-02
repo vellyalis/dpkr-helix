@@ -133,6 +133,13 @@ excluded. The hidden launcher redirects updater output to two fixed local log
 files that are replaced on each request; updater output is never returned to an
 MCP caller.
 
+The post-initialization MCP tool-list-change notification has an empty payload
+and only asks the already OAuth-approved client to reread metadata it could
+already request. It does not add authorization, change tool annotations, invoke
+the mutating updater, or grant filesystem access. Updating a ChatGPT developer-
+mode connection remains a separate external account action and is performed by
+the guided workflow only after explicit owner approval.
+
 This does not make GitHub or the local account a sandbox. A compromised
 canonical repository, Git executable, npm registry/cache, Node runtime, or
 Windows user can still affect the installation. Branch protection, pinned

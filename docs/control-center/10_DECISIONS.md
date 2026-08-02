@@ -1449,3 +1449,59 @@ silently promote this advisory rule to a G3 enforcement claim.
 read grants, an observed task still reads outside its declared scope despite
 this metadata, or task boundaries must become enforceable product policy rather
 than evaluation inputs.
+
+## ADR-044: Combine standard catalog notification with a one-time ChatGPT bootstrap
+
+**Date:** 2026-08-02
+
+**Status:** Accepted; live ChatGPT proof complete
+
+**Context:** The self-update tools were installed and callable by a conforming
+MCP client, but an existing ChatGPT developer-mode connection retained the old
+tool catalog. MCP defines `notifications/tools/list_changed`, while current
+OpenAI guidance still describes a host-side connection refresh after metadata
+changes. The desired workflow removes manual Plugins refresh and replacement-
+chat steps without adding an updater daemon or making updates automatic.
+
+**Decision:** After each MCP connection initializes, schedule exactly one
+`sendToolListChanged()` call on the next timer turn. This avoids racing client
+handler registration and lets conforming clients re-list automatically. Treat
+ChatGPT Web's legacy catalog migration as a one-time host-side bootstrap: after
+explicit approval, the guided browser workflow invokes the developer-mode
+connection's **Update** action and starts the verification chat. Keep
+`get_dpkr_helix_update_status` and `update_dpkr_helix` stable thereafter, so
+ordinary self-updates change behavior behind known tools and need only the
+expected reconnect.
+
+**Alternatives rejected:** Immediate and microtask notifications raced client
+handler registration in direct probes. Claiming ChatGPT auto-refresh from the
+standard notification was rejected by live host evidence. A persistent browser
+controller, extension, background worker, or second catalog owner was rejected
+because ChatGPT owns its account catalog and future updates do not require that
+machinery.
+
+**Complexity receipt:** Accepted at existing MCP lifecycle adaptation: one
+post-initialization callback and one timer. No dependency, service, store,
+worker, browser runtime, setting, permission, credential, or updater policy was
+added to dpkr helix. The one-time ChatGPT account mutation stays in the existing
+guided orchestration boundary and still requires approval.
+
+**Evidence:** Immediate and microtask probes missed the client handler;
+`setTimeout(..., 0)` produced one refresh. The actual server produced one event
+and a re-listed 11-tool catalog containing both update tools. Focused update and
+MCP tests, typecheck, the full suite, build, production audit, public/diff gates,
+and hosted CI run `30752498799` pass. Before the host bootstrap, live ChatGPT
+reported that no direct update-status function was available. After the
+automated developer-mode **Update**, its catalog displayed both tools with the
+correct read/mutating annotations, and a fresh chat invoked the read-only tool
+and returned `UP_TO_DATE`.
+
+**Failure and recovery:** A client that ignores the notification retains its
+existing catalog and behavior; no server action or permission changes. The
+approved one-time host bootstrap repairs that legacy state. Reverting the small
+server callback restores the prior connection behavior, while the stable update
+tools remain usable in already refreshed hosts.
+
+**Reconsider when:** ChatGPT documents and proves automatic MCP tool-list-change
+handling, a future update must add or rename a tool, or a supported account API
+replaces the developer-mode browser action.

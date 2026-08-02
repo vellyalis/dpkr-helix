@@ -139,6 +139,14 @@ helix. It verifies `origin/main` before replacing the current service. After the
 expected reconnect, use the read-only status tool to report success, rejection,
 or rollback without exposing machine-local paths.
 
+The two update tool names are stable. Once they are present in the ChatGPT app
+catalog, normal self-updates need only the expected MCP reconnect; they do not
+need Plugins **Update** or a replacement conversation. dpkr helix also emits the
+standard MCP tool-list-change notification after initialization for clients that
+support dynamic catalog refresh. ChatGPT Web currently requires one host-side
+developer-mode connection update when a legacy catalog first gains these names;
+the guided workflow can perform that account action after explicit approval.
+
 By default, DevSpace also runs in `DEVSPACE_TOOL_MODE=minimal`, so dedicated
 `grep`, `glob`, and `ls` tools are hidden. Use `bash` with command-line tools
 such as `rg`, `find`, and `ls` for search and directory inspection.

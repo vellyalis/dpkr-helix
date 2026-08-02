@@ -128,10 +128,20 @@ keeps the runtime record when identity cannot be proven.
 
 ## Update From ChatGPT
 
-After installing this update surface and refreshing the ChatGPT connection once
-so it discovers the new tools, you can ask ChatGPT to update dpkr helix. ChatGPT
-uses `get_dpkr_helix_update_status` and `update_dpkr_helix`; you do not need to
-provide Git, npm, stop, or restart commands.
+After the update surface is present in the ChatGPT catalog, you can ask ChatGPT
+to update dpkr helix. ChatGPT uses `get_dpkr_helix_update_status` and
+`update_dpkr_helix`; you do not need to provide Git, npm, stop, or restart
+commands. Ordinary later updates reuse these stable tool names, so the expected
+service reconnect does not require another catalog refresh or replacement chat.
+
+The server emits the standard MCP tool-list-change notification after a new
+connection initializes. Conforming clients can therefore resynchronize their
+catalog automatically. ChatGPT Web currently does not apply that notification
+when a legacy connection gains new tool names. That one-time migration can be
+performed by the guided workflow in the already signed-in browser after the
+owner approves the external account action; otherwise use the developer-mode
+connection's **Update** action and start one fresh chat. It is not part of every
+self-update.
 
 This path is deliberately explicit. It never polls for versions or installs an
 update without a user request. It is available only when the managed source is a
@@ -226,8 +236,10 @@ After the stable endpoint passes:
    expose `~/.devspace/auth.json` to ChatGPT, Codex, logs, or handoff state.
 5. Start a new conversation and prove `list_projects` → `open_project` → one
    read-only workspace call.
-6. Refresh the connection after tool, schema, annotation, authentication, or
-   MCP App UI metadata changes.
+6. After explicit approval, let the guided workflow update the developer-mode
+   connection when tool, schema, annotation, authentication, or MCP App UI
+   metadata changes. ChatGPT Web currently needs this host-side refresh even
+   though dpkr helix emits the standard MCP tool-list-change notification.
 
 Creating or refreshing the ChatGPT connection and approving OAuth change
 external account state. The guided skill must pause for user approval before
