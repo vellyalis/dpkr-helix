@@ -125,10 +125,13 @@ Last synchronized: 2026-08-02
 - The installed source/artifact hashes match; doctor, local/public health,
   focused/full/policy/typecheck/build/audit/public/diff gates and independent
   review/governance pass. No agent or long-running process remains active.
+- The verified GOAL_08 checkpoint is published on `origin/main` at `cbfb446`;
+  local HEAD, the tracking ref, and the advertised remote ref match.
 - The public ChatGPT self-update tools remain present and match the current
-  source. Isolated tests and installed sanitized status confirm the public
-  commit is `UP_TO_DATE`; current GOAL_08 commits remain local-only until an
-  explicitly approved push makes them available to public updaters.
+  source. Isolated MCP/controller tests pass and the installed sanitized
+  controller reports the update surface available. This ChatGPT session still
+  has the previous cached tool catalog, so one app connection refresh is
+  required before claiming ChatGPT-side invocation of the two update tools.
 
 ## Completed before this work unit
 
@@ -294,15 +297,18 @@ commands merely because the preparation work is complete.
   no duplicate worker/provider call; focused tests; typecheck; full and policy
   regression; production build/audit; public/diff gates; fixed A2 R1 S3 proof
   candidate and zero-finding focused R2
-- 2026-08-02 ChatGPT self-update recheck: public zero-input request/status tools
-  match local source; system-update tests, sanitized installed `UP_TO_DATE`
-  state, stable-endpoint configuration, and public commit reachability pass;
-  current GOAL_08 commits remain unpublished pending explicit push approval
+- 2026-08-02 ChatGPT self-update publication recheck: public zero-input
+  request/status tools match local source; system-update tests, sanitized
+  installed `UP_TO_DATE` state, stable-endpoint configuration, current-tree
+  public gate, and public commit reachability pass; the approved fast-forward
+  push published `cbfb446` to `origin/main`
 
 ## Exact next action
 
-No local implementation action remains in the accepted roadmap. Preserve the
-verified GOAL_08 checkpoint and wait for a new user-selected Goal. Local commits
-remain ahead of `origin/main`; do not push or otherwise publish them, change
-model/profile defaults, or expand the M03 residual into a new workstream without
-explicit user direction.
+Refresh or reconnect the dpkr helix app once so ChatGPT rediscovers the MCP tool
+catalog. In a fresh ChatGPT turn, verify that
+`get_dpkr_helix_update_status` and `update_dpkr_helix` are both exposed, then
+call only the read-only status tool. The mutating update tool remains explicit-
+request-only. No local implementation action remains in the accepted roadmap;
+do not change model/profile defaults or expand the M03 residual into a new
+workstream without explicit user direction.

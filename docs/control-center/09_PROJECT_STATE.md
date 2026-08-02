@@ -406,9 +406,11 @@ ChatGPT self-update recheck:
   preflight-before-stop, duplicate exclusion, bounded sanitized status,
   rollback, and hidden launch; the installed controller reports `UP_TO_DATE`
   at public commit `24a2a42`; and
-- current GOAL_08 commits are still local-only because no remote publication
-  was authorized. Public installations cannot receive them until an approved
-  fast-forward publication reaches `origin/main`.
+- the owner approved a normal fast-forward publication. Local HEAD, the
+  tracking ref, and the advertised `origin/main` ref now match the verified
+  GOAL_08 documentation checkpoint `cbfb446`. The current ChatGPT session still
+  has its previous cached app tool catalog and must refresh the connection once
+  before the two update tools can be claimed as host-visible.
 
 Cutover outcome:
 
@@ -437,12 +439,13 @@ Cutover outcome:
 | should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
 | repository context and verification-basis capture observe a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/review or re-verification produces a new fingerprint, exact equality is required for `fresh`, and locks or double fingerprinting remain deferred without a measured inconsistency |
 | Skill/task precedence is expressed in model-visible metadata rather than enforced by a new per-turn runtime policy owner | accepted advisory-contract residual | keep existing project/root authorization authoritative; retain the direct signed-in 8/8 evidence and add enforcement only if a future measured task still crosses the boundary |
-| current GOAL_08 commits are ahead of public `origin/main` | publication not authorized in this unit | the public self-updater is healthy but can deliver only published commits; request explicit approval before pushing the verified checkpoint |
+| current ChatGPT session caches the tool catalog from before the self-update surface was discovered | host refresh pending | refresh or reconnect the dpkr helix app once, then verify both update tools and call the read-only status tool before claiming end-to-end ChatGPT invocation |
 
 ## Next executable action
 
-No local implementation work unit remains in the accepted roadmap. Preserve
-the verified GOAL_08 checkpoint and wait for a new user-selected Goal. The
-local commits remain ahead of `origin/main`; any push or other publication is a
-separate approval-gated external action. Do not change provider/model/profile
+Refresh or reconnect the dpkr helix app once so ChatGPT rediscovers the MCP tool
+catalog. In a fresh turn, verify `get_dpkr_helix_update_status` and
+`update_dpkr_helix` are exposed and call only the read-only status tool. The
+mutating tool still requires an explicit update request. No local implementation
+work unit remains in the accepted roadmap; do not change provider/model/profile
 defaults or invent another parity workstream from the known M03 residual.

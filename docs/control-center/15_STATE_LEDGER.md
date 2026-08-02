@@ -359,3 +359,23 @@ and Git rather than duplicated here.
 - No dependency, service, store, worker, model/profile default, authentication
   state, or remote publication changed. GOAL_08 and WS-QA-08 are `DONE`; no
   local implementation work unit remains in the accepted roadmap.
+
+## 2026-08-02 — GOAL_08 checkpoint published; ChatGPT catalog refresh pending
+
+- The owner explicitly approved publication of the verified GOAL_08 checkpoint.
+- `npm run check:public`, typecheck, the focused system-update MCP/controller
+  test, doctor, and local/public health passed before publication. The optional
+  clean-root history recheck exceeded its bounded rerun window; its accepted
+  release proof was not replaced or claimed as freshly rerun.
+- A normal non-force fast-forward push advanced public `origin/main` from
+  `24a2a42` through the ten GOAL_08 commits to `cbfb446`. Local HEAD, the
+  tracking ref, and the advertised remote ref matched after the push.
+- The installed update controller reports the update surface available, and
+  source plus focused MCP tests expose sanitized
+  `get_dpkr_helix_update_status` and explicit mutating `update_dpkr_helix`.
+- This ChatGPT session still has the previous cached dpkr helix tool catalog and
+  does not yet expose those two tools. One app connection refresh plus a fresh
+  read-only status call remains required before claiming end-to-end
+  ChatGPT-initiated update availability.
+- No force push, tag, GitHub Release, npm publication, authentication change,
+  model/profile-default change, or product implementation change occurred.
