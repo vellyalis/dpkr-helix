@@ -7,6 +7,10 @@ import { loadProjectContextFiles } from "@earendil-works/pi-coding-agent";
 import type { ServerConfig } from "./config.js";
 import { createManagedWorktree } from "./git-worktrees.js";
 import {
+  readRepositoryContext,
+  type RepositoryContext,
+} from "./operations/repository-diff.js";
+import {
   AccessDeniedError,
   assertAllowedPath,
   assertCanonicalAllowedPath,
@@ -75,6 +79,7 @@ export interface WorkspaceContext {
   workspace: Workspace;
   agentsFiles: LoadedAgentsFile[];
   availableAgentsFiles: AvailableAgentsFile[];
+  repositoryContext: RepositoryContext;
 }
 
 export interface WorkspaceReadPath {
@@ -319,8 +324,9 @@ export class WorkspaceRegistry {
     this.workspaces.set(workspace.id, workspace);
     const agentsFiles = await this.loadInitialAgentsFiles(workspace.root);
     const availableAgentsFiles = await this.findAvailableAgentsFiles(workspace.root, agentsFiles);
+    const repositoryContext = await readRepositoryContext(workspace.root);
 
-    return { workspace, agentsFiles, availableAgentsFiles };
+    return { workspace, agentsFiles, availableAgentsFiles, repositoryContext };
   }
 
   private loadSkillsForWorkspace(root: string): Pick<Workspace, "skills" | "skillDiagnostics"> {

@@ -1,7 +1,9 @@
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { git, getGitEligibility, safeWorkspaceRefSegment } from "./git.js";
+import {
+  createWorkingTreeFingerprint,
+  git,
+  getGitEligibility,
+  safeWorkspaceRefSegment,
+} from "./git.js";
 
 export type ReviewSince = "last_shown" | "last_review" | "workspace_open";
 
@@ -63,7 +65,7 @@ export function createReviewCheckpointManager(): ReviewCheckpointManager {
         }
 
         state.gitRoot = eligibility.gitRoot;
-        const commit = await createWorkingTreeSnapshot(eligibility.gitRoot);
+        const commit = await createWorkingTreeSnapshot(eligibility.gitRoot, root);
         await git(eligibility.gitRoot, ["update-ref", state.openRef, commit]);
         await git(eligibility.gitRoot, ["update-ref", state.baselineRef, commit]);
       } catch (error) {
@@ -84,7 +86,7 @@ export function createReviewCheckpointManager(): ReviewCheckpointManager {
 
       const baselineRef = since === "workspace_open" ? state.openRef : state.baselineRef;
       const baseline = (await git(state.gitRoot, ["rev-parse", "--verify", `${baselineRef}^{commit}`])).stdout.trim();
-      const current = await createWorkingTreeSnapshot(state.gitRoot);
+      const current = await createWorkingTreeSnapshot(state.gitRoot, state.root);
       const patch = (await git(state.gitRoot, ["diff", "--binary", "--no-color", baseline, current], {
         maxBuffer: 50 * 1024 * 1024,
       })).stdout;
@@ -119,25 +121,19 @@ function reviewRefs(workspaceId: string): Pick<WorkspaceReviewState, "openRef" |
   };
 }
 
-async function createWorkingTreeSnapshot(gitRoot: string): Promise<string> {
-  const tempDir = await mkdtemp(join(tmpdir(), "devspace-review-index-"));
-  const indexPath = join(tempDir, "index");
-  const env = checkpointEnv(indexPath);
-
-  try {
-    await git(gitRoot, ["read-tree", "HEAD"], { env });
-    await git(gitRoot, ["add", "-A", "--", "."], { env });
-    const tree = (await git(gitRoot, ["write-tree"], { env })).stdout.trim();
-    const parent = (await git(gitRoot, ["rev-parse", "--verify", "HEAD^{commit}"])).stdout.trim();
-    return (await git(gitRoot, ["commit-tree", tree, "-p", parent, "-m", "dpkr helix review snapshot"], { env })).stdout.trim();
-  } finally {
-    await rm(tempDir, { recursive: true, force: true });
-  }
+async function createWorkingTreeSnapshot(gitRoot: string, workspaceRoot: string): Promise<string> {
+  const { head, fingerprint } = await createWorkingTreeFingerprint(gitRoot, workspaceRoot);
+  return (
+    await git(
+      gitRoot,
+      ["commit-tree", fingerprint, "-p", head, "-m", "dpkr helix review snapshot"],
+      { env: checkpointEnv() },
+    )
+  ).stdout.trim();
 }
 
-function checkpointEnv(indexPath: string): NodeJS.ProcessEnv {
+function checkpointEnv(): NodeJS.ProcessEnv {
   return {
-    GIT_INDEX_FILE: indexPath,
     GIT_AUTHOR_NAME: "dpkr helix",
     GIT_AUTHOR_EMAIL: "devspace@users.noreply.local",
     GIT_COMMITTER_NAME: "dpkr helix",

@@ -71,6 +71,7 @@ import { requestOperationStop } from "./operations/operation-stop.js";
 import { OperationStore } from "./operations/operation-store.js";
 import { OperationVerificationProjector } from "./operations/verification-projector.js";
 import { createReviewCheckpointManager } from "./review-checkpoints.js";
+import { repositoryContextOutputSchema } from "./repository-context-output.js";
 import { shutdownHttpServer } from "./server-shutdown.js";
 import { formatPathForPrompt } from "./skills.js";
 import {
@@ -412,6 +413,7 @@ const workspaceOutputSchema = {
   agents: z.array(workspaceLocalAgentOutputSchema),
   skillDiagnostics: z.array(z.unknown()),
   handoff: workspaceHandoffOutputSchema.optional(),
+  repositoryContext: repositoryContextOutputSchema,
   instruction: z.string(),
 };
 
@@ -430,6 +432,7 @@ const projectOpenOutputSchema = {
   agents: z.array(workspaceLocalAgentOutputSchema).optional(),
   skillDiagnostics: z.array(z.unknown()).optional(),
   handoff: workspaceHandoffOutputSchema.optional(),
+  repositoryContext: repositoryContextOutputSchema.optional(),
   instruction: z.string().optional(),
   error: z
     .object({
@@ -765,7 +768,7 @@ function createWorkspaceToolResult(input: {
   localAgentProviders: LocalAgentProviderAvailability[];
   prefixLines?: string[];
 }) {
-  const { workspace, agentsFiles, availableAgentsFiles } = input.context;
+  const { workspace, agentsFiles, availableAgentsFiles, repositoryContext } = input.context;
   const handoff = input.handoffs.get(workspace.root);
   const visibleSkills = workspace.skills
     .filter((skill) => !skill.disableModelInvocation)
@@ -823,9 +826,13 @@ function createWorkspaceToolResult(input: {
     instruction,
   ].filter(Boolean).join("\n");
   const content = [textBlock(resultText)];
+  const responseContent = [
+    ...content,
+    textBlock(`Repository context: ${JSON.stringify(repositoryContext)}`),
+  ];
 
   return {
-    content,
+    content: responseContent,
     _meta: {
       tool: input.tool,
       card: {
@@ -860,6 +867,7 @@ function createWorkspaceToolResult(input: {
       agents: visibleAgents,
       skillDiagnostics: workspace.skillDiagnostics,
       handoff,
+      repositoryContext,
       instruction,
     },
   };

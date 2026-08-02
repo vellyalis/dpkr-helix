@@ -255,3 +255,21 @@ and Git rather than duplicated here.
   complete. MWU-08.02 shared repository context and tree fingerprint is next.
 - No product, managed-profile/model default, authentication, publication, or
   external repository state changed.
+
+## 2026-08-02 — GOAL_08 shared repository context accepted
+
+- MWU-08.02 extends successful `open_project` and `open_workspace` results with
+  bounded `repositoryContext` from the existing WorkspaceRegistry and
+  repository-diff owners.
+- One shared Git primitive uses an isolated temporary index scoped to the
+  opened workspace and returns the captured HEAD plus tree fingerprint without
+  changing the user index, checkout, refs, HEAD, status, or tracked content.
+- Context returns at most 200 dirty paths and 100 sorted root-manifest script
+  names, reports explicit totals/truncation, preserves detached/non-Git/missing
+  states, and classifies untracked binary files from the isolated tree diff.
+- The first open-result text/card payload remains compatible. Plain MCP adds a
+  second bounded context text block and structured content adds the typed field.
+- Focused fixtures, typecheck, full regression, production build, public/diff
+  checks, and independent A2 review through focused R2 pass. R1's three
+  requirement-linked findings were fixed; no adjudicated BLOCK remains.
+- GOAL_08 remains `IN_PROGRESS`; MWU-08.03 model-visible final review is next.

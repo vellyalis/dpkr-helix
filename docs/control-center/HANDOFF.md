@@ -4,10 +4,9 @@ Last synchronized: 2026-08-02
 
 ## Current position
 
-- Completed work unit: GOAL_08 MWU-08.01 baseline and configuration selection.
-  The measured current `gpt-5.5` medium setting is retained after the medium,
-  conditional-high, and metadata-audit comparisons. MWU-08.02 shared repository
-  context and tree fingerprint is next.
+- Completed work units: GOAL_08 MWU-08.01 configuration selection and
+  MWU-08.02 shared repository context/tree fingerprint. The measured current
+  `gpt-5.5` medium setting is retained; MWU-08.03 model-visible review is next.
 - GOAL_01 through GOAL_07: DONE.
 - GOAL_08 Codex-Parity Coding Quality: `IN_PROGRESS`; P01-P08 manifests,
   deterministic snapshots, metadata prompts, and the result contract are frozen.
@@ -91,6 +90,13 @@ Last synchronized: 2026-08-02
   because registered projects are listed before a supplied sentence is
   restated. No metadata, product, profile/default, or authentication setting
   changed.
+- Open results now expose bounded failure-isolated repository context through
+  the existing owners and a workspace-scoped temporary-index fingerprint. The
+  first text/card contract is unchanged; plain MCP receives a second context
+  block and structured clients receive `repositoryContext`.
+- Independent A2 R1 findings for nested workspace scope, text compatibility,
+  and untracked-binary accuracy were fixed. Focused R2 found no fix-induced
+  S0-S1 candidate. No delegated agents or long-running processes remain active.
 
 ## Completed before this work unit
 
@@ -100,10 +106,10 @@ Last synchronized: 2026-08-02
 - GOAL_08 defines the measured same-snapshot parity suite, model/profile
   selection, bounded start context, review freshness, structured user input,
   and bounded wait behavior.
-- GOAL_08's completed unit is MWU-08.01. P01-P08 and the result template are
+- GOAL_08's completed units are MWU-08.01 and MWU-08.02. P01-P08 and the result template are
   frozen; the current baseline, rejected medium candidate, rejected High hard
   subset, and metadata audit are recorded. The measured current setting is
-  retained. MWU-08.02 is the active next unit.
+  retained. MWU-08.03 is the active next unit.
 
 ## GOAL_09 completed release
 
@@ -172,9 +178,9 @@ Last synchronized: 2026-08-02
    current remote.
 5. Confirm GOAL_09 remains `DONE`; do not repeat its one-time clean-root cutover.
 6. Confirm the operational-comfort checkpoint and current local/public health.
-7. Continue GOAL_08 at MWU-08.02; do not recreate or rerun MWU-08.01 manifests,
-   baseline, rejected candidates, tie-breaks, or metadata audit. WS-UPD-01 is
-   complete on `main` and in the installed runtime.
+7. Continue GOAL_08 at MWU-08.03; do not recreate or rerun MWU-08.01 evidence
+   or MWU-08.02 repository-context work. WS-UPD-01 is complete on `main` and in
+   the installed runtime.
 
 Do not recreate GOAL_01 through GOAL_08 documents. Do not start public cutover
 commands merely because the preparation work is complete.
@@ -228,11 +234,15 @@ commands merely because the preparation work is complete.
   16 required attempts and two valid Web tie-breaks; 18 schema-valid records;
   local 3/4 and Web 1/4; mandatory boundary-based rejection; metadata M01/M02
   pass and negative M03 unnecessary-tool failure; current setting retained
+- 2026-08-02 MWU-08.02 repository-context proof: clean/dirty/detached/non-Git/
+  missing/truncated/nested fixtures; accurate untracked-binary metadata; user
+  index/HEAD/ref/status/content no-mutation checks; plain/structured MCP
+  compatibility; focused tests; typecheck; full regression; build; public/diff
+  gates; and independent A2 review through focused R2
 
 ## Exact next action
 
-Begin GOAL_08 MWU-08.02 at the existing repository-diff and workspace-open
-projection owners. Implement and prove the isolated temporary-index tree
-fingerprint plus bounded repository context without mutating index, checkout,
-refs, or existing work. Do not change model/profile defaults or make an
-external submission without new explicit approval.
+Begin GOAL_08 MWU-08.03 at the existing review-checkpoint, process-verification,
+operation-evidence, and `show_changes` owners. Add nullable basis fingerprints
+and the bounded model-visible review contract. Do not repeat MWU-08.01/02,
+change model/profile defaults, or make an external submission without approval.

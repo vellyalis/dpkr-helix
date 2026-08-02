@@ -167,6 +167,8 @@ try {
     assert.ok("baseRef" in (openTool.inputSchema.properties ?? {}));
     assert.ok("workspaceId" in (openTool.outputSchema?.properties ?? {}));
     assert.ok("project" in (openTool.outputSchema?.properties ?? {}));
+    assert.ok("repositoryContext" in (openTool.outputSchema?.properties ?? {}));
+    assert.ok("repositoryContext" in (openWorkspaceTool.outputSchema?.properties ?? {}));
     for (const remoteMutationTool of [
       "register_project",
       "update_project",
@@ -219,6 +221,10 @@ try {
     assert.equal(openedCheckout.isError, undefined);
     assert.match(openedCheckout.content[0]?.text ?? "", /Opened project Shared Name \(checkout-project\)/);
     assert.equal(openedCheckout.structuredContent?.mode, "checkout");
+    assert.equal(
+      (openedCheckout.structuredContent?.repositoryContext as { state?: string } | undefined)?.state,
+      "unavailable",
+    );
     assert.deepEqual(openedCheckout.structuredContent?.project, {
       id: checkout.id,
       slug: checkout.slug,
@@ -250,6 +256,16 @@ try {
     assert.match(openedLegacy.content[0]?.text ?? "", /Opened workspace/);
     assert.equal(openedLegacy.structuredContent?.mode, "checkout");
     assert.equal(openedLegacy.structuredContent?.project, undefined);
+    assert.doesNotMatch(openedLegacy.content[0]?.text ?? "", /Repository context:/);
+    assert.match(openedLegacy.content[1]?.text ?? "", /Repository context: \{/);
+    assert.equal(
+      (openedLegacy.structuredContent?.repositoryContext as { state?: string } | undefined)?.state,
+      "available",
+    );
+    assert.equal(
+      typeof (openedLegacy.structuredContent?.repositoryContext as { fingerprint?: unknown } | undefined)?.fingerprint,
+      "string",
+    );
     const legacyWorkspaceId = openedLegacy.structuredContent?.workspaceId;
     assert.equal(typeof legacyWorkspaceId, "string");
 

@@ -17,10 +17,9 @@ Last synchronized: 2026-08-02
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; GOAL_08 remains the canonical next-program
   contract
-- Current program unit: GOAL_08 MWU-08.02 shared repository context and tree
-  fingerprint is next. MWU-08.01 baseline and configuration selection is
-  complete; the measured current `gpt-5.5` medium setting is retained after the
-  medium, conditional-high, and metadata-audit comparisons.
+- Current program unit: GOAL_08 MWU-08.03 model-visible final review is next.
+  MWU-08.01 configuration selection and MWU-08.02 shared repository context
+  are complete; the measured current `gpt-5.5` medium setting is retained.
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
@@ -36,7 +35,7 @@ Last synchronized: 2026-08-02
 | GOAL_05 Codex Handoff | DONE | structured local-agent handoff |
 | GOAL_06 Live Operations Dashboard | DONE | canonical live/retained operation views |
 | GOAL_07 Integration and Hardening | DONE | distribution, recovery, security, acceptance |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01 complete; current setting retained; MWU-08.02 is next |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | MWU-08.01/02 complete; current setting retained; MWU-08.03 is next |
 | GOAL_09 Public Release Readiness | DONE | clean-history source release published and publicly verified |
 
 ## Goal model — GOAL_09
@@ -84,6 +83,7 @@ publishing the compatibility package accidentally.
 | Managed Windows update | physical packed install plus canonical setup transaction and hidden MCP request/status launcher | source Junction lets maintenance lock or mutate live files; arbitrary shell loses ownership/result across self-restart; daemon/polling/dashboard add friction or a second owner |
 | MCP session retention | active-request protection plus a 64-session inactive LRU bound | 24-hour time-only retention allowed hosts that omit DELETE to grow heap without bound; shorter global timeouts can break legitimate reused sessions |
 | MWU-08.01 model/profile setting | measured current `gpt-5.5` medium baseline: Web 8/8, local 4/8 | `gpt-5.6-sol` medium: Web 6/8, local 5/8; conditional high hard subset: Web 1/4, local 3/4; mandatory regressions and mixed delegated execution prevent adoption |
+| MWU-08.02 repository start context | existing WorkspaceRegistry/repository-diff owners plus one workspace-scoped temporary-index fingerprint; 200 path and 100 script-name bounds | whole-Git-root staging crosses nested workspace boundaries; another Git reader/store creates a second owner; changing the first text/card payload breaks compatibility |
 
 ## Workstream portfolio
 
@@ -99,7 +99,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
-| WS-QA-08 measured coding parity | IN_PROGRESS | MWU-08.01 configuration selection complete; MWU-08.02 shared repository context is next |
+| WS-QA-08 measured coding parity | IN_PROGRESS | MWU-08.01/02 complete; MWU-08.03 model-visible final review is next |
 
 ## Architecture and complexity decision
 
@@ -296,6 +296,22 @@ MWU-08.01 fixture proof:
 - no product feature, profile/model-default change, authentication change, or
   publication has been executed or adopted.
 
+MWU-08.02 repository-context proof:
+
+- one shared Git primitive returns a consistent HEAD/tree fingerprint from an
+  isolated temporary index and scopes working-tree reads to the opened
+  workspace, including nested Git workspaces;
+- open results return bounded dirty metadata and root script names through an
+  additive structured field and second plain-MCP text block while preserving
+  the existing first text/card contract;
+- clean, dirty, detached-HEAD, non-Git, missing-manifest, 200-path/100-script
+  truncation, nested-sibling exclusion, and untracked-binary fixtures pass;
+- fixture evidence proves the user index bytes, HEAD, refs, status, and tracked
+  content remain unchanged; and
+- focused tests, typecheck, full regression, production build, public/diff
+  gates, and independent A2 review through focused R2 pass with zero unresolved
+  adjudicated BLOCK.
+
 Cutover outcome:
 
 - Source publication is complete and GOAL_09 is closed.
@@ -321,11 +337,11 @@ Cutover outcome:
 | Web delegation remains managed `gpt-5.5` medium under a `GPT-5.6 Sol` controller | measured attribution boundary | preserve the mixed configuration label; do not claim end-to-end candidate coverage or change the managed profile without approval |
 | candidate medium and high settings regress mandatory safety or continuation behavior | adoption blockers; both candidates rejected | retain the measured current setting and never trade efficiency for a mandatory pass |
 | should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
+| repository context observes a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/refresh produces a new context, and locks or double fingerprinting remain deferred without a measured inconsistency |
 
 ## Next executable action
 
-Begin GOAL_08 MWU-08.02 by locating the existing repository-diff and workspace-
-open projection seams, then implement the isolated temporary-index tree
-fingerprint and bounded repository context inside those canonical owners. Do
-not rerun MWU-08.01, change the selected model/profile, or make an external
-submission without a new explicit approval.
+Begin GOAL_08 MWU-08.03 at the existing review-checkpoint, process-verification,
+operation-evidence, and `show_changes` owners. Add the nullable verification
+basis fingerprint and bounded model-visible review contract without changing
+the accepted repository context, model/profile defaults, or external state.

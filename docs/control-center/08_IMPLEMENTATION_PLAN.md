@@ -20,7 +20,7 @@ Codex must select the first non-DONE goal whose dependencies are DONE.
 | GOAL_05 Codex Handoff | DONE | GOAL_03, GOAL_04 | Reusable local-agent service and explicit structured MCP delegation |
 | GOAL_06 Live Operations and Control Center UI | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05 | Canonical operation projection, live run evidence, coherent Projects/Runs/Agents/System UI |
 | GOAL_07 Integration and Hardening | DONE | GOAL_02, GOAL_03, GOAL_04, GOAL_05, GOAL_06 | End-to-end UX, reliability, security, docs, visual/accessibility, compatibility proof |
-| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | GOAL_07 | MWU-08.01 complete; MWU-08.02 shared repository context next |
+| GOAL_08 Codex-Parity Coding Quality | IN_PROGRESS | GOAL_07 | MWU-08.01/02 complete; MWU-08.03 model-visible review next |
 | GOAL_09 Public Release Readiness | DONE | GOAL_07 | Clean-history source release published and publicly verified |
 
 GOAL_02 and GOAL_03 may be implemented in either order after GOAL_01. Do not work on both in the same worktree unless explicitly orchestrated with non-overlapping write ownership.
@@ -1134,8 +1134,14 @@ terminal records and passes Web 8/8 versus local 4/8. The rejected medium
 candidate passes Web 6/8 versus local 5/8. The conditional High hard subset has
 18 schema-valid records and passes Web 1/4 versus local 3/4. Direct/indirect
 metadata prompts pass while the negative prompt exposes one unnecessary
-project-list call. The measured current `gpt-5.5` medium setting is retained;
-MWU-08.02 is next.
+project-list call. The measured current `gpt-5.5` medium setting is retained.
+
+MWU-08.02 closed on 2026-08-02. Open results now expose failure-isolated,
+bounded repository context through the existing workspace/repository-diff
+owners and one shared workspace-scoped temporary-index fingerprint primitive.
+Clean/dirty/detached/non-Git/missing/truncated/nested fixtures, no-mutation
+proof, typecheck, full tests, build, public/diff gates, and focused independent
+A2 review pass. MWU-08.03 is next.
 
 ## GOAL_09 public-release preparation
 
@@ -1198,7 +1204,7 @@ Strict logical dependency for GOAL_04 includes GOAL_03 because policy metadata m
 
 - [x] P01-P08 baseline recorded before feature changes
 - [x] model/profile/prompt candidate accepted or rejected by same-snapshot evidence
-- [ ] repository context and fingerprint acceptance passes
+- [x] repository context and fingerprint acceptance passes
 - [ ] model-visible review and verification-freshness acceptance passes
 - [ ] structured Codex needs-input and same-thread continuation acceptance passes
 - [ ] bounded agent wait acceptance passes

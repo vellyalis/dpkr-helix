@@ -52,9 +52,12 @@ try {
     PORT: "1",
   });
   const registry = new WorkspaceRegistry(config);
-  const { workspace, agentsFiles, availableAgentsFiles } = await registry.openWorkspace(root);
+  const { workspace, agentsFiles, availableAgentsFiles, repositoryContext } =
+    await registry.openWorkspace(root);
 
   assert.equal(workspace.mode, "checkout");
+  assert.equal(repositoryContext.state, "unavailable");
+  assert.match(repositoryContext.message ?? "", /git repository/i);
   assert.deepEqual(
     agentsFiles.map((file) => file.content),
     ["global instructions\n", "root instructions\n"],
@@ -149,6 +152,9 @@ try {
   assert.equal(worktreeWorkspace.workspace.worktree?.baseRef, "HEAD");
   assert.equal(worktreeWorkspace.workspace.worktree?.dirtySource, true);
   assert.equal(worktreeWorkspace.workspace.worktree?.managed, true);
+  assert.equal(worktreeWorkspace.repositoryContext.state, "available");
+  assert.equal(worktreeWorkspace.repositoryContext.branch, undefined);
+  assert.equal(worktreeWorkspace.repositoryContext.dirty.total, 0);
   assert.equal((await stat(worktreeWorkspace.workspace.root)).isDirectory(), true);
   assert.match(worktreeWorkspace.agentsFiles.map((file) => file.content).join("\n"), /global instructions/);
   assert.match(worktreeWorkspace.agentsFiles.map((file) => file.content).join("\n"), /git root instructions/);

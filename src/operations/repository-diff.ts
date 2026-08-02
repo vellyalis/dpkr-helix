@@ -1,8 +1,15 @@
 import { lstat, readFile } from "node:fs/promises";
-import { isAbsolute, relative, resolve, sep } from "node:path";
-import { getGitEligibility, git } from "../git.js";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import {
+  createWorkingTreeFingerprint,
+  getGitEligibility,
+  git,
+} from "../git.js";
 
 const MAX_FILE_PATCH_BYTES = 2 * 1024 * 1024;
+const MAX_REPOSITORY_CONTEXT_FILES = 200;
+const MAX_MANIFEST_SCRIPT_NAMES = 100;
+const MAX_ROOT_MANIFEST_BYTES = 1024 * 1024;
 
 export type RepositoryFileOperation =
   | "untracked"
@@ -40,6 +47,34 @@ export interface RepositoryFileDiff {
   message?: string;
 }
 
+export interface RepositoryContextFile {
+  path: string;
+  previousPath?: string;
+  operation: RepositoryFileOperation;
+  binary: boolean;
+}
+
+export interface RepositoryContext {
+  state: "available" | "unavailable";
+  basis: "current_worktree";
+  refreshedAt: string;
+  branch?: string;
+  head?: string;
+  fingerprint?: string;
+  dirty: {
+    total: number;
+    returned: number;
+    truncated: boolean;
+    files: RepositoryContextFile[];
+  };
+  manifest?: {
+    path: "package.json";
+    scriptNames: string[];
+    truncated: boolean;
+  };
+  message?: string;
+}
+
 export async function readRepositoryDiffSummary(
   workspaceRoot: string,
 ): Promise<RepositoryDiffSummary> {
@@ -53,64 +88,132 @@ export async function readRepositoryDiffSummary(
   }
 
   try {
-    const [statusResult, statsResult, branchResult] = await Promise.all([
-      git(workspaceRoot, [
-        "-c",
-        "status.relativePaths=true",
-        "status",
-        "--porcelain=v1",
-        "-z",
-        "--untracked-files=all",
-        "--",
-        ".",
-      ]),
-      git(workspaceRoot, [
-        "diff",
-        "--numstat",
-        "-z",
-        "--find-renames",
-        "--relative",
-        "HEAD",
-        "--",
-        ".",
-      ]),
-      git(workspaceRoot, ["branch", "--show-current"]),
-    ]);
-    const stats = parseNumstat(statsResult.stdout);
-    const files = parseStatus(statusResult.stdout).map((file) => {
-      const stat = stats.get(file.path);
-      return {
-        ...file,
-        additions: stat?.additions,
-        removals: stat?.removals,
-        binary: stat?.binary ?? false,
-      };
-    });
-    const totals = files.reduce(
-      (sum, file) => ({
-        additions: sum.additions + (file.additions ?? 0),
-        removals: sum.removals + (file.removals ?? 0),
-      }),
-      { additions: 0, removals: 0 },
-    );
-    return {
-      state: "available",
-      basis: "current_worktree_against_head",
-      refreshedAt,
-      branch: branchResult.stdout.trim() || undefined,
-      files,
-      ...totals,
-      statsIncomplete: files.some(
-        ({ additions, removals }) =>
-          additions === undefined || removals === undefined,
-      ),
-    };
+    return await readAvailableRepositoryDiffSummary(workspaceRoot, refreshedAt);
   } catch {
     return unavailableSummary(
       refreshedAt,
       "Current repository changes could not be read.",
     );
   }
+}
+
+export async function readRepositoryContext(
+  workspaceRoot: string,
+): Promise<RepositoryContext> {
+  const refreshedAt = new Date().toISOString();
+  const manifestPromise = readRootManifestContext(workspaceRoot);
+
+  try {
+    const eligibility = await getGitEligibility(workspaceRoot);
+    const manifest = await manifestPromise;
+    if (!eligibility.ok || !eligibility.gitRoot) {
+      return unavailableContext(
+        refreshedAt,
+        eligibility.message ?? "Repository context is unavailable.",
+        manifest,
+      );
+    }
+
+    const snapshot = await createWorkingTreeFingerprint(
+      eligibility.gitRoot,
+      workspaceRoot,
+    );
+    const summary = await readAvailableRepositoryDiffSummary(
+      workspaceRoot,
+      refreshedAt,
+      { base: snapshot.head, target: snapshot.fingerprint },
+    );
+    const files = summary.files
+      .slice(0, MAX_REPOSITORY_CONTEXT_FILES)
+      .map(({ path, previousPath, operation, binary }) => ({
+        path,
+        previousPath,
+        operation,
+        binary,
+      }));
+
+    return {
+      state: "available",
+      basis: "current_worktree",
+      refreshedAt,
+      branch: summary.branch,
+      head: snapshot.head,
+      fingerprint: snapshot.fingerprint,
+      dirty: {
+        total: summary.files.length,
+        returned: files.length,
+        truncated: summary.files.length > files.length,
+        files,
+      },
+      manifest,
+    };
+  } catch {
+    return unavailableContext(
+      refreshedAt,
+      "Current repository context could not be read.",
+      await manifestPromise,
+    );
+  }
+}
+
+async function readAvailableRepositoryDiffSummary(
+  workspaceRoot: string,
+  refreshedAt: string,
+  comparison?: { base: string; target: string },
+): Promise<RepositoryDiffSummary> {
+  const [statusResult, statsResult, branchResult] = await Promise.all([
+    git(workspaceRoot, [
+      "-c",
+      "status.relativePaths=true",
+      "status",
+      "--porcelain=v1",
+      "-z",
+      "--untracked-files=all",
+      "--",
+      ".",
+    ]),
+    git(workspaceRoot, [
+      "diff",
+      "--numstat",
+      "-z",
+      "--find-renames",
+      "--relative",
+      comparison?.base ?? "HEAD",
+      ...(comparison ? [comparison.target] : []),
+      "--",
+      ".",
+    ]),
+    git(workspaceRoot, ["branch", "--show-current"]),
+  ]);
+  const stats = parseNumstat(statsResult.stdout);
+  const files = parseStatus(statusResult.stdout).map((file) => {
+    const stat = stats.get(file.path);
+    return {
+      ...file,
+      additions: stat?.additions,
+      removals: stat?.removals,
+      binary: stat?.binary ?? false,
+    };
+  });
+  const totals = files.reduce(
+    (sum, file) => ({
+      additions: sum.additions + (file.additions ?? 0),
+      removals: sum.removals + (file.removals ?? 0),
+    }),
+    { additions: 0, removals: 0 },
+  );
+  return {
+    state: "available",
+    basis: "current_worktree_against_head",
+    refreshedAt,
+    branch: branchResult.stdout.trim() || undefined,
+    files,
+    ...totals,
+    statsIncomplete: files.some(
+      ({ additions, removals }) =>
+        additions === undefined || removals === undefined,
+    ),
+  };
 }
 
 export async function readRepositoryFileDiff(
@@ -180,6 +283,59 @@ function unavailableSummary(
     statsIncomplete: false,
     message,
   };
+}
+
+function unavailableContext(
+  refreshedAt: string,
+  message: string,
+  manifest: RepositoryContext["manifest"],
+): RepositoryContext {
+  return {
+    state: "unavailable",
+    basis: "current_worktree",
+    refreshedAt,
+    dirty: {
+      total: 0,
+      returned: 0,
+      truncated: false,
+      files: [],
+    },
+    manifest,
+    message,
+  };
+}
+
+async function readRootManifestContext(
+  workspaceRoot: string,
+): Promise<RepositoryContext["manifest"]> {
+  const manifestPath = join(workspaceRoot, "package.json");
+  try {
+    const metadata = await lstat(manifestPath);
+    if (
+      !metadata.isFile()
+      || metadata.isSymbolicLink()
+      || metadata.size > MAX_ROOT_MANIFEST_BYTES
+    ) {
+      return undefined;
+    }
+
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as unknown;
+    if (!isRecord(manifest)) return undefined;
+    const scriptNames = isRecord(manifest.scripts)
+      ? Object.keys(manifest.scripts).sort()
+      : [];
+    return {
+      path: "package.json",
+      scriptNames: scriptNames.slice(0, MAX_MANIFEST_SCRIPT_NAMES),
+      truncated: scriptNames.length > MAX_MANIFEST_SCRIPT_NAMES,
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function parseStatus(output: string): Omit<

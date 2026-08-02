@@ -4,9 +4,9 @@
 
 ## Status
 
-`IN_PROGRESS` — MWU-08.01 baseline and configuration selection is complete.
-The measured current `gpt-5.5` medium setting is retained; MWU-08.02 shared
-repository context and fingerprint is the next work unit.
+`IN_PROGRESS` — MWU-08.01 baseline/configuration selection and MWU-08.02 shared
+repository context/fingerprint are complete. The measured current `gpt-5.5`
+medium setting is retained; MWU-08.03 model-visible final review is next.
 
 ## Goal
 
@@ -136,7 +136,7 @@ directory, or creating a new development root.
 | Hypothesis | Candidate type | Expected observation | Decision |
 | --- | --- | --- | --- |
 | H1: profile model/effort and prompt/tool metadata limit task quality | Context setting | same snapshots pass more often without product code | Compared; current setting retained, M03 defect recorded |
-| H2: weak start/end contracts cause missed context and untrustworthy completion | Mechanism | fewer unrelated changes and stale-verification claims | Current bottleneck; MWU-08.02 next |
+| H2: weak start/end contracts cause missed context and untrustworthy completion | Mechanism | fewer unrelated changes and stale-verification claims | Current bottleneck; start context accepted, MWU-08.03 end contract next |
 | H3: polling and unstructured blocking cause avoidable turns and guesses | Mechanism/UX | fewer status calls and fewer assumption-driven edits | Implement after the review contract |
 | H4: cancellation is the main quality bottleneck | Lifecycle mechanism | task success changes materially when cancel exists | Deferred; current evidence supports operational hygiene only |
 | H5: more agents, services, indexes, or reverse notifications improve quality | Architecture | frequent tasks pass more often despite added owners | Rejected without new evidence |
@@ -659,6 +659,21 @@ No product feature began before this work unit closed.
 - add bounded root-manifest script-name reading;
 - add repository context to open results;
 - prove no index/checkout/ref mutation and failure isolation.
+
+Progress on 2026-08-02: the existing Git primitive now builds a stable
+HEAD/fingerprint pair through an isolated temporary index scoped to the opened
+workspace. The repository-diff owner returns branch, HEAD, fingerprint, at most
+200 dirty paths, accurate binary metadata, and at most 100 sorted root
+`package.json` script names. `WorkspaceRegistry` keeps non-Git/manifest failure
+isolated after open, while the MCP result preserves its first text/card payload
+and adds context through a second plain-MCP text block plus structured content.
+
+Focused clean/dirty/detached/non-Git/missing-manifest/truncation/nested-scope
+fixtures prove stable fingerprints and byte-identical user index, HEAD, refs,
+status, and tracked content. Typecheck, full regression, production build,
+diff/public checks, and independent A2 review through focused R2 pass. R1's
+workspace-boundary, text compatibility, and untracked-binary findings were
+fixed; R2 found no fix-induced S0-S1 candidate. MWU-08.02 is complete.
 
 ### MWU-08.03 — Model-visible final review contract
 
