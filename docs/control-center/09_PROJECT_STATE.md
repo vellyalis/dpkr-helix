@@ -471,6 +471,32 @@ Cutover outcome:
 - No tag, GitHub Release, or npm publication was created.
 - The hosted-CI announcement gate is satisfied.
 
+Direct P01 effort comparison proof:
+
+- twelve fresh P01 records now cover normal Chat and local Codex at medium,
+  high, and xhigh with two attempts per cell. Work and Web-side delegation were
+  absent from every accepted Chat record;
+- both surfaces pass the mandatory P01 outcome 6/6, stay inside the two-file
+  write allowlist, and independently pass the focused test and diff check;
+- Chat preserves consistent CRLF in all six cells and uses 27 observed direct
+  calls with zero failed tool operation. Four Chat outcomes are the minimal
+  one-line source fix and two add one focused decimal-rejection assertion;
+- Codex uses 43 observed direct calls, including 17 failed patch attempts and
+  ten failed test commands. Six test failures are expected baselines; four are
+  avoidable intermediate reruns. Only both xhigh outcomes finish with the
+  minimal one-line diff; the four medium/high outcomes retain redundant or
+  expanded validation, and every Codex source has LF or mixed line endings;
+- observed Web completion detection averages about 96 seconds versus about 75
+  seconds for Codex, but Web polling makes that timing an upper bound. P01
+  therefore favors Chat on execution discipline and file hygiene while Codex
+  is faster in this sample; both remain functionally correct; and
+- Codex CLI 0.146.0 `workspace-write` could not be used: its packaged Windows
+  helper location first failed discovery, then the sandbox rejected permitted
+  workspace commands and edits. The accepted P01 Codex cells isolate user
+  config, rules, apps, and MCP, and use direct tools in disposable fixtures with
+  `danger-full-access`. This preserves coding-quality evidence but does not
+  establish OS-sandbox parity.
+
 ## Residual risks
 
 | Risk | State | Control |
@@ -486,6 +512,8 @@ Cutover outcome:
 | this execution context could not register a replacement current-user task | accepted local deployment constraint | reuse the existing limited-user no-console task through canonical recovery; preserve helper-only rollback |
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
 | ChatGPT Web does not currently honor MCP tool-list-change for newly added names | external host behavior, one-time migration closed | automate the approved developer-mode connection update during legacy migration; keep the two update tool names stable so later self-updates need only reconnect |
+| the last ChatGPT self-update status remains `DIRTY_WORKTREE` even after its rejecting condition was committed | stale last-attempt state, not a current installation failure | current source is clean and public; installed/source runtime files are content-equivalent after CR normalization; require a later meaningful published runtime delta to prove replacement rather than treating `UP_TO_DATE` as replacement evidence |
+| Codex CLI 0.146.0 rejects the permitted P01 workload under `workspace-write` on this Windows installation | local runner capability degradation; direct coding remains available | keep the valid comparison profile isolated from user config/apps/MCP, disclose `danger-full-access`, and repair/reverify the sandbox before making enforced-safety comparisons |
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
 | delegated Web execution does not answer direct Chat-versus-Codex quality | comparison-class error; worker routing remains separate evidence | score only normal Chat directly using helix file/shell tools at `中程度`/`高い`/`非常に高い`; require zero new local-agent sessions; never use Work |
 | candidate medium and high settings regress mandatory safety or continuation behavior | adoption blockers; both candidates rejected | retain the measured current setting and never trade efficiency for a mandatory pass |
@@ -495,10 +523,10 @@ Cutover outcome:
 
 ## Next executable action
 
-Run the remaining fresh P01-P08 records in the three prepared direct roots,
-including the second P05 attempt, with identical seeds and matching
-`gpt-5.6-sol` medium/high/xhigh effort. Chat must use helix read/edit/shell
-directly and create zero local-agent sessions. Preserve terminal attribution,
-mandatory safety, final content quality, failed attempts, tool use, verification,
-and file hygiene before ranking. Never reuse excluded roots; Work and Web-side
-delegation are prohibited.
+Run fresh P02 next in the three prepared direct roots with matching
+`gpt-5.6-sol` medium/high/xhigh effort, then continue P03/P04/P06/P07/P08. P01
+and P05 are complete. Chat must remain normal Chat with Work unselected, use
+helix directly, and create zero local-agent sessions. Local Codex must retain
+the recorded isolated direct profile and sandbox caveat. Preserve attribution,
+mandatory safety, semantic and diff quality, failed operations, verification,
+file hygiene, and timing before any cross-case ranking.

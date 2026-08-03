@@ -371,12 +371,25 @@ commands merely because the preparation work is complete.
   write, same-provider-session continuation, bounded two-file changes, and a
   passing 2/2 focused test run. Controller effort was not recorded, so these are
   not scored Web comparison cells. Work and Portable interactions are excluded.
+- 2026-08-03 update rejection reconciliation: `DIRTY_WORKTREE` is the persisted
+  last-attempt rejection, recorded before the repository was checkpointed. The
+  current source is clean and public; installed/source runtime differences are
+  only CR normalization. A rerun would report `UP_TO_DATE`, so actual replacement
+  remains intentionally unclaimed until a later meaningful runtime delta.
+- 2026-08-03 direct P01 batch: all twelve Chat/Codex medium/high/xhigh records
+  are terminal and schema-valid. Both surfaces pass 6/6 and preserve scope.
+  Chat uses 27 calls, zero failed tool operation, and consistent CRLF; Codex
+  uses 43 calls, 17 failed patches, four avoidable intermediate failed tests,
+  and LF/mixed source endings. Codex xhigh alone produces the minimal final diff
+  in both attempts. The Codex 0.146.0 `workspace-write` failure is disclosed;
+  accepted cells use isolated direct tools in disposable fixtures with
+  `danger-full-access` and make no OS-sandbox-parity claim.
 
 ## Exact next action
 
-Run the remaining fresh P01-P08 records in the prepared medium/high/xhigh
-direct roots, including P05 attempt 2. Require direct helix read/edit/shell and
-zero local-agent sessions on Chat, and exact `gpt-5.6-sol` effort attribution on
-both surfaces. Record semantic correctness, scope/safety, failed attempts, tool
-use, verification, and file hygiene before ranking. Work, delegation, and all
-earlier provider-turn workspaces are excluded.
+Run P02 next in all three direct effort roots, then P03/P04/P06/P07/P08. P01
+and P05 are complete. Require normal Chat with Work unselected, direct helix
+tools, zero local-agent sessions, and exact `gpt-5.6-sol` effort attribution.
+Keep local Codex isolated from user config/apps/MCP and retain the documented
+0.146.0 sandbox caveat. Record final semantics and diff quality, safety/scope,
+failed operations, verification, file hygiene, and timing before ranking.

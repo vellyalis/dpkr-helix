@@ -585,3 +585,38 @@ and Git rather than duplicated here.
   sufficient to admit the direct matrix, but P05 alone is not sufficient to
   decide whether Chat can generally replace Codex for coding or which effort is
   best. The remaining fresh P01-P08 records are next.
+
+## 2026-08-03 — Self-update rejection reconciled
+
+- The reported `DIRTY_WORKTREE` status is a correct last-attempt rejection from
+  before the local checkpoint; it did not replace or damage the installation.
+- Current source and public tracking state are clean. The seven installed/source
+  runtime file differences collapse after CR normalization, and the setup
+  script digest matches.
+- A retry at the current revision would only prove `UP_TO_DATE`. A real
+  ChatGPT-driven replacement remains deferred until a meaningful runtime commit
+  is published while the managed installation is one commit behind.
+
+## 2026-08-03 — Direct P01 effort batch completed
+
+- Twelve fresh records cover normal Chat and direct local Codex at medium,
+  high, and xhigh, two attempts each. Work, Web delegation, and local-agent
+  creation are absent from accepted Chat cells.
+- Both surfaces pass 6/6, change only `src/parse-port.js` and optionally the
+  allowed test, and pass independent focused tests plus diff checks.
+- Chat uses 27 observed calls with zero failed tool operation and preserves
+  consistent CRLF. Four outcomes are the minimal one-line fix; two add one
+  focused decimal-rejection assertion.
+- Codex uses 43 calls with 17 failed patches. Its ten failed test commands
+  comprise six expected baselines and four avoidable intermediate runs. Medium
+  and high retain redundant or expanded validation; xhigh produces the minimal
+  semantic diff in both attempts. All six Codex sources end LF-only or mixed.
+- The Web completion-detection mean is about 96 seconds versus about 75 seconds
+  for Codex, with Web timing explicitly treated as a polling upper bound.
+- Codex CLI 0.146.0 `workspace-write` rejected permitted commands and writes
+  after its packaged helper-path defect was bypassed. Accepted cells use
+  `--ignore-user-config --ignore-rules --ephemeral`, disable apps/MCP, and run
+  direct tools with `danger-full-access` inside disposable fixtures. Coding-
+  quality evidence is valid; enforced sandbox parity is not claimed.
+- All twelve records pass `result.schema.json`; the frozen suite materializer
+  still validates. P01 and P05 are complete, and P02 is the next fresh case.
