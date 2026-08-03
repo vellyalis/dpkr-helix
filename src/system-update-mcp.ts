@@ -25,10 +25,23 @@ const APPLY_TOOL_ANNOTATIONS = {
   openWorldHint: true,
 };
 
+const SYSTEM_UPDATE_STATUS_SCOPES = [
+  "installation",
+  "current_attempt",
+  "last_attempt",
+] as const;
+
+type PresentedSystemUpdateStatus = SystemUpdateStatus & {
+  statusScope: typeof SYSTEM_UPDATE_STATUS_SCOPES[number];
+  canRequestUpdate: boolean;
+};
+
 const statusOutputSchema = z.object({
   available: z.boolean(),
   phase: z.enum(SYSTEM_UPDATE_PHASES),
   active: z.boolean(),
+  statusScope: z.enum(SYSTEM_UPDATE_STATUS_SCOPES),
+  canRequestUpdate: z.boolean(),
   message: z.string(),
   requestId: z.string().optional(),
   fromCommit: z.string().optional(),
@@ -57,7 +70,7 @@ export function registerSystemUpdateTools(
     {
       title: "Get dpkr helix update status",
       description:
-        "Read the sanitized state of the most recent dpkr helix self-update. Use this after reconnecting from an update or when the user asks whether an update completed. It never returns credentials or local source paths.",
+        "Read the sanitized state of the most recent dpkr helix self-update. Terminal phases and codes describe only that historical attempt, not the current source state. If the user explicitly asks to update and canRequestUpdate is true, call update_dpkr_helix even after a rejected attempt; it runs fresh preflight checks. Use this after reconnecting from an update or when the user asks whether an update completed. It never returns credentials or local source paths.",
       inputSchema: {},
       outputSchema: statusOutputSchema,
       _meta: {},
@@ -65,7 +78,7 @@ export function registerSystemUpdateTools(
     },
     async () => {
       const startedAt = performance.now();
-      const status = await systemUpdate.getStatus();
+      const status = presentStatus(await systemUpdate.getStatus());
       log({
         tool: SYSTEM_UPDATE_TOOL_NAMES.status,
         success: true,
@@ -84,7 +97,7 @@ export function registerSystemUpdateTools(
     {
       title: "Update dpkr helix",
       description:
-        "Apply the latest verified origin/main to this managed Windows installation. Call only after the user explicitly asks to update dpkr helix. The updater rejects dirty, non-main, diverged, or noncanonical source; verifies the candidate before stopping the current service; runs without a visible console; and rolls back the previous installation if deployment fails. The MCP connection may reconnect once after verified apply begins.",
+        "Apply the latest verified origin/main to this managed Windows installation. Call only after the user explicitly asks to update dpkr helix. A new request rechecks current preflight conditions even when the last recorded attempt was rejected. The updater rejects dirty, non-main, diverged, or noncanonical source; verifies the candidate before stopping the current service; runs without a visible console; and rolls back the previous installation if deployment fails. The MCP connection may reconnect once after verified apply begins.",
       inputSchema: {},
       outputSchema: z.object({
         accepted: z.boolean(),
@@ -99,6 +112,10 @@ export function registerSystemUpdateTools(
       const startedAt = performance.now();
       try {
         const result = await systemUpdate.requestUpdate();
+        const presentedResult = {
+          ...result,
+          status: presentStatus(result.status),
+        };
         log({
           tool: SYSTEM_UPDATE_TOOL_NAMES.apply,
           success: true,
@@ -106,7 +123,7 @@ export function registerSystemUpdateTools(
         });
         return {
           content: [{ type: "text" as const, text: result.message }],
-          structuredContent: result,
+          structuredContent: presentedResult,
         };
       } catch (error) {
         const detail = error instanceof Error ? error.message : "unknown updater error";
@@ -126,13 +143,36 @@ export function registerSystemUpdateTools(
   );
 }
 
-function formatStatus(status: SystemUpdateStatus): string {
+function presentStatus(status: SystemUpdateStatus): PresentedSystemUpdateStatus {
+  return {
+    ...status,
+    statusScope: status.active
+      ? "current_attempt"
+      : status.phase === "idle"
+        ? "installation"
+        : "last_attempt",
+    canRequestUpdate: status.available && !status.active,
+  };
+}
+
+function formatStatus(status: PresentedSystemUpdateStatus): string {
   const lines = [
-    `dpkr helix update: ${status.phase}`,
+    status.statusScope === "last_attempt"
+      ? `dpkr helix last update attempt: ${status.phase}`
+      : `dpkr helix update: ${status.phase}`,
     status.message,
   ];
+  if (status.statusScope === "last_attempt") {
+    lines.push("This is a historical result and does not report the current source state.");
+  }
+  lines.push(`Can start a new update request: ${status.canRequestUpdate ? "yes" : "no"}`);
+  if (status.statusScope === "last_attempt" && status.canRequestUpdate) {
+    lines.push("A new explicit update request will run current preflight checks.");
+  }
   if (status.fromCommit) lines.push(`From: ${status.fromCommit}`);
   if (status.targetCommit) lines.push(`Target: ${status.targetCommit}`);
-  if (status.code) lines.push(`Code: ${status.code}`);
+  if (status.code) {
+    lines.push(`${status.statusScope === "last_attempt" ? "Last attempt code" : "Code"}: ${status.code}`);
+  }
   return lines.join("\n");
 }

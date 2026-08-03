@@ -646,3 +646,24 @@ and Git rather than duplicated here.
 - All twelve P02 records pass `result.schema.json`; the frozen suite
   materializer still validates. P01, P02, and P05 are complete, and P03 is the
   next fresh case.
+
+## 2026-08-03 — Historical self-update rejection clarified locally
+
+- A live `get_dpkr_helix_update_status` read still exposed the persisted
+  `rejected` / `DIRTY_WORKTREE` result after its original dirty condition had
+  been committed. Fresh Git evidence showed the managed `main` clean and equal
+  to advertised `origin/main`; the status file timestamp predates the current
+  checkpoint and is a last-attempt record, not a current eligibility check.
+- The existing MCP presentation now adds `statusScope` and
+  `canRequestUpdate`. Inactive terminal phases are `last_attempt`, running work
+  is `current_attempt`, and installation availability is separate. Text output
+  labels terminal codes as historical and states that a new explicit update
+  request runs current preflight again.
+- The change stays inside the existing system-update MCP owner. It adds no Git
+  reader, dependency, service, store, worker, queue, retry, or automatic update.
+- Focused system-update tests, the full suite, typecheck, production build,
+  public-release check, and diff checks pass. The candidate is isolated in a
+  dedicated worktree so managed `main` can remain clean and one commit behind
+  for a real self-update after explicit publication approval.
+- Publication, installed replacement, reconnect, and fresh ChatGPT observation
+  are not yet claimed. They are the next action before resuming WS-QA-09 P03.

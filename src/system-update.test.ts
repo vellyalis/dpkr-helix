@@ -184,11 +184,10 @@ try {
     async getStatus() {
       return {
         available: true,
-        phase: "up_to_date",
+        phase: "rejected",
         active: false,
-        message: "This installation already matches origin/main.",
-        fromCommit: "a".repeat(40),
-        targetCommit: "a".repeat(40),
+        message: "The update was rejected without replacing the running installation.",
+        code: "DIRTY_WORKTREE",
       };
     },
     async requestUpdate() {
@@ -231,17 +230,22 @@ try {
       idempotentHint: false,
       openWorldHint: true,
     });
+    assert.match(statusTool?.description ?? "", /historical attempt/i);
     const statusResult = await client.callTool({
       name: "get_dpkr_helix_update_status",
       arguments: {},
-    }) as { structuredContent?: Record<string, unknown> };
-    assert.equal(statusResult.structuredContent?.phase, "up_to_date");
+    }) as { content?: Array<{ text?: string }>; structuredContent?: Record<string, unknown> };
+    assert.equal(statusResult.structuredContent?.phase, "rejected");
+    assert.equal(statusResult.structuredContent?.statusScope, "last_attempt");
+    assert.equal(statusResult.structuredContent?.canRequestUpdate, true);
+    assert.match(statusResult.content?.[0]?.text ?? "", /historical result/i);
     assert.equal("sourceRoot" in (statusResult.structuredContent ?? {}), false);
     const updateResult = await client.callTool({
       name: "update_dpkr_helix",
       arguments: {},
     }) as { structuredContent?: Record<string, unknown> };
     assert.equal(updateResult.structuredContent?.accepted, true);
+    assert.equal((updateResult.structuredContent?.status as Record<string, unknown>)?.statusScope, "current_attempt");
     assert.equal(mcpUpdateRequests, 1);
     const failedUpdate = await client.callTool({
       name: "update_dpkr_helix",

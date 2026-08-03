@@ -39,6 +39,10 @@ Last synchronized: 2026-08-03
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
+- WS-UPD-02 locally corrects the model-visible status ambiguity that let an
+  inactive historical `DIRTY_WORKTREE` rejection be read as a current blocker.
+  The candidate is fully verified in a separate worktree; public fast-forward,
+  managed replacement, and live ChatGPT confirmation remain approval-gated.
 
 ## Goal status
 
@@ -124,6 +128,7 @@ publishing the compatibility package accidentally.
 | Windows Codex child launch | install-time verified single `windowsHide: true` option | dependency update alone still omits the no-console option; SDK fork creates a second owner |
 | Windows recovery trigger | existing limited-user no-console task plus canonical health-gated recovery | legacy public-or-local failure rule restarted healthy local state during tunnel-only outages |
 | Managed Windows update | physical packed install plus canonical setup transaction and hidden MCP request/status launcher | source Junction lets maintenance lock or mutate live files; arbitrary shell loses ownership/result across self-restart; daemon/polling/dashboard add friction or a second owner |
+| Managed update status meaning | additive MCP presentation with `installation` / `current_attempt` / `last_attempt` scope and `canRequestUpdate`; the existing updater remains the fresh-preflight owner | treating a persisted terminal code as current eligibility causes ChatGPT to suppress valid explicit retries; adding a second Git reader would duplicate preflight and become stale |
 | MCP session retention | active-request protection plus a 64-session inactive LRU bound | 24-hour time-only retention allowed hosts that omit DELETE to grow heap without bound; shorter global timeouts can break legitimate reused sessions |
 | MWU-08.01 historical model/profile result | measured `gpt-5.5` medium baseline: Web 8/8, local 4/8 | `gpt-5.6-sol` medium: Web 6/8, local 5/8; conditional high hard subset: Web 1/4, local 3/4; mandatory regressions and mixed delegated execution prevented adoption at that checkpoint |
 | MWU-08.02 repository start context | existing WorkspaceRegistry/repository-diff owners plus one workspace-scoped temporary-index fingerprint; 200 path and 100 script-name bounds | whole-Git-root staging crosses nested workspace boundaries; another Git reader/store creates a second owner; changing the first text/card payload breaks compatibility |
@@ -148,6 +153,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
+| WS-UPD-02 historical update-status clarity | VERIFIED LOCALLY / PUBLICATION PENDING | public fast-forward, managed replacement, and live ChatGPT status show historical scope plus fresh-request availability |
 | WS-QA-08 measured coding parity | VERIFIED / DONE | signed-in Web passes 8/8 versus retained local 5/8 with zero mandatory safety regression |
 | WS-QA-09 GPT-5.6 Sol effort comparison | IN PROGRESS / DIRECT CANARY PASSED | fresh medium/high/xhigh P01-P08 direct results and any required tie-breaks close the matrix |
 
@@ -464,6 +470,12 @@ ChatGPT self-update recheck:
   ChatGPT developer-mode catalog update was then automated; its live catalog
   exposed both tools and a fresh chat returned `UP_TO_DATE` through the read-
   only status tool.
+- a focused WS-UPD-02 candidate keeps the existing controller and updater as
+  owners while adding model-visible `statusScope` and `canRequestUpdate` fields.
+  An inactive rejected result renders as historical, the old code is labeled
+  `Last attempt code`, and a fresh explicit request remains available. Focused
+  and full tests, typecheck, build, public-release check, and diff checks pass;
+  public and installed-runtime evidence remain pending approval.
 
 Cutover outcome:
 
@@ -542,7 +554,7 @@ Direct P02 effort comparison proof:
 | this execution context could not register a replacement current-user task | accepted local deployment constraint | reuse the existing limited-user no-console task through canonical recovery; preserve helper-only rollback |
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
 | ChatGPT Web does not currently honor MCP tool-list-change for newly added names | external host behavior, one-time migration closed | automate the approved developer-mode connection update during legacy migration; keep the two update tool names stable so later self-updates need only reconnect |
-| the last ChatGPT self-update status remains `DIRTY_WORKTREE` even after its rejecting condition was committed | stale last-attempt state, not a current installation failure | current source is clean and public; installed/source runtime files are content-equivalent after CR normalization; require a later meaningful published runtime delta to prove replacement rather than treating `UP_TO_DATE` as replacement evidence |
+| the installed ChatGPT status still presents the old `DIRTY_WORKTREE` result without explicit historical scope | local fix verified; public/live rollout pending | publish WS-UPD-02 from its separate worktree, apply it through the existing managed updater, and verify `last_attempt` plus `canRequestUpdate` in a fresh Chat |
 | Codex CLI 0.146.0 rejects the permitted P01 workload under `workspace-write` on this Windows installation | local runner capability degradation; direct coding remains available | keep the valid comparison profile isolated from user config/apps/MCP, disclose `danger-full-access`, and repair/reverify the sandbox before making enforced-safety comparisons |
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
 | delegated Web execution does not answer direct Chat-versus-Codex quality | comparison-class error; worker routing remains separate evidence | score only normal Chat directly using helix file/shell tools at `中程度`/`高い`/`非常に高い`; require zero new local-agent sessions; never use Work |
@@ -553,10 +565,8 @@ Direct P02 effort comparison proof:
 
 ## Next executable action
 
-Run fresh P03 next in the three prepared direct roots with matching
-`gpt-5.6-sol` medium/high/xhigh effort, then continue P04/P06/P07/P08. P01,
-P02, and P05 are complete. Chat must remain normal Chat with Work unselected, use
-helix directly, and create zero local-agent sessions. Local Codex must retain
-the recorded isolated direct profile and sandbox caveat. Preserve attribution,
-mandatory safety, semantic and diff quality, failed operations, verification,
-file hygiene, and timing before any cross-case ranking.
+After explicit owner approval, fast-forward `origin/main` to the verified
+WS-UPD-02 checkpoint from its separate worktree, request the managed update from
+the still-clean source `main`, reconnect, and confirm the live stale rejection
+is labeled `last_attempt` with `canRequestUpdate=true`. Resume WS-QA-09 at P03
+only after that bounded operational correction is closed.

@@ -177,6 +177,13 @@ server is replacing itself. After reconnecting, ask ChatGPT for the update
 status. The result is stored without credentials, local source paths, command
 output, or file contents.
 
+The status response separates a running attempt from the last completed
+attempt. An inactive `rejected`, `failed`, `rolled_back`, `succeeded`, or
+`up_to_date` result is historical and does not claim that the same source
+condition still exists. When `canRequestUpdate` is `true`, a new explicit
+`update_dpkr_helix` request runs the current preflight checks again; the old
+terminal code is not a request blocker.
+
 The equivalent local command is:
 
 ```powershell

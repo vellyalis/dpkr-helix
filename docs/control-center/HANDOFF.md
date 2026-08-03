@@ -17,6 +17,10 @@ Last synchronized: 2026-08-03
 - GOAL_10: `DONE`; the standard MCP catalog-change signal is implemented, the
   one-time legacy ChatGPT catalog migration was automated, and live read-only
   status invocation passed.
+- WS-UPD-02: `VERIFIED LOCALLY / PUBLICATION AND LIVE APPLY PENDING`; inactive
+  terminal update results are now explicitly scoped to `last_attempt`, expose
+  `canRequestUpdate`, and instruct ChatGPT to run fresh preflight after a new
+  explicit update request instead of treating an old rejection as current.
 - WS-QA-09: `IN PROGRESS / DIRECT MATRIX PREPARED`; the owner compares normal
   Chat coding directly through helix with direct local Codex. Work and Web-side
   local-agent delegation are prohibited from execution, reuse, and scoring.
@@ -376,6 +380,13 @@ commands merely because the preparation work is complete.
   current source is clean and public; installed/source runtime differences are
   only CR normalization. A rerun would report `UP_TO_DATE`, so actual replacement
   remains intentionally unclaimed until a later meaningful runtime delta.
+- 2026-08-03 update-status clarity candidate: the MCP presentation adds
+  `statusScope=last_attempt` and `canRequestUpdate=true` to inactive terminal
+  results, labels their code as historical in text, and directs an explicit
+  update request through fresh preflight. The same presentation is returned by
+  the mutating tool. Focused/full tests, typecheck, build, public-release check,
+  and diff checks pass without a dependency, store, worker, or Git reader.
+  Publication and live installed-runtime verification have not occurred.
 - 2026-08-03 direct P01 batch: all twelve Chat/Codex medium/high/xhigh records
   are terminal and schema-valid. Both surfaces pass 6/6 and preserve scope.
   Chat uses 27 calls, zero failed tool operation, and consistent CRLF; Codex
@@ -398,9 +409,8 @@ commands merely because the preparation work is complete.
 
 ## Exact next action
 
-Run P03 next in all three direct effort roots, then P04/P06/P07/P08. P01,
-P02, and P05 are complete. Require normal Chat with Work unselected, direct helix
-tools, zero local-agent sessions, and exact `gpt-5.6-sol` effort attribution.
-Keep local Codex isolated from user config/apps/MCP and retain the documented
-0.146.0 sandbox caveat. Record final semantics and diff quality, safety/scope,
-failed operations, verification, file hygiene, and timing before ranking.
+After explicit owner approval, fast-forward `origin/main` to the verified
+WS-UPD-02 checkpoint from its separate worktree, request `update_dpkr_helix`
+from the still-clean managed `main`, reconnect, and prove that the live status
+marks the old rejection `last_attempt` with `canRequestUpdate=true`. Then resume
+WS-QA-09 at P03; P01, P02, and P05 remain recorded complete in current State.
