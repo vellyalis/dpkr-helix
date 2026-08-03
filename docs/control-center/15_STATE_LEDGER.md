@@ -435,3 +435,12 @@ and Git rather than duplicated here.
 - The owner explicitly deferred all evaluation turns until 2026-08-04. No
   model/profile default, product behavior, authentication, or external account
   state changed during preparation.
+- A read-only resume preflight at clean `c4914ee` reconfirmed the suite SHA-256
+  `e40d2260abcdac3dd4ecdd33c18e66e30653b08e2eb3c052bff5a82261160b17` and
+  materializer validation. Medium, high, and xhigh each retain all 32 expected
+  workspace/result records with matching HEAD, starting diff, status, attempt
+  metadata, and untouched result template. Their `prepared.json` SHA-256 values
+  are respectively `1baa8a4699774dfc2e5f0621679cfc348a1b0f510cadaa0393c1b57f5a4c667c`,
+  `c11cb8c4fb5ec1ceb99bb06f261afb46fd782055160491805bb46b68ba7619ea`,
+  and `a4b9643544062e0320fbba2f12cc8c1764e87d9d6839f670fd779fe1708464df`.
+  No provider turn ran, so the 2026-08-04 start boundary remains authoritative.

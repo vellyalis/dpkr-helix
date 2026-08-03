@@ -18,7 +18,9 @@ Last synchronized: 2026-08-03
   status invocation passed.
 - WS-QA-09: `READY`; the owner requires a complete same-snapshot comparison of
   `gpt-5.6-sol` medium, high, and xhigh across local Codex and Web plus helix.
-  Execution is explicitly deferred until 2026-08-04.
+  Execution is explicitly deferred until 2026-08-04. A read-only resume
+  preflight confirmed the frozen suite and all 96 prepared workspaces remain
+  intact and unused.
 - Installed working directory: unchanged.
 - Remote history replacement and visibility change were completed with explicit
   owner approval. No tag, GitHub Release, or npm publication was created.
@@ -328,13 +330,17 @@ commands merely because the preparation work is complete.
   retained the old catalog until its approved developer-mode connection update
   was automated, then exposed both tools and returned `UP_TO_DATE` through
   `get_dpkr_helix_update_status` in a fresh chat
+- 2026-08-03 WS-QA-09 resume preflight: clean `main` at `c4914ee`, frozen suite
+  SHA-256 `e40d2260abcdac3dd4ecdd33c18e66e30653b08e2eb3c052bff5a82261160b17`,
+  materializer validation, and all 96 workspace HEAD/diff/status/metadata/result
+  templates pass with zero drift; no provider or evaluation turn ran
 
 ## Exact next action
 
 On 2026-08-04, follow
-`evals/codex-parity/v1/EFFORT_COMPARISON_RUNBOOK.md`. Reconcile Git and suite
-hash, validate the prepared medium/high/xhigh roots, and run P05 attempt 1 as
-the model/effort attribution canary for all six surface/effort cells. Only then
-run the remaining complete P01-P08 matrix. A delegated managed `gpt-5.5`
-fallback is capability-blocked, not a 5.6-sol result. Do not change installed
-defaults before the comparison is accepted.
+`evals/codex-parity/v1/EFFORT_COMPARISON_RUNBOOK.md`. Repeat the Git and suite
+freshness checks, confirm the prepared-root hashes against the State Ledger,
+and run P05 attempt 1 as the model/effort attribution canary for all six
+surface/effort cells. Only then run the remaining complete P01-P08 matrix. A
+delegated managed `gpt-5.5` fallback is capability-blocked, not a 5.6-sol
+result. Do not change installed defaults before the comparison is accepted.

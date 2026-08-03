@@ -20,7 +20,9 @@ Last synchronized: 2026-08-03
 - Current program unit: WS-QA-09 is `READY`, with execution deferred by the
   owner until 2026-08-04. It compares the same `gpt-5.6-sol` model at medium,
   high, and xhigh on complete P01-P08 snapshots across local Codex and signed-in
-  Web plus dpkr helix. No evaluation turn has begun.
+  Web plus dpkr helix. A 2026-08-03 read-only resume preflight at `c4914ee`
+  confirmed the frozen suite hash and all 96 prepared workspaces without drift;
+  no evaluation turn has begun.
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
@@ -479,9 +481,10 @@ Cutover outcome:
 
 ## Next executable action
 
-On 2026-08-04, reconcile Git and the frozen suite hash, validate the three
-prepared effort workspaces, then run P05 attempt 1 as the attribution canary for
-each effort and surface. Continue to the 96-record full matrix only when every
-controller and delegated provider is attributable to `gpt-5.6-sol` at the
-target effort. Do not change the installed default model/profile or score a
-managed `gpt-5.5` fallback as 5.6-sol.
+On 2026-08-04, repeat the Git and frozen-suite freshness checks, confirm the
+three prepared-root hashes still match the 2026-08-03 preflight recorded in the
+State Ledger, then run P05 attempt 1 as the attribution canary for each effort
+and surface. Continue to the 96-record full matrix only when every controller
+and delegated provider is attributable to `gpt-5.6-sol` at the target effort.
+Do not change the installed default model/profile or score a managed `gpt-5.5`
+fallback as 5.6-sol.
