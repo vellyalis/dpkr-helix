@@ -50,15 +50,17 @@ publication; clone this repository when you want dpkr helix itself.
 ## Roadmap
 
 The local coding, project-policy, handoff, delegation, and live-operations
-baseline is shipped. The measured Codex-quality parity program is in progress:
-its P01-P08 snapshots are frozen, and the next step is to compare local Codex
-with Web-plus-helix on those identical starts before implementing only changes
-that close proven correctness, safety, review, or workflow gaps.
+baseline and measured Codex-quality parity program are shipped. The optional
+GPT-5.6 Sol effort matrix was stopped incomplete because it no longer changed a
+current product or setting decision. The next workstream observes a real daily
+ChatGPT workflow and invests only in measured correctness, continuity, or
+operational friction.
 
 | Horizon | Status | Focus |
 | --- | --- | --- |
 | Current baseline | Shipped | Secure workspace tools, project workflows, handoffs, local-agent delegation, and operations visibility |
-| Current program | In progress | Frozen parity fixtures, baseline/configuration comparison, bounded repository context, verification freshness, structured questions/outcomes, bounded waiting, and parity convergence |
+| Measured parity | Shipped | Frozen parity fixtures, bounded repository context, verification freshness, structured outcomes, bounded waiting, and signed-in convergence |
+| Next workstream | Next | Fresh-session operational-quality observation followed by one evidence-selected improvement, if a real gap is found |
 | Later ideas | Not committed | Consider only after a measured gap or concrete user requirement justifies them |
 
 See the [public roadmap](./docs/ROADMAP.md) for the ordered milestones, exit

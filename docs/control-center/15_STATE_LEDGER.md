@@ -686,3 +686,23 @@ and Git rather than duplicated here.
   old terminal result can no longer be mistaken for a current update blocker.
 - WS-UPD-02 is `VERIFIED / DONE`. The next executable action returns to
   WS-QA-09 P03.
+
+## 2026-08-03 — Optional effort matrix stopped; operations quality selected
+
+- The owner determined that completing WS-QA-09 would not change a current
+  product, release, or model-setting decision and that its remaining execution
+  cost is better invested in real operational quality.
+- WS-QA-09 is `OWNER STOPPED / INCOMPLETE`, not DONE. Fresh ignored-root
+  inspection found 24/96 terminal result records and 72 `not_run`. Partial
+  evidence remains diagnostic only; no effort ranking, complete-matrix claim,
+  or default change is permitted.
+- Resume WS-QA-09 only for a concrete effort-selection decision or an observed
+  model-quality regression that requires the same comparison class.
+- WS-OPS-05 is `NEXT / FRESH SESSION BASELINE`. Its first unit observes one real
+  signed-in normal-Chat workflow through the existing production path: correct
+  app/tool choice, one workspace open and reuse, direct read/edit/verification/
+  review continuity, absence of unintended delegation or duplicate work,
+  bounded waiting, reconnect continuity, and truthful status.
+- The observation must select one repeated high-impact friction with a causal
+  boundary before implementation. If no actionable gap is observed, close the
+  baseline without adding generic automation, UI, infrastructure, or tests.

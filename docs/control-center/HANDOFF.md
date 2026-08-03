@@ -23,10 +23,14 @@ Last synchronized: 2026-08-03
   explicit update request instead of treating an old rejection as current. The
   public fast-forward, managed replacement, and installed-artifact MCP proof
   completed at `f1c1041`.
-- WS-QA-09: `IN PROGRESS / DIRECT MATRIX PREPARED`; the owner compares normal
-  Chat coding directly through helix with direct local Codex. Work and Web-side
-  local-agent delegation are prohibited from execution, reuse, and scoring.
-  Earlier worker canaries remain routing evidence only.
+- WS-QA-09: `OWNER STOPPED / INCOMPLETE`; the owner ended the optional effort
+  matrix because it no longer changes a current product, release, or setting
+  decision. Exactly 24/96 records are terminal. They remain diagnostic only;
+  no effort ranking, completion claim, or default change is permitted.
+- WS-OPS-05: `NEXT / FRESH SESSION BASELINE`; observe one real normal-Chat
+  workflow through dpkr helix and select one implementation only when repeated,
+  high-impact correctness, continuity, status, or operational friction is
+  directly evidenced.
 - Active managed profiles are `codex-explorer=gpt-5.6-luna/max`,
   `codex-implementer=gpt-5.6-sol/medium`,
   `codex-implementer-high=gpt-5.6-sol/high`, and
@@ -415,9 +419,9 @@ commands merely because the preparation work is complete.
 
 ## Exact next action
 
-Run P03 next in all three direct effort roots, then P04/P06/P07/P08. P01,
-P02, and P05 are complete. Require normal Chat with Work unselected, direct helix
-tools, zero local-agent sessions, and exact `gpt-5.6-sol` effort attribution.
-Keep local Codex isolated from user config/apps/MCP and retain the documented
-0.146.0 sandbox caveat. Record final semantics and diff quality, safety/scope,
-failed operations, verification, file hygiene, and timing before ranking.
+After the session is cleared, run one fresh signed-in normal-Chat workflow
+through dpkr helix. Open one workspace once and reuse it; observe direct
+read/edit/verification/review continuity, unintended delegation or duplicate
+work, bounded waiting, reconnect behavior, and status truth. Record the highest-
+impact repeated friction and its causal boundary. If none is observed, close
+the baseline without inventing a feature.

@@ -76,8 +76,10 @@ text. Its original conditional higher-effort rule evaluated High only on the
 hard subset. A later owner-requested full `medium` / `high` / `xhigh` comparison
 is defined separately by `effort-comparison-plan.json` and
 `EFFORT_COMPARISON_RUNBOOK.md`; it reuses the frozen snapshots without changing
-the v1 historical matrix. Model and prompt defaults are not changed by either
-evaluation.
+the v1 historical matrix. The owner stopped that follow-up incomplete after 24
+of 96 terminal records because it no longer changed a current product or
+setting decision. Its partial cells are diagnostic only. Model and prompt
+defaults are not changed by either evaluation.
 
 ## Safety and ownership
 

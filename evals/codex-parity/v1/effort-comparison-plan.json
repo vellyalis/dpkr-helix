@@ -1,8 +1,17 @@
 {
   "schema": "dpkr-helix-effort-comparison-plan/v1",
   "planId": "goal08-gpt-5.6-sol-direct-effort-full",
-  "status": "running",
+  "status": "stopped_by_owner",
   "targetDate": "2026-08-03",
+  "stopDisposition": {
+    "decidedAt": "2026-08-03",
+    "completionClaimed": false,
+    "terminalRecords": 24,
+    "requiredTerminalRecords": 96,
+    "reason": "The remaining comparison does not change a current product, release, or model-setting decision, so its execution cost exceeds its present user value.",
+    "evidencePolicy": "Retain completed cells as partial diagnostic evidence only. Do not rank efforts or infer a complete P01-P08 result.",
+    "resumeCondition": "Resume only when a concrete effort-selection decision or an observed model-quality regression requires this same comparison class."
+  },
   "baseSuite": {
     "path": "evals/codex-parity/v1/suite.json",
     "suiteId": "goal08-p01-p08",

@@ -16,21 +16,16 @@ Last synchronized: 2026-08-03
 - License: MIT, upstream copyright retained
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
-  intact and WS-QA-09 is the next evaluation.
-- Current program unit: WS-QA-09 is `IN PROGRESS / DIRECT MATRIX PREPARED`. The
-  owner requires normal Chat to code directly through helix and compares that
-  result with direct local Codex. Work and Web-side local-agent delegation are
-  prohibited from execution, reuse, and scoring. One medium delegated P05
-  attempt exposed the earlier comparison error, completed only in an excluded
-  root, and is not evidence. Three new direct-execution roots contain 96 clean
-  workspaces for the corrected matrix.
-- The corrected P05 canary pairs are terminal and attributed at medium, high,
-  and xhigh. Every direct surface asked before writing, resumed the same thread,
-  produced normalized-identical final code, and passed 2/2. Chat used 4/5/5
-  observed helix calls with no failed test and preserved CRLF. Local Codex used
-  8/12/7 calls: medium/high incurred patch mismatches and two intermediate
-  failed tests, while xhigh avoided those failures; all three left mixed line
-  endings. This is one-case execution evidence, not the completed matrix.
+  intact and WS-OPS-05 is next.
+- Current program unit: WS-OPS-05 is `NEXT / FRESH SESSION BASELINE`. After a
+  session clear, observe one real signed-in normal-Chat workflow through the
+  existing production path. Select one implementation work unit only if direct
+  evidence identifies a repeated high-impact correctness, continuity, status,
+  or operational-friction gap.
+- The owner stopped WS-QA-09 incomplete because its remaining comparison no
+  longer changes a current product, release, or model-setting decision. Exactly
+  24 of 96 result records are terminal and 72 remain `not_run`; partial results
+  are diagnostic only, no effort is ranked, and no default changes.
 - The owner explicitly replaced the active managed Codex profile setting that
   caused delegated GPT-5.5 execution. The installed catalog now maps read-only
   exploration to `gpt-5.6-luna/max` and implementation to `gpt-5.6-sol` at
@@ -137,7 +132,8 @@ publishing the compatibility package accidentally.
 | MWU-08.04 structured Codex outcome | installed Codex SDK per-turn schema plus existing LocalAgentService/store and operation/MCP/UI projections; nullable disposition/question and same-session continuation | prose parsing silently manufactures completion; a second message/store/notification owner duplicates lifecycle state; changing non-Codex adapters without native schema breaks compatibility |
 | MWU-08.05 bounded wait | optional 0..30000 ms wait on the existing status tool/service path with explicit timeout metadata | duplicate workers, background polling, cancellation, or another wait owner add risk without improving the measured workflow |
 | MWU-08.06 parity convergence | existing server/workspace/read metadata explicitly preserves narrower task read boundaries over advertised Skills; signed-in Web 8/8 versus retained local 5/8 | a new per-turn permission language/enforcement owner is not justified by the advisory-metadata experiment; repeated wording tuning or a model/default change lacks evidence |
-| WS-QA-09 `gpt-5.6-sol` effort | direct P05 passes at medium/high/xhigh with normalized-equal output; no selected effort yet | the complete fresh P01-P08 matrix is required before ranking |
+| WS-QA-09 `gpt-5.6-sol` effort | no selection; 24/96 terminal records retained as partial diagnostics and current settings unchanged | owner stopped the incomplete matrix because no current decision justifies the remaining cost; resume only for a concrete effort decision or observed regression |
+| WS-OPS-05 daily operation quality | shipped production workflow is the baseline; no new mechanism selected | a fresh-session real workflow must identify a repeated high-impact friction before implementation |
 | Managed Codex subagent profiles | owner-selected Luna/max explorer plus Sol medium/high/xhigh implementers; Sol/high reviewer retained | legacy managed GPT-5.5 profiles caused false candidate attribution and are no longer active defaults |
 
 ## Workstream portfolio
@@ -156,7 +152,8 @@ publishing the compatibility package accidentally.
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
 | WS-UPD-02 historical update-status clarity | VERIFIED / DONE | public fast-forward, managed replacement, and installed MCP status show historical scope plus fresh-request availability |
 | WS-QA-08 measured coding parity | VERIFIED / DONE | signed-in Web passes 8/8 versus retained local 5/8 with zero mandatory safety regression |
-| WS-QA-09 GPT-5.6 Sol effort comparison | IN PROGRESS / DIRECT CANARY PASSED | fresh medium/high/xhigh P01-P08 direct results and any required tie-breaks close the matrix |
+| WS-QA-09 GPT-5.6 Sol effort comparison | OWNER STOPPED / INCOMPLETE | no active exit work; resume only for a concrete effort-selection decision or observed model-quality regression |
+| WS-OPS-05 daily operation quality and continuity | NEXT / BASELINE NOT RUN | one fresh real workflow selects one evidence-backed improvement or proves no actionable product gap |
 
 ## Architecture and complexity decision
 
@@ -564,16 +561,16 @@ Direct P02 effort comparison proof:
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
 | delegated Web execution does not answer direct Chat-versus-Codex quality | comparison-class error; worker routing remains separate evidence | score only normal Chat directly using helix file/shell tools at `中程度`/`高い`/`非常に高い`; require zero new local-agent sessions; never use Work |
 | candidate medium and high settings regress mandatory safety or continuation behavior | adoption blockers; both candidates rejected | retain the measured current setting and never trade efficiency for a mandatory pass |
+| WS-QA-09 effort matrix is incomplete | accepted owner stop, not a product or release gap | retain 24 terminal records as diagnostics only; make no ranking claim and resume only under the recorded condition |
 | should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
 | repository context and verification-basis capture observe a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/review or re-verification produces a new fingerprint, exact equality is required for `fresh`, and locks or double fingerprinting remain deferred without a measured inconsistency |
 | Skill/task precedence is expressed in model-visible metadata rather than enforced by a new per-turn runtime policy owner | accepted advisory-contract residual | keep existing project/root authorization authoritative; retain the direct signed-in 8/8 evidence and add enforcement only if a future measured task still crosses the boundary |
 
 ## Next executable action
 
-Run fresh P03 next in the three prepared direct roots with matching
-`gpt-5.6-sol` medium/high/xhigh effort, then continue P04/P06/P07/P08. P01,
-P02, and P05 are complete. Chat must remain normal Chat with Work unselected, use
-helix directly, and create zero local-agent sessions. Local Codex must retain
-the recorded isolated direct profile and sandbox caveat. Preserve attribution,
-mandatory safety, semantic and diff quality, failed operations, verification,
-file hygiene, and timing before any cross-case ranking.
+After the session is cleared, start one fresh signed-in normal-Chat workflow
+through dpkr helix. Reuse one workspace and observe app/tool choice, direct
+read/edit/verification/review continuity, unintended delegation or duplicate
+work, bounded waiting, reconnect behavior, and status truth. Record the highest-
+impact repeated friction and its causal boundary; implement nothing if no
+actionable product gap is observed.

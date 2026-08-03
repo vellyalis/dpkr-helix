@@ -9,6 +9,8 @@ measured baseline shows that it would not improve a real outcome.
 
 - **Shipped** — implemented and covered by the completed product baseline.
 - **Next** — the first planned work unit; implementation has not started.
+- **Stopped** — intentionally ended incomplete; partial evidence remains
+  diagnostic and no completion claim is made.
 - **Planned** — accepted direction with an ordered dependency and proof owner.
 - **Not committed** — an idea is outside the accepted roadmap until evidence
   and a concrete requirement justify it.
@@ -20,7 +22,8 @@ measured baseline shows that it would not improve a real outcome.
 | Local coding baseline | Shipped | Approved project access, direct file and shell tools, reusable workspaces, project policies, handoffs, local-agent delegation, and live operations |
 | Source distribution and hardening | Shipped | Source-based installation, public/private data boundary, security and contribution policies, dependency checks, and a reviewed public-release runbook |
 | Measured Codex-quality parity | Shipped | Signed-in Web-plus-helix passes the frozen suite 8/8 versus retained local Codex 5/8 without weakening permissions, evidence truth, or existing work |
-| GPT-5.6 Sol effort comparison | Next | Compare direct normal-Chat-plus-helix coding with direct local Codex at `medium`, `high`, and `xhigh` on identical P01-P08 snapshots |
+| GPT-5.6 Sol effort comparison | Stopped | Owner stopped the incomplete 24/96 matrix because it no longer changes a current product, release, or setting decision |
+| Daily operation quality and continuity | Next | Observe one fresh-session real workflow and fix only the highest-impact repeated friction supported by direct evidence |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -48,7 +51,7 @@ criteria live in the canonical
 contract. The ordered implementation record is
 [08_IMPLEMENTATION_PLAN.md](./control-center/08_IMPLEMENTATION_PLAN.md).
 
-## Next evaluation: GPT-5.6 Sol effort comparison
+## Stopped evaluation: GPT-5.6 Sol effort comparison
 
 The owner selected one follow-up comparison without reopening completed product
 implementation: run the same `gpt-5.6-sol` model at `medium`, `high`, and
@@ -56,14 +59,28 @@ implementation: run the same `gpt-5.6-sol` model at `medium`, `high`, and
 records are diagnostic only because delegated attempts were mixed with managed
 `gpt-5.5`, High covered only four cases, and xhigh was not run.
 
-The execution is active. The
+The owner stopped the execution incomplete at 24 of 96 terminal records. The
 [machine-readable plan](../evals/codex-parity/v1/effort-comparison-plan.json)
 and [runbook](../evals/codex-parity/v1/EFFORT_COMPARISON_RUNBOOK.md) preserve the
 frozen snapshots, require actual model/effort attribution before scoring,
 prohibit ChatGPT Work and Web-side local-agent delegation, and stop a cell
 before the full run if direct execution or attribution is not proven. The
-direct P05 canary now passes on both surfaces at medium, high, and xhigh; the
-remaining P01-P08 records are required before any general quality conclusion.
+partial records remain diagnostic only: they do not select an effort, change a
+default, or support a complete P01-P08 conclusion. Resume only if a concrete
+effort-selection decision or observed model-quality regression requires it.
+
+## Next: daily operation quality and continuity
+
+The next workstream is WS-OPS-05. It starts in a cleared session with one
+fresh, signed-in normal-Chat workflow through the existing production path.
+Observe correct app/tool selection, one workspace open and reuse, direct
+read/edit/verification/review continuity, absence of unintended delegation or
+duplicate work, bounded waiting, reconnect continuity, and truthful status.
+
+The baseline itself is not the outcome. It ends by selecting one highest-impact
+repeated friction for a bounded implementation work unit, or by recording that
+no actionable product gap was observed. Do not add generic automation, UI, or
+infrastructure without that evidence.
 
 ## Decision rules
 

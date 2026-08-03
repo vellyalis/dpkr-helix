@@ -9,6 +9,12 @@ baseline; it does not rewrite frozen v1 results or change a default model.
 
 The machine-readable contract is `effort-comparison-plan.json`.
 
+## Status
+
+`OWNER STOPPED / INCOMPLETE` — 24 of 96 required records are terminal. The
+partial cells remain diagnostic only; no effort ranking or completion claim is
+permitted. Resume only under the machine-readable plan's explicit condition.
+
 ## Start gate
 
 1. Reconcile Git and confirm the suite contract still hashes to
