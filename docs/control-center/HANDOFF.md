@@ -40,13 +40,13 @@ Last synchronized: 2026-08-03
   `prepared.json` SHA-256 values are `d623e89b9b154055439d6699c5332e5156dcdcf06b545250b0d5a776921346f6`,
   `e8827d6705c47dea492f216cdb72e3ddf00747b840340dbca2e6baf3f4d5bf24`,
   and `fc9ad3d41dda3bbbe162f219977bd16aff6cfe44c6f143af753d7716496b82f7`.
-- The corrected medium P05 direct pair is terminal. Both surfaces had zero
-  pre-answer changes, one closed question, same-thread continuation, the same
-  normalized final code, and passing 2/2 tests. Chat used four observed direct
-  helix calls, had no failed verification, and preserved CRLF. Local Codex used
-  eight observed calls, recovered from one patch mismatch and two intermediate
-  failed tests, and left mixed CRLF/LF endings. One case does not select a
-  winner.
+- The corrected P05 direct pairs are terminal at medium/high/xhigh. Every pair
+  had zero pre-answer changes, one closed question, same-thread continuation,
+  normalized-identical final code, and passing 2/2 tests. Chat used 4/5/5
+  direct helix calls, had no failed verification, and preserved CRLF. Local
+  Codex used 8/12/7 calls; medium/high had patch mismatches and two failed
+  intermediate tests, while xhigh avoided those failures. All three local
+  results left mixed line endings. One case does not select an overall winner.
 - Installed working directory: unchanged.
 - Remote history replacement and visibility change were completed with explicit
   owner approval. No tag, GitHub Release, or npm publication was created.
@@ -374,8 +374,9 @@ commands merely because the preparation work is complete.
 
 ## Exact next action
 
-Run the remaining direct P05 canaries with controller `GPT-5.6 Sol` set to
-`高い` and `非常に高い`, then matching direct local Codex high/xhigh turns.
-Require direct helix read/edit/shell, the same workspace ID and conversation,
-and zero local-agent sessions. If all four pass, continue the prepared matrix.
-Work, delegation, and all earlier provider-turn workspaces are excluded.
+Run the remaining fresh P01-P08 records in the prepared medium/high/xhigh
+direct roots, including P05 attempt 2. Require direct helix read/edit/shell and
+zero local-agent sessions on Chat, and exact `gpt-5.6-sol` effort attribution on
+both surfaces. Record semantic correctness, scope/safety, failed attempts, tool
+use, verification, and file hygiene before ranking. Work, delegation, and all
+earlier provider-turn workspaces are excluded.

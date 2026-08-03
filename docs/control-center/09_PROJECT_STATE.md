@@ -24,12 +24,13 @@ Last synchronized: 2026-08-03
   attempt exposed the earlier comparison error, completed only in an excluded
   root, and is not evidence. Three new direct-execution roots contain 96 clean
   workspaces for the corrected matrix.
-- The first corrected medium P05 pair is terminal and attributed. Both direct
-  surfaces asked before writing, resumed the same thread, produced the same
-  normalized implementation, and passed 2/2. Chat used four observed helix
-  calls with no failed test and preserved CRLF; local Codex used eight observed
-  calls, recovered from one patch mismatch and two intermediate failed tests,
-  and left mixed line endings. This is one-case evidence, not a matrix result.
+- The corrected P05 canary pairs are terminal and attributed at medium, high,
+  and xhigh. Every direct surface asked before writing, resumed the same thread,
+  produced normalized-identical final code, and passed 2/2. Chat used 4/5/5
+  observed helix calls with no failed test and preserved CRLF. Local Codex used
+  8/12/7 calls: medium/high incurred patch mismatches and two intermediate
+  failed tests, while xhigh avoided those failures; all three left mixed line
+  endings. This is one-case execution evidence, not the completed matrix.
 - The owner explicitly replaced the active managed Codex profile setting that
   caused delegated GPT-5.5 execution. The installed catalog now maps read-only
   exploration to `gpt-5.6-luna/max` and implementation to `gpt-5.6-sol` at
@@ -130,7 +131,7 @@ publishing the compatibility package accidentally.
 | MWU-08.04 structured Codex outcome | installed Codex SDK per-turn schema plus existing LocalAgentService/store and operation/MCP/UI projections; nullable disposition/question and same-session continuation | prose parsing silently manufactures completion; a second message/store/notification owner duplicates lifecycle state; changing non-Codex adapters without native schema breaks compatibility |
 | MWU-08.05 bounded wait | optional 0..30000 ms wait on the existing status tool/service path with explicit timeout metadata | duplicate workers, background polling, cancellation, or another wait owner add risk without improving the measured workflow |
 | MWU-08.06 parity convergence | existing server/workspace/read metadata explicitly preserves narrower task read boundaries over advertised Skills; signed-in Web 8/8 versus retained local 5/8 | a new per-turn permission language/enforcement owner is not justified by the advisory-metadata experiment; repeated wording tuning or a model/default change lacks evidence |
-| WS-QA-09 `gpt-5.6-sol` effort | medium direct P05 pair passes with normalized-equal output; no selected effort yet | high/xhigh direct canaries and the complete fresh matrix are still required before ranking |
+| WS-QA-09 `gpt-5.6-sol` effort | direct P05 passes at medium/high/xhigh with normalized-equal output; no selected effort yet | the complete fresh P01-P08 matrix is required before ranking |
 | Managed Codex subagent profiles | owner-selected Luna/max explorer plus Sol medium/high/xhigh implementers; Sol/high reviewer retained | legacy managed GPT-5.5 profiles caused false candidate attribution and are no longer active defaults |
 
 ## Workstream portfolio
@@ -148,7 +149,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
 | WS-QA-08 measured coding parity | VERIFIED / DONE | signed-in Web passes 8/8 versus retained local 5/8 with zero mandatory safety regression |
-| WS-QA-09 GPT-5.6 Sol effort comparison | IN PROGRESS / DIRECT MATRIX PREPARED | direct normal-Chat-plus-helix and direct local Codex P05 pass at medium/high/xhigh with zero Web agent sessions, then fresh medium/high/xhigh P01-P08 results and any required tie-breaks close the matrix |
+| WS-QA-09 GPT-5.6 Sol effort comparison | IN PROGRESS / DIRECT CANARY PASSED | fresh medium/high/xhigh P01-P08 direct results and any required tie-breaks close the matrix |
 
 ## Architecture and complexity decision
 
@@ -494,9 +495,10 @@ Cutover outcome:
 
 ## Next executable action
 
-Run the remaining direct P05 canaries with normal Chat controller `GPT-5.6 Sol`
-set to `高い` and `非常に高い`, followed by matching direct local Codex high and
-xhigh turns. Chat must use helix read/edit/shell directly, reuse one workspace
-ID in the same conversation, and create zero local-agent sessions. If all four
-pass, continue the prepared complete matrix. Never reuse the excluded v2 root;
-Work and Web-side delegation are prohibited.
+Run the remaining fresh P01-P08 records in the three prepared direct roots,
+including the second P05 attempt, with identical seeds and matching
+`gpt-5.6-sol` medium/high/xhigh effort. Chat must use helix read/edit/shell
+directly and create zero local-agent sessions. Preserve terminal attribution,
+mandatory safety, final content quality, failed attempts, tool use, verification,
+and file hygiene before ranking. Never reuse excluded roots; Work and Web-side
+delegation are prohibited.

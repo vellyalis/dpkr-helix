@@ -562,3 +562,26 @@ and Git rather than duplicated here.
   patch-context mismatch and two intermediate failed test runs, and left mixed
   CRLF/LF endings. This is a measured execution-quality difference on one case,
   not a general or final matrix conclusion.
+
+## 2026-08-03 — Direct P05 effort canary completed
+
+- Normal Chat with Work unselected directly used dpkr helix at `中程度`, `高い`,
+  and `非常に高い`; all three cells created zero local-agent sessions. Matching
+  local Codex cells reported `gpt-5.6-sol` at medium, high, and xhigh.
+- Every surface asked exactly one closed rounding question before mutation,
+  preserved a zero-diff pre-answer state, continued the same Chat/Codex thread,
+  changed only the two allowed files, retained both algorithms, and passed the
+  independent 2/2 test.
+- Within each effort, final Chat and Codex contents are identical after newline
+  normalization. Chat used 4/5/5 observed calls, no failed intermediate test,
+  and retained consistent CRLF. Codex used 8/12/7 calls; medium/high recovered
+  from patch failures and two intermediate failed tests, xhigh avoided both,
+  and all three Codex outcomes left mixed line endings.
+- Codex xhigh invoked `npm test` rather than the manifest's literal
+  `node --test`; an independent permitted `node --test` still passed. This is
+  retained as execution-discipline evidence without changing the functional
+  pass.
+- The six canary result records are terminal and attributed. The evidence is
+  sufficient to admit the direct matrix, but P05 alone is not sufficient to
+  decide whether Chat can generally replace Codex for coding or which effort is
+  best. The remaining fresh P01-P08 records are next.

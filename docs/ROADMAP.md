@@ -61,7 +61,9 @@ The execution is active. The
 and [runbook](../evals/codex-parity/v1/EFFORT_COMPARISON_RUNBOOK.md) preserve the
 frozen snapshots, require actual model/effort attribution before scoring,
 prohibit ChatGPT Work and Web-side local-agent delegation, and stop a cell
-before the full run if direct execution or attribution is not proven.
+before the full run if direct execution or attribution is not proven. The
+direct P05 canary now passes on both surfaces at medium, high, and xhigh; the
+remaining P01-P08 records are required before any general quality conclusion.
 
 ## Decision rules
 
