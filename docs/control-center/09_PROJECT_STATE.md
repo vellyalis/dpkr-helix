@@ -17,12 +17,19 @@ Last synchronized: 2026-08-03
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-QA-09 is the next evaluation.
-- Current program unit: WS-QA-09 is `IN PROGRESS / FRESH MATRIX PREPARED`. The
-  owner requires Chat and absolutely prohibits Work; no Work interaction may be
-  recorded, reused, or scored. Fresh Chat P05 canaries passed for three Sol
-  implementer efforts; those attribution-incomplete workspaces and two earlier
-  Work interactions must not be reused. Three fresh Chat-only roots now contain
-  96 untouched workspaces for the controller/worker/local canary and matrix.
+- Current program unit: WS-QA-09 is `IN PROGRESS / DIRECT MATRIX PREPARED`. The
+  owner requires normal Chat to code directly through helix and compares that
+  result with direct local Codex. Work and Web-side local-agent delegation are
+  prohibited from execution, reuse, and scoring. One medium delegated P05
+  attempt exposed the earlier comparison error, completed only in an excluded
+  root, and is not evidence. Three new direct-execution roots contain 96 clean
+  workspaces for the corrected matrix.
+- The first corrected medium P05 pair is terminal and attributed. Both direct
+  surfaces asked before writing, resumed the same thread, produced the same
+  normalized implementation, and passed 2/2. Chat used four observed helix
+  calls with no failed test and preserved CRLF; local Codex used eight observed
+  calls, recovered from one patch mismatch and two intermediate failed tests,
+  and left mixed line endings. This is one-case evidence, not a matrix result.
 - The owner explicitly replaced the active managed Codex profile setting that
   caused delegated GPT-5.5 execution. The installed catalog now maps read-only
   exploration to `gpt-5.6-luna/max` and implementation to `gpt-5.6-sol` at
@@ -123,7 +130,7 @@ publishing the compatibility package accidentally.
 | MWU-08.04 structured Codex outcome | installed Codex SDK per-turn schema plus existing LocalAgentService/store and operation/MCP/UI projections; nullable disposition/question and same-session continuation | prose parsing silently manufactures completion; a second message/store/notification owner duplicates lifecycle state; changing non-Codex adapters without native schema breaks compatibility |
 | MWU-08.05 bounded wait | optional 0..30000 ms wait on the existing status tool/service path with explicit timeout metadata | duplicate workers, background polling, cancellation, or another wait owner add risk without improving the measured workflow |
 | MWU-08.06 parity convergence | existing server/workspace/read metadata explicitly preserves narrower task read boundaries over advertised Skills; signed-in Web 8/8 versus retained local 5/8 | a new per-turn permission language/enforcement owner is not justified by the advisory-metadata experiment; repeated wording tuning or a model/default change lacks evidence |
-| WS-QA-09 `gpt-5.6-sol` effort | fresh Chat-only medium/high/xhigh matrix prepared; no selected effort yet | earlier worker-only canaries did not prove the controller effort; fresh Chat controller/worker and local P05 attribution plus the complete matrix are still required |
+| WS-QA-09 `gpt-5.6-sol` effort | medium direct P05 pair passes with normalized-equal output; no selected effort yet | high/xhigh direct canaries and the complete fresh matrix are still required before ranking |
 | Managed Codex subagent profiles | owner-selected Luna/max explorer plus Sol medium/high/xhigh implementers; Sol/high reviewer retained | legacy managed GPT-5.5 profiles caused false candidate attribution and are no longer active defaults |
 
 ## Workstream portfolio
@@ -141,7 +148,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
 | WS-QA-08 measured coding parity | VERIFIED / DONE | signed-in Web passes 8/8 versus retained local 5/8 with zero mandatory safety regression |
-| WS-QA-09 GPT-5.6 Sol effort comparison | IN PROGRESS / FRESH MATRIX PREPARED | fresh Chat controller/worker and local P05 attribution pass at medium/high/xhigh, then fresh medium/high/xhigh P01-P08 results and any required tie-breaks close the matrix |
+| WS-QA-09 GPT-5.6 Sol effort comparison | IN PROGRESS / DIRECT MATRIX PREPARED | direct normal-Chat-plus-helix and direct local Codex P05 pass at medium/high/xhigh with zero Web agent sessions, then fresh medium/high/xhigh P01-P08 results and any required tie-breaks close the matrix |
 
 ## Architecture and complexity decision
 
@@ -479,7 +486,7 @@ Cutover outcome:
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
 | ChatGPT Web does not currently honor MCP tool-list-change for newly added names | external host behavior, one-time migration closed | automate the approved developer-mode connection update during legacy migration; keep the two update tool names stable so later self-updates need only reconnect |
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
-| Chat P05 evidence recorded `Pro` but not the selectable controller effort | attribution gap; worker routing remains proven | keep the worker canaries as routing/continuation evidence only; rerun fresh Web cells with controller `中程度`/`高い`/`非常に高い` aligned to medium/high/xhigh; never use Work |
+| delegated Web execution does not answer direct Chat-versus-Codex quality | comparison-class error; worker routing remains separate evidence | score only normal Chat directly using helix file/shell tools at `中程度`/`高い`/`非常に高い`; require zero new local-agent sessions; never use Work |
 | candidate medium and high settings regress mandatory safety or continuation behavior | adoption blockers; both candidates rejected | retain the measured current setting and never trade efficiency for a mandatory pass |
 | should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
 | repository context and verification-basis capture observe a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/review or re-verification produces a new fingerprint, exact equality is required for `fresh`, and locks or double fingerprinting remain deferred without a measured inconsistency |
@@ -487,9 +494,9 @@ Cutover outcome:
 
 ## Next executable action
 
-Rerun fresh Chat P05 attribution cells with controller `GPT-5.6 Sol` set to
-`中程度`, `高い`, and `非常に高い` for medium, high, and xhigh while the helix
-worker uses the matching Sol effort. Then run the matching local P05 cells,
-preserving question-before-write and the same provider thread on continuation.
-If all six pass, materialize the fresh complete matrix. Do not reuse any prior
-provider-turn workspace. Work is prohibited and must not be recorded or scored.
+Run the remaining direct P05 canaries with normal Chat controller `GPT-5.6 Sol`
+set to `高い` and `非常に高い`, followed by matching direct local Codex high and
+xhigh turns. Chat must use helix read/edit/shell directly, reuse one workspace
+ID in the same conversation, and create zero local-agent sessions. If all four
+pass, continue the prepared complete matrix. Never reuse the excluded v2 root;
+Work and Web-side delegation are prohibited.

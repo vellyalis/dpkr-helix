@@ -1,6 +1,6 @@
 {
   "schema": "dpkr-helix-effort-comparison-plan/v1",
-  "planId": "goal08-gpt-5.6-sol-effort-full",
+  "planId": "goal08-gpt-5.6-sol-direct-effort-full",
   "status": "running",
   "targetDate": "2026-08-03",
   "baseSuite": {
@@ -19,9 +19,19 @@
   },
   "minimumTerminalRecords": 96,
   "workspaceOutputs": {
-    "medium": ".tmp/codex-parity-v1-gpt-5.6-sol-medium-chat-v2-20260803",
-    "high": ".tmp/codex-parity-v1-gpt-5.6-sol-high-chat-v2-20260803",
-    "xhigh": ".tmp/codex-parity-v1-gpt-5.6-sol-xhigh-chat-v2-20260803"
+    "medium": ".tmp/codex-parity-v1-gpt-5.6-sol-medium-chat-direct-v3-20260803",
+    "high": ".tmp/codex-parity-v1-gpt-5.6-sol-high-chat-direct-v3-20260803",
+    "xhigh": ".tmp/codex-parity-v1-gpt-5.6-sol-xhigh-chat-direct-v3-20260803"
+  },
+  "surfaceExecution": {
+    "local-codex": "The local Codex CLI reads, edits, and verifies the generated workspace directly.",
+    "web-helix": "Normal ChatGPT Chat reads, edits, and verifies the generated workspace directly through dpkr helix tools. It must not delegate to a local agent.",
+    "webForbiddenTools": ["delegate_task", "continue_agent", "get_agent_status", "list_agents"],
+    "historicalWorkflowOverride": "For this direct coding comparison, direct Web execution replaces any delegation-oriented webHelix workflow label in the frozen historical manifests. Task, code constraints, permissions, snapshots, and product acceptance remain unchanged.",
+    "continuityInterpretation": {
+      "P05": "Use one Chat conversation and one reused helix workspaceId across the question and answer; create zero local-agent sessions.",
+      "P07": "Run the required verification process once through direct helix shell/process tools; create zero local-agent sessions."
+    }
   },
   "attributionGate": {
     "firstCase": "P05",
@@ -36,16 +46,16 @@
     },
     "rules": [
       "Use Chat. Work is prohibited and no Work interaction may be recorded or scored. Record the ChatGPT controller model plus the mapped UI effort selected immediately before every Web turn.",
-      "Every delegated provider session must report gpt-5.6-sol and the target effort; a managed gpt-5.5 fallback is mixed and is not a usable cell.",
+      "The ChatGPT controller must use dpkr helix workspace, file, edit, and shell tools directly. Delegation and all local-agent lifecycle tools are prohibited, and the workspace must have zero newly created local-agent sessions.",
       "Local Codex must report gpt-5.6-sol and the target effort in its JSONL trace.",
-      "If the ordinary-Chat controller setting, delegated-worker attribution, or local-Codex attribution is missing or mismatched, mark the cell capability-blocked and do not score it as gpt-5.6-sol."
+      "If the ordinary-Chat controller setting or local-Codex attribution is missing or mismatched, or if Chat delegates, mark the cell capability-blocked and do not score it as a direct Chat-versus-Codex result."
     ]
   },
   "historicalEvidencePolicy": {
     "medium": "context-only because five Web delegation attempts were mixed with managed gpt-5.5 medium",
     "high": "context-only because only P01/P02/P05/P07 ran and delegated records were mixed",
     "xhigh": "no historical records",
-    "scoring": "Use only fresh records produced for this complete matrix."
+    "scoring": "Use only fresh direct-execution records produced for this complete matrix. The v2 P05 delegated attempt is excluded."
   },
   "ranking": [
     "Reject any effort with a permission, synthetic-canary, pre-existing-work, or stale-evidence regression.",
@@ -55,6 +65,7 @@
   "nonScope": [
     "Changing the installed default model or managed profile before the comparison is accepted.",
     "Changing P01-P08 manifests, seed commits, permissions, acceptance criteria, or tie-break rules.",
-    "Treating a visible 5.6-sol controller with a 5.5 delegated worker as end-to-end 5.6-sol."
+    "Using a delegated local coding agent for the Web surface.",
+    "Scoring ChatGPT Work, DevSpace Portable, or the excluded v2 delegated P05 attempt."
   ]
 }

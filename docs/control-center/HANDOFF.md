@@ -17,12 +17,10 @@ Last synchronized: 2026-08-03
 - GOAL_10: `DONE`; the standard MCP catalog-change signal is implemented, the
   one-time legacy ChatGPT catalog migration was automated, and live read-only
   status invocation passed.
-- WS-QA-09: `IN PROGRESS / FRESH MATRIX PREPARED`; the owner requires Chat and
-  absolutely prohibits Work. No Work interaction may be recorded, reused, or
-  scored. Fresh Chat P05 canaries proved
-  medium, high, and xhigh managed workers, but recorded only `Pro` for the
-  controller and therefore did not prove its selectable effort. Those
-  attribution-incomplete workspaces and two Work interactions are consumed.
+- WS-QA-09: `IN PROGRESS / DIRECT MATRIX PREPARED`; the owner compares normal
+  Chat coding directly through helix with direct local Codex. Work and Web-side
+  local-agent delegation are prohibited from execution, reuse, and scoring.
+  Earlier worker canaries remain routing evidence only.
 - Active managed profiles are `codex-explorer=gpt-5.6-luna/max`,
   `codex-implementer=gpt-5.6-sol/medium`,
   `codex-implementer-high=gpt-5.6-sol/high`, and
@@ -36,10 +34,19 @@ Last synchronized: 2026-08-03
   a comparable Web cell, until the Chat controller is also recorded at
   `中程度`/`高い`/`非常に高い`. A wrong `DevSpace Portable` selection was rejected
   before workspace open, created no agent record or change, and is excluded.
-- Fresh medium/high/xhigh Chat-only roots each contain 32 untouched workspaces.
-  Their `prepared.json` SHA-256 values are `a408b4e114ec6233e804aa8ee9a793709690ae261f3b2f232e97e5b1df6a9f0b`,
-  `c93aa4457d92d0b33deabeddf32f6a3e012e6177dbfd5e55b9a312f81f882af3`,
-  and `edea8ecde7d9d6e80416f1273372097f74bd221fbc69babd03f67d02351270d1`.
+- One medium v2 P05 turn incorrectly delegated to a local agent; it completed
+  only in the excluded root and is not scored. New medium/high/xhigh direct
+  roots each contain 32 clean workspaces and zero P05 agent sessions. Their
+  `prepared.json` SHA-256 values are `d623e89b9b154055439d6699c5332e5156dcdcf06b545250b0d5a776921346f6`,
+  `e8827d6705c47dea492f216cdb72e3ddf00747b840340dbca2e6baf3f4d5bf24`,
+  and `fc9ad3d41dda3bbbe162f219977bd16aff6cfe44c6f143af753d7716496b82f7`.
+- The corrected medium P05 direct pair is terminal. Both surfaces had zero
+  pre-answer changes, one closed question, same-thread continuation, the same
+  normalized final code, and passing 2/2 tests. Chat used four observed direct
+  helix calls, had no failed verification, and preserved CRLF. Local Codex used
+  eight observed calls, recovered from one patch mismatch and two intermediate
+  failed tests, and left mixed CRLF/LF endings. One case does not select a
+  winner.
 - Installed working directory: unchanged.
 - Remote history replacement and visibility change were completed with explicit
   owner approval. No tag, GitHub Release, or npm publication was created.
@@ -367,9 +374,8 @@ commands merely because the preparation work is complete.
 
 ## Exact next action
 
-Run fresh Chat P05 canaries with controller `GPT-5.6 Sol` set to `中程度`,
-`高い`, and `非常に高い` for medium, high, and xhigh and require a matching Sol
-worker. Then run the matching local P05 canaries. Require question-before-write,
-exact attribution, and same-provider-session continuation. If all six pass,
-materialize the complete matrix. Work is prohibited and must not be recorded,
-reused, or scored. Do not reuse any provider-turn workspace.
+Run the remaining direct P05 canaries with controller `GPT-5.6 Sol` set to
+`高い` and `非常に高い`, then matching direct local Codex high/xhigh turns.
+Require direct helix read/edit/shell, the same workspace ID and conversation,
+and zero local-agent sessions. If all four pass, continue the prepared matrix.
+Work, delegation, and all earlier provider-turn workspaces are excluded.

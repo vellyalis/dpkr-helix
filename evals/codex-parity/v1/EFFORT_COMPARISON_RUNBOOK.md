@@ -1,8 +1,11 @@
 # GPT-5.6 Sol effort comparison runbook
 
 This follow-up compares `gpt-5.6-sol` at `medium`, `high`, and `xhigh` on the
-unchanged P01-P08 v1 snapshots. It supplements the completed product-parity
-baseline; it does not rewrite the frozen v1 results or change a default model.
+unchanged P01-P08 v1 snapshots. The Web surface is normal ChatGPT Chat directly
+using dpkr helix file and shell tools; the other surface is the local Codex CLI
+directly editing the workspace. A delegated local coding agent is not the Web
+surface in this comparison. The run supplements the completed product-parity
+baseline; it does not rewrite frozen v1 results or change a default model.
 
 The machine-readable contract is `effort-comparison-plan.json`.
 
@@ -19,14 +22,16 @@ The machine-readable contract is `effort-comparison-plan.json`.
 3. Confirm the three prepared output roots named in the plan exist and each
    contains `prepared.json`, P01-P08, both surfaces, and attempts 1 and 2.
 4. Freeze the observed Codex CLI, ChatGPT host, dpkr helix server, tool-catalog,
-   profile text, and UI-selected controller setting in the first result from
-   each configuration.
+   and UI-selected controller setting in the first result from each
+   configuration.
 
-## Attribution canary before the full matrix
+## Direct-execution canary before the full matrix
 
-Run P05 attempt 1 first for each effort and surface. P05 forces the Web path to
-delegate, return one question without mutation, continue the same provider
-session with `Use bankers rounding.`, and expose the worker's model and effort.
+Run P05 attempt 1 first for each effort and surface. P05 requires one question
+without mutation, continuation in the same controller conversation with
+`Use bankers rounding.`, focused changes, and fresh verification. On Web,
+ChatGPT must call dpkr helix directly and reuse one workspace ID; it must not
+create or continue a local-agent session.
 
 A cell is usable only when all of the following are true:
 
@@ -34,16 +39,17 @@ A cell is usable only when all of the following are true:
   recorded, reused, or scored;
 - the controller selection is `GPT-5.6 Sol` with `中程度` for medium, `高い` for
   high, or `非常に高い` for xhigh, recorded immediately before the turn;
-- the delegated worker reports `gpt-5.6-sol` at that same effort;
+- the Web trace contains direct workspace/file/edit/shell calls, contains no
+  `delegate_task`, `continue_agent`, `get_agent_status`, or `list_agents` call,
+  and creates zero local-agent records in the target workspace;
 - local Codex JSONL reports `gpt-5.6-sol` at that same effort; and
-- the exact seed commit, starting diff, manifest digest, profile revision,
-  server revision, and tool-catalog revision are recorded.
+- the exact seed commit, starting diff, manifest digest, server revision, and
+  tool-catalog revision are recorded.
 
-If the controller setting is not evidenced, if a worker falls back to managed
-`gpt-5.5`, if the effort is missing, or if the host cannot select the requested
-effort, record `capability-blocked`. Do not continue the remaining 15 case-
-attempts for that surface/effort and do not report it as a 5.6-sol quality
-result.
+If the controller setting is not evidenced, if Chat delegates, if the effort
+is missing, or if the host cannot select the requested effort, record
+`capability-blocked`. Do not continue the remaining 15 case-attempts for that
+surface/effort and do not report it as a direct 5.6-sol quality result.
 
 ## Full execution
 
@@ -52,9 +58,14 @@ surfaces at each effort. This produces 96 required terminal records. Run an
 attempt 3 only for a case/surface/effort whose first two mandatory outcomes
 disagree.
 
-Keep the manifest task, constraints, acceptance, permissions, continuation
-answer, and time limit identical. Model and effort are harness configuration,
-not task-content changes. Do not reuse a workspace after a provider turn.
+Keep the manifest task, code constraints, permissions, continuation answer,
+time limit, and product acceptance identical. Model, effort, and the direct-
+execution prohibition on delegation are harness configuration, not task-
+content changes. The historical delegation-oriented Web workflow labels do not
+apply to this direct comparison. For P05, same-thread means one Chat
+conversation plus one reused helix workspace ID; for P07, the long verification
+is one direct helix process. Both require zero local-agent sessions. Do not
+reuse a workspace after a model turn.
 
 For every attempt, fill the existing `result.json` from direct evidence and
 retain the final Git status/diff, verification exit and freshness, provider

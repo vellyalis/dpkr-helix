@@ -525,3 +525,40 @@ and Git rather than duplicated here.
   `edea8ecde7d9d6e80416f1273372097f74bd221fbc69babd03f67d02351270d1`.
 - No provider turn ran during preparation. Chat is required; Work remains
   prohibited from execution, recording, reuse, and scoring.
+
+## 2026-08-03 — Direct Chat-versus-Codex comparison corrected
+
+- The owner restated the comparison class: normal ChatGPT must code by directly
+  calling helix file and shell tools, and its resulting implementation is
+  compared with direct local Codex on the same model, effort, task, and seed.
+- The first medium v2 P05 prompt incorrectly delegated to `codex-implementer`.
+  It proved `gpt-5.6-sol/medium` worker routing and changed only the expected two
+  files, but it measures Chat-to-Codex delegation rather than Chat coding. The
+  root and result are excluded from scoring.
+- The effort plan and runbook now prohibit Web-side delegation and all local-
+  agent lifecycle calls. P05 continuity is one Chat conversation and one reused
+  helix workspace ID; P07 uses one direct helix verification process. Work
+  remains absolutely prohibited.
+- New direct medium/high/xhigh roots contain 32 clean workspaces each. All 96
+  HEADs, starting statuses, attempt metadata, and unrun result states match.
+  Their `prepared.json` SHA-256 values are
+  `d623e89b9b154055439d6699c5332e5156dcdcf06b545250b0d5a776921346f6`,
+  `e8827d6705c47dea492f216cdb72e3ddf00747b840340dbca2e6baf3f4d5bf24`, and
+  `fc9ad3d41dda3bbbe162f219977bd16aff6cfe44c6f143af753d7716496b82f7`.
+
+## 2026-08-03 — Medium direct P05 pair passed
+
+- Normal Chat showed Chat selected, Work unselected, `GPT-5.6 Sol`, and
+  `中程度`. It opened the exact workspace once through dpkr helix, asked one
+  half-up-versus-bankers question with zero changes, reused the same workspace
+  in the same conversation, directly read/edited/tested, and created no agent.
+- Local Codex 0.146.0 reported `gpt-5.6-sol/medium`, asked one closed question
+  with zero changes, and emitted the same thread ID after the frozen answer.
+- Both surfaces changed only `src/config.js` and `test/round.test.js`, produced
+  normalized-identical content, retained both algorithms, and independently
+  passed `node --test` with 2/2 tests.
+- Chat used four observed tool calls, no failed verification, and preserved
+  consistent CRLF. Local Codex used eight observed calls, recovered from one
+  patch-context mismatch and two intermediate failed test runs, and left mixed
+  CRLF/LF endings. This is a measured execution-quality difference on one case,
+  not a general or final matrix conclusion.
