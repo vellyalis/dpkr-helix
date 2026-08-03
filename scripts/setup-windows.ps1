@@ -49,7 +49,7 @@ param(
 
   [string] $PublicBaseUrl,
 
-  [string] $CodexModel = "gpt-5.5",
+  [string] $CodexModel = "gpt-5.6-sol",
 
   [string] $CodexCliVersion = "0.145.0",
 
@@ -1116,10 +1116,10 @@ function Install-AgentProfiles {
 ---
 schema: devspace-agent/v1
 name: codex-explorer
-description: Codex investigator for read-only repository research and implementation planning.
+description: Luna investigator at max reasoning for read-only research and implementation planning.
 provider: codex
-model: $Model
-thinking: medium
+model: gpt-5.6-luna
+thinking: max
 ---
 
 $script:ManagedProfileMarker
@@ -1173,8 +1173,54 @@ Review the requested scope without modifying files.
 - Return findings by severity, then state whether any blocking defect remains.
 "@
 
+  $highImplementer = @"
+---
+schema: devspace-agent/v1
+name: codex-implementer-high
+description: Sol worker at high reasoning for difficult focused implementation tasks.
+provider: codex
+model: $Model
+thinking: high
+---
+
+$script:ManagedProfileMarker
+
+Implement the requested change in the current workspace.
+
+- Read the applicable project instructions before editing.
+- Use this profile only when the task needs high reasoning.
+- Keep the change within the stated scope.
+- Preserve unrelated user changes.
+- Run focused verification for changed behavior.
+- Report changed files, verification results, blockers, and remaining risks.
+"@
+
+  $xhighImplementer = @"
+---
+schema: devspace-agent/v1
+name: codex-implementer-xhigh
+description: Sol worker at xhigh reasoning for the hardest focused implementation tasks.
+provider: codex
+model: $Model
+thinking: xhigh
+---
+
+$script:ManagedProfileMarker
+
+Implement the requested change in the current workspace.
+
+- Read the applicable project instructions before editing.
+- Use this profile only when the task needs xhigh reasoning.
+- Keep the change within the stated scope.
+- Preserve unrelated user changes.
+- Run focused verification for changed behavior.
+- Report changed files, verification results, blockers, and remaining risks.
+"@
+
   Write-ManagedProfile -Path (Join-Path $profileDir "codex-explorer.md") -Content $explorer
   Write-ManagedProfile -Path (Join-Path $profileDir "codex-implementer.md") -Content $implementer
+  Write-ManagedProfile -Path (Join-Path $profileDir "codex-implementer-high.md") -Content $highImplementer
+  Write-ManagedProfile -Path (Join-Path $profileDir "codex-implementer-xhigh.md") -Content $xhighImplementer
   Write-ManagedProfile -Path (Join-Path $profileDir "codex-reviewer.md") -Content $reviewer
 }
 

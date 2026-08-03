@@ -4,9 +4,10 @@ Last synchronized: 2026-08-03
 
 ## Current position
 
-- Completed work units: GOAL_08 MWU-08.01 through MWU-08.06. The measured
-  current `gpt-5.5` medium setting is retained; signed-in Web plus dpkr helix
-  passes the frozen parity gate 8/8 versus retained local Codex 5/8.
+- Completed work units: GOAL_08 MWU-08.01 through MWU-08.06. Its measured
+  GPT-5.5 baseline and signed-in parity evidence remain frozen historical
+  checkpoints; the owner explicitly replaced the active managed profiles on
+  2026-08-03 without relabeling those results.
 - GOAL_01 through GOAL_07: DONE.
 - GOAL_08 Codex-Parity Coding Quality: `DONE`; P01-P08 manifests,
   deterministic snapshots, metadata prompts, result contract, and final
@@ -16,11 +17,15 @@ Last synchronized: 2026-08-03
 - GOAL_10: `DONE`; the standard MCP catalog-change signal is implemented, the
   one-time legacy ChatGPT catalog migration was automated, and live read-only
   status invocation passed.
-- WS-QA-09: `READY`; the owner requires a complete same-snapshot comparison of
-  `gpt-5.6-sol` medium, high, and xhigh across local Codex and Web plus helix.
-  Execution is explicitly deferred until 2026-08-04. A read-only resume
-  preflight confirmed the frozen suite and all 96 prepared workspaces remain
-  intact and unused.
+- WS-QA-09: `READY / FRESH CHAT CANARY REQUIRED`; the owner resumed execution,
+  rejected the ChatGPT Work surface, and requires ordinary Chat. Two
+  Work-surface P05 interactions are excluded and their workspaces are consumed.
+  Do not count or reuse them.
+- Active managed profiles are `codex-explorer=gpt-5.6-luna/max`,
+  `codex-implementer=gpt-5.6-sol/medium`,
+  `codex-implementer-high=gpt-5.6-sol/high`, and
+  `codex-implementer-xhigh=gpt-5.6-sol/xhigh`; the reviewer remains Sol/high.
+  The runtime profile catalog and all four provider combinations were verified.
 - Installed working directory: unchanged.
 - Remote history replacement and visibility change were completed with explicit
   owner approval. No tag, GitHub Release, or npm publication was created.
@@ -334,13 +339,16 @@ commands merely because the preparation work is complete.
   SHA-256 `e40d2260abcdac3dd4ecdd33c18e66e30653b08e2eb3c052bff5a82261160b17`,
   materializer validation, and all 96 workspace HEAD/diff/status/metadata/result
   templates pass with zero drift; no provider or evaluation turn ran
+- 2026-08-03 managed-profile correction: source installer, bootstrap, and active
+  profile files no longer select GPT-5.5. Setup tests pass, the profile loader
+  reports Luna/max and Sol/medium/high/xhigh, and the bundled Codex provider
+  accepted all four combinations. No delegated worker remains active.
 
 ## Exact next action
 
-On 2026-08-04, follow
-`evals/codex-parity/v1/EFFORT_COMPARISON_RUNBOOK.md`. Repeat the Git and suite
-freshness checks, confirm the prepared-root hashes against the State Ledger,
-and run P05 attempt 1 as the model/effort attribution canary for all six
-surface/effort cells. Only then run the remaining complete P01-P08 matrix. A
-delegated managed `gpt-5.5` fallback is capability-blocked, not a 5.6-sol
-result. Do not change installed defaults before the comparison is accepted.
+Create a fresh P05 canary workspace, open ordinary Chat rather than Work, and
+delegate medium/high/xhigh to the three explicit implementer targets. Require
+matching controller and provider attribution plus same-thread P05 continuation.
+Only after all six surface/effort cells pass should a fresh complete matrix be
+materialized. The two Work-surface interactions are invalid evidence and their
+workspaces must not be reused.

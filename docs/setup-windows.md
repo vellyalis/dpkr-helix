@@ -97,6 +97,12 @@ checkout, creates a new Owner password, runs the official Codex browser login
 when needed, starts DevSpace and the tunnel, and checks local/public OAuth
 metadata plus a real Codex subagent run.
 
+The managed Codex profiles use `gpt-5.6-luna` at `max` for read-only
+exploration, and `gpt-5.6-sol` at `medium`, `high`, and `xhigh` for normal
+implementation, review, and the hardest implementation tasks respectively.
+The default `codex-implementer` target uses Sol at `medium`; no managed profile
+uses GPT-5.5.
+
 The global runtime is installed from a built package archive rather than an npm
 link to the checkout, then its production dependencies are restored from the
 verified deployment lock. Normal source dependency maintenance therefore cannot

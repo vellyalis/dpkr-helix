@@ -444,3 +444,26 @@ and Git rather than duplicated here.
   `c11cb8c4fb5ec1ceb99bb06f261afb46fd782055160491805bb46b68ba7619ea`,
   and `a4b9643544062e0320fbba2f12cc8c1764e87d9d6839f670fd779fe1708464df`.
   No provider turn ran, so the 2026-08-04 start boundary remains authoritative.
+
+## 2026-08-03 — Managed Codex profiles corrected; Work canary excluded
+
+- The owner resumed WS-QA-09, explicitly prohibited ChatGPT Work for the Web
+  surface, required ordinary Chat, and approved replacing the old managed
+  GPT-5.5 setting used by helix delegation.
+- Two P05 interactions were made through Work before that correction. They are
+  excluded from the comparison, did not modify their case workspaces, and make
+  those workspace identities ineligible for reuse as fresh Chat evidence.
+- Fresh runtime evidence localized the wrong attribution to the managed profile
+  files and bootstrap: `codex-implementer` explicitly selected `gpt-5.5` at
+  medium. The DevSpace runtime passed profile model and effort through unchanged;
+  no SDK fallback mechanism caused the result.
+- The managed set now uses `gpt-5.6-luna/max` for read-only exploration and
+  explicit `gpt-5.6-sol` implementers at medium, high, and xhigh. The reviewer
+  remains Sol/high. Active profile files gained the managed marker and the
+  bootstrap default is Sol.
+- The focused Windows setup test passes. The actual profile loader reports the
+  intended catalog, and read-only provider probes using the bundled Codex 0.145
+  succeed for Luna/max and Sol/medium/high/xhigh. No worker or long-running
+  probe remains active.
+- Historical GOAL_08 evidence remains unchanged. WS-QA-09 must restart with a
+  fresh ordinary-Chat P05 canary before any complete matrix is attributed.

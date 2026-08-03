@@ -565,6 +565,18 @@ try {
     -Condition ($sourceText.Contains('$env:DEVSPACE_LOG_TOOL_CALLS = "0"')) `
     -Message "Managed runtime leaves high-volume successful tool logging enabled."
   Assert-True `
+    -Condition ($sourceText.Contains('[string] $CodexModel = "gpt-5.6-sol"')) `
+    -Message "Managed Codex default is not GPT-5.6 Sol."
+  Assert-True `
+    -Condition (
+      $sourceText.Contains('model: gpt-5.6-luna') -and
+      $sourceText.Contains('thinking: max') -and
+      $sourceText.Contains('name: codex-implementer-high') -and
+      $sourceText.Contains('name: codex-implementer-xhigh') -and
+      $sourceText.Contains('thinking: xhigh')
+    ) `
+    -Message "Managed Luna max or Sol xhigh profile is missing."
+  Assert-True `
     -Condition (
       $sourceText.Contains('if ($Mode -eq "LaunchUpdate")') -and
       $sourceText.Contains('-WindowStyle Hidden') -and

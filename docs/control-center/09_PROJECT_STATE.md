@@ -17,12 +17,16 @@ Last synchronized: 2026-08-03
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-QA-09 is the next evaluation.
-- Current program unit: WS-QA-09 is `READY`, with execution deferred by the
-  owner until 2026-08-04. It compares the same `gpt-5.6-sol` model at medium,
-  high, and xhigh on complete P01-P08 snapshots across local Codex and signed-in
-  Web plus dpkr helix. A 2026-08-03 read-only resume preflight at `c4914ee`
-  confirmed the frozen suite hash and all 96 prepared workspaces without drift;
-  no evaluation turn has begun.
+- Current program unit: WS-QA-09 is `READY / FRESH CHAT CANARY REQUIRED`. The
+  owner resumed it on 2026-08-03, then explicitly rejected the ChatGPT Work
+  surface and required ordinary Chat. Two Work-surface P05 interactions are
+  excluded from the comparison and their workspaces must not be reused. The
+  frozen suite and remaining prepared workspaces retain their preflight state.
+- The owner explicitly replaced the active managed Codex profile setting that
+  caused delegated GPT-5.5 execution. The installed catalog now maps read-only
+  exploration to `gpt-5.6-luna/max` and implementation to `gpt-5.6-sol` at
+  medium, high, or xhigh. Historical GOAL_08 measurements remain frozen and are
+  not retroactively relabeled.
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
@@ -112,13 +116,14 @@ publishing the compatibility package accidentally.
 | Windows recovery trigger | existing limited-user no-console task plus canonical health-gated recovery | legacy public-or-local failure rule restarted healthy local state during tunnel-only outages |
 | Managed Windows update | physical packed install plus canonical setup transaction and hidden MCP request/status launcher | source Junction lets maintenance lock or mutate live files; arbitrary shell loses ownership/result across self-restart; daemon/polling/dashboard add friction or a second owner |
 | MCP session retention | active-request protection plus a 64-session inactive LRU bound | 24-hour time-only retention allowed hosts that omit DELETE to grow heap without bound; shorter global timeouts can break legitimate reused sessions |
-| MWU-08.01 model/profile setting | measured current `gpt-5.5` medium baseline: Web 8/8, local 4/8 | `gpt-5.6-sol` medium: Web 6/8, local 5/8; conditional high hard subset: Web 1/4, local 3/4; mandatory regressions and mixed delegated execution prevent adoption |
+| MWU-08.01 historical model/profile result | measured `gpt-5.5` medium baseline: Web 8/8, local 4/8 | `gpt-5.6-sol` medium: Web 6/8, local 5/8; conditional high hard subset: Web 1/4, local 3/4; mandatory regressions and mixed delegated execution prevented adoption at that checkpoint |
 | MWU-08.02 repository start context | existing WorkspaceRegistry/repository-diff owners plus one workspace-scoped temporary-index fingerprint; 200 path and 100 script-name bounds | whole-Git-root staging crosses nested workspace boundaries; another Git reader/store creates a second owner; changing the first text/card payload breaks compatibility |
 | MWU-08.03 model-visible final review | existing review checkpoint, repository-diff, process-session, and operation-evidence owners; 128-KiB UTF-8 patch and 200 turn-file bounds; exact fingerprint freshness | caller-supplied outcomes manufacture evidence; agent lookup before policy/checkpoint boundaries leaks state; a second evidence store or review service creates another owner |
 | MWU-08.04 structured Codex outcome | installed Codex SDK per-turn schema plus existing LocalAgentService/store and operation/MCP/UI projections; nullable disposition/question and same-session continuation | prose parsing silently manufactures completion; a second message/store/notification owner duplicates lifecycle state; changing non-Codex adapters without native schema breaks compatibility |
 | MWU-08.05 bounded wait | optional 0..30000 ms wait on the existing status tool/service path with explicit timeout metadata | duplicate workers, background polling, cancellation, or another wait owner add risk without improving the measured workflow |
 | MWU-08.06 parity convergence | existing server/workspace/read metadata explicitly preserves narrower task read boundaries over advertised Skills; signed-in Web 8/8 versus retained local 5/8 | a new per-turn permission language/enforcement owner is not justified by the advisory-metadata experiment; repeated wording tuning or a model/default change lacks evidence |
 | WS-QA-09 `gpt-5.6-sol` effort | no selected effort yet; full fresh matrix required | historical medium is mixed, High is a mixed four-case subset, and xhigh is absent, so none can close the owner-requested comparison |
+| Managed Codex subagent profiles | owner-selected Luna/max explorer plus Sol medium/high/xhigh implementers; Sol/high reviewer retained | legacy managed GPT-5.5 profiles caused false candidate attribution and are no longer active defaults |
 
 ## Workstream portfolio
 
@@ -135,7 +140,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
 | WS-QA-08 measured coding parity | VERIFIED / DONE | signed-in Web passes 8/8 versus retained local 5/8 with zero mandatory safety regression |
-| WS-QA-09 GPT-5.6 Sol effort comparison | READY | all six attribution cells pass, then fresh medium/high/xhigh P01-P08 results and any required tie-breaks close the matrix |
+| WS-QA-09 GPT-5.6 Sol effort comparison | READY / RESET CANARY | ordinary Chat passes all six fresh attribution cells, then fresh medium/high/xhigh P01-P08 results and any required tie-breaks close the matrix |
 
 ## Architecture and complexity decision
 
@@ -473,7 +478,7 @@ Cutover outcome:
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
 | ChatGPT Web does not currently honor MCP tool-list-change for newly added names | external host behavior, one-time migration closed | automate the approved developer-mode connection update during legacy migration; keep the two update tool names stable so later self-updates need only reconnect |
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
-| Web delegation remains managed `gpt-5.5` medium under a `GPT-5.6 Sol` controller | measured attribution boundary | preserve the mixed configuration label; do not claim end-to-end candidate coverage or change the managed profile without approval |
+| historical Web delegation used managed `gpt-5.5` medium under a `GPT-5.6 Sol` controller | cause removed from active configuration | keep historical records mixed; ordinary Chat must prove the new explicit Sol medium/high/xhigh targets before any fresh result is attributed |
 | candidate medium and high settings regress mandatory safety or continuation behavior | adoption blockers; both candidates rejected | retain the measured current setting and never trade efficiency for a mandatory pass |
 | should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
 | repository context and verification-basis capture observe a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/review or re-verification produces a new fingerprint, exact equality is required for `fresh`, and locks or double fingerprinting remain deferred without a measured inconsistency |
@@ -481,10 +486,10 @@ Cutover outcome:
 
 ## Next executable action
 
-On 2026-08-04, repeat the Git and frozen-suite freshness checks, confirm the
-three prepared-root hashes still match the 2026-08-03 preflight recorded in the
-State Ledger, then run P05 attempt 1 as the attribution canary for each effort
-and surface. Continue to the 96-record full matrix only when every controller
-and delegated provider is attributable to `gpt-5.6-sol` at the target effort.
-Do not change the installed default model/profile or score a managed `gpt-5.5`
-fallback as 5.6-sol.
+Create a fresh P05 canary workspace and use ordinary Chat, never Work. Delegate
+to `codex-implementer`, `codex-implementer-high`, and
+`codex-implementer-xhigh` for medium, high, and xhigh respectively. Continue to
+a freshly materialized 96-record matrix only when every controller and provider
+session is attributable to `gpt-5.6-sol` at the requested effort and P05
+continuation completes in the same provider thread. Do not reuse the two
+Work-surface workspaces or relabel their interactions as Chat evidence.
