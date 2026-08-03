@@ -510,3 +510,18 @@ and Git rather than duplicated here.
   Codex model/effort before a medium/high/xhigh cell is scored.
 - No frozen case, seed, acceptance rule, result schema, product code, profile,
   provider session, or external account setting changed.
+
+## 2026-08-03 — Fresh Chat-only effort matrix prepared
+
+- The owner resumed the coding-quality comparison. The machine-readable plan is
+  `running` and points to new medium/high/xhigh roots; no prior provider-turn
+  workspace is reused.
+- The frozen materializer created 32 workspaces per effort, 96 total. Every
+  workspace matches its seed HEAD and starting status, and every result remains
+  in untouched template state.
+- Medium, high, and xhigh `prepared.json` SHA-256 values are respectively
+  `a408b4e114ec6233e804aa8ee9a793709690ae261f3b2f232e97e5b1df6a9f0b`,
+  `c93aa4457d92d0b33deabeddf32f6a3e012e6177dbfd5e55b9a312f81f882af3`, and
+  `edea8ecde7d9d6e80416f1273372097f74bd221fbc69babd03f67d02351270d1`.
+- No provider turn ran during preparation. Chat is required; Work remains
+  prohibited from execution, recording, reuse, and scoring.

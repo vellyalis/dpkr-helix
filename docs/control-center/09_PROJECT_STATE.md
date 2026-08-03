@@ -17,12 +17,12 @@ Last synchronized: 2026-08-03
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-QA-09 is the next evaluation.
-- Current program unit: WS-QA-09 is `IN PROGRESS / WORKER CANARY PASSED`. The
+- Current program unit: WS-QA-09 is `IN PROGRESS / FRESH MATRIX PREPARED`. The
   owner requires Chat and absolutely prohibits Work; no Work interaction may be
   recorded, reused, or scored. Fresh Chat P05 canaries passed for three Sol
-  implementer efforts; two earlier Work interactions remain excluded and their
-  workspaces must not be reused. The frozen suite and remaining prepared
-  workspaces retain their preflight state.
+  implementer efforts; those attribution-incomplete workspaces and two earlier
+  Work interactions must not be reused. Three fresh Chat-only roots now contain
+  96 untouched workspaces for the controller/worker/local canary and matrix.
 - The owner explicitly replaced the active managed Codex profile setting that
   caused delegated GPT-5.5 execution. The installed catalog now maps read-only
   exploration to `gpt-5.6-luna/max` and implementation to `gpt-5.6-sol` at
@@ -123,7 +123,7 @@ publishing the compatibility package accidentally.
 | MWU-08.04 structured Codex outcome | installed Codex SDK per-turn schema plus existing LocalAgentService/store and operation/MCP/UI projections; nullable disposition/question and same-session continuation | prose parsing silently manufactures completion; a second message/store/notification owner duplicates lifecycle state; changing non-Codex adapters without native schema breaks compatibility |
 | MWU-08.05 bounded wait | optional 0..30000 ms wait on the existing status tool/service path with explicit timeout metadata | duplicate workers, background polling, cancellation, or another wait owner add risk without improving the measured workflow |
 | MWU-08.06 parity convergence | existing server/workspace/read metadata explicitly preserves narrower task read boundaries over advertised Skills; signed-in Web 8/8 versus retained local 5/8 | a new per-turn permission language/enforcement owner is not justified by the advisory-metadata experiment; repeated wording tuning or a model/default change lacks evidence |
-| WS-QA-09 `gpt-5.6-sol` effort | ordinary-Chat delegated-worker P05 canary passes at medium/high/xhigh; no selected effort yet | recording only `Pro` did not prove the controller model/effort; fresh ordinary-Chat and local P05 attribution plus the complete matrix are still required |
+| WS-QA-09 `gpt-5.6-sol` effort | fresh Chat-only medium/high/xhigh matrix prepared; no selected effort yet | earlier worker-only canaries did not prove the controller effort; fresh Chat controller/worker and local P05 attribution plus the complete matrix are still required |
 | Managed Codex subagent profiles | owner-selected Luna/max explorer plus Sol medium/high/xhigh implementers; Sol/high reviewer retained | legacy managed GPT-5.5 profiles caused false candidate attribution and are no longer active defaults |
 
 ## Workstream portfolio
@@ -141,7 +141,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
 | WS-QA-08 measured coding parity | VERIFIED / DONE | signed-in Web passes 8/8 versus retained local 5/8 with zero mandatory safety regression |
-| WS-QA-09 GPT-5.6 Sol effort comparison | IN PROGRESS / WORKER CANARY PASSED | fresh ordinary-Chat controller/worker and local P05 attribution pass at medium/high/xhigh, then fresh medium/high/xhigh P01-P08 results and any required tie-breaks close the matrix |
+| WS-QA-09 GPT-5.6 Sol effort comparison | IN PROGRESS / FRESH MATRIX PREPARED | fresh Chat controller/worker and local P05 attribution pass at medium/high/xhigh, then fresh medium/high/xhigh P01-P08 results and any required tie-breaks close the matrix |
 
 ## Architecture and complexity decision
 

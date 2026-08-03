@@ -1,8 +1,8 @@
 {
   "schema": "dpkr-helix-effort-comparison-plan/v1",
   "planId": "goal08-gpt-5.6-sol-effort-full",
-  "status": "ready",
-  "targetDate": "2026-08-04",
+  "status": "running",
+  "targetDate": "2026-08-03",
   "baseSuite": {
     "path": "evals/codex-parity/v1/suite.json",
     "suiteId": "goal08-p01-p08",
@@ -19,9 +19,9 @@
   },
   "minimumTerminalRecords": 96,
   "workspaceOutputs": {
-    "medium": ".tmp/codex-parity-v1-gpt-5.6-sol-medium-20260804",
-    "high": ".tmp/codex-parity-v1-gpt-5.6-sol-high-20260804",
-    "xhigh": ".tmp/codex-parity-v1-gpt-5.6-sol-xhigh-20260804"
+    "medium": ".tmp/codex-parity-v1-gpt-5.6-sol-medium-chat-v2-20260803",
+    "high": ".tmp/codex-parity-v1-gpt-5.6-sol-high-chat-v2-20260803",
+    "xhigh": ".tmp/codex-parity-v1-gpt-5.6-sol-xhigh-chat-v2-20260803"
   },
   "attributionGate": {
     "firstCase": "P05",

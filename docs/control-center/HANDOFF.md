@@ -17,12 +17,12 @@ Last synchronized: 2026-08-03
 - GOAL_10: `DONE`; the standard MCP catalog-change signal is implemented, the
   one-time legacy ChatGPT catalog migration was automated, and live read-only
   status invocation passed.
-- WS-QA-09: `IN PROGRESS / WORKER CANARY PASSED`; the owner requires Chat and
+- WS-QA-09: `IN PROGRESS / FRESH MATRIX PREPARED`; the owner requires Chat and
   absolutely prohibits Work. No Work interaction may be recorded, reused, or
   scored. Fresh Chat P05 canaries proved
   medium, high, and xhigh managed workers, but recorded only `Pro` for the
-  controller and therefore did not prove its selectable effort. Two Work-
-  surface P05 interactions are excluded and consumed.
+  controller and therefore did not prove its selectable effort. Those
+  attribution-incomplete workspaces and two Work interactions are consumed.
 - Active managed profiles are `codex-explorer=gpt-5.6-luna/max`,
   `codex-implementer=gpt-5.6-sol/medium`,
   `codex-implementer-high=gpt-5.6-sol/high`, and
@@ -36,6 +36,10 @@ Last synchronized: 2026-08-03
   a comparable Web cell, until the Chat controller is also recorded at
   `中程度`/`高い`/`非常に高い`. A wrong `DevSpace Portable` selection was rejected
   before workspace open, created no agent record or change, and is excluded.
+- Fresh medium/high/xhigh Chat-only roots each contain 32 untouched workspaces.
+  Their `prepared.json` SHA-256 values are `a408b4e114ec6233e804aa8ee9a793709690ae261f3b2f232e97e5b1df6a9f0b`,
+  `c93aa4457d92d0b33deabeddf32f6a3e012e6177dbfd5e55b9a312f81f882af3`,
+  and `edea8ecde7d9d6e80416f1273372097f74bd221fbc69babd03f67d02351270d1`.
 - Installed working directory: unchanged.
 - Remote history replacement and visibility change were completed with explicit
   owner approval. No tag, GitHub Release, or npm publication was created.
