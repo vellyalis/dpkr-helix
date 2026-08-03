@@ -32,6 +32,13 @@ Last synchronized: 2026-08-03
   The same fresh-workspace surface fell from 1,055 advertised nested instruction
   paths to the nine real tracked paths with zero `.tmp` entries. Reconnect,
   direct read/exec, doctor, and local/public health all pass.
+- Final operational cleanup: `DONE`; owner-approved cleanup removed the exact
+  private WS-OPS-05 recovery root after a 37,246-file / 1,120,679,031-byte
+  preflight, and post-delete inspection confirms that root is absent. The
+  separate legacy `DevSpace Stable` development registration, which pointed to
+  the retired ngrok endpoint, was deleted from ChatGPT. Exactly one installed
+  `dpkr helix` entry remains at the fixed Cloudflare MCP URL, and direct read and
+  exec still pass through the existing workspace after removal.
 - Active managed profiles are `codex-explorer=gpt-5.6-luna/max`,
   `codex-implementer=gpt-5.6-sol/medium`,
   `codex-implementer-high=gpt-5.6-sol/high`, and
@@ -430,7 +437,8 @@ commands merely because the preparation work is complete.
 
 ## Exact next action
 
-WS-OPS-05 has no remaining executable work. On the next owner request, reconcile
-the persistent handoff with Git and live evidence, then select only that new
-goal. Do not resume the stopped WS-QA-09 matrix without a concrete effort-choice
-decision or observed model-quality regression.
+No active DevSpace work remains. On the next owner request, reconcile the
+persistent handoff with Git and live evidence, then select only that new goal.
+WS-QA-09 remains intentionally owner-stopped and incomplete, not pending work;
+do not resume it without a concrete effort-choice decision or observed
+model-quality regression.

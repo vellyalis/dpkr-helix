@@ -26,6 +26,13 @@ Last synchronized: 2026-08-03
   tracked nested instructions and zero `.tmp` entries. Direct read/exec, doctor,
   local/public health and OAuth metadata, Git tracking, and advertised remote
   identity all pass.
+- Final operational cleanup is `DONE`. The owner-approved deletion removed the
+  exact private WS-OPS-05 recovery root after a 37,246-file /
+  1,120,679,031-byte preflight, and the root is now absent. ChatGPT no longer
+  lists the separate legacy `DevSpace Stable` development registration that
+  pointed to the retired ngrok endpoint. Exactly one installed `dpkr helix`
+  entry remains at the fixed Cloudflare MCP endpoint, and direct read/exec
+  passed through its existing workspace after removal.
 - The owner stopped WS-QA-09 incomplete because its remaining comparison no
   longer changes a current product, release, or model-setting decision. Exactly
   24 of 96 result records are terminal and 72 remain `not_run`; partial results
@@ -556,6 +563,8 @@ Direct P02 effort comparison proof:
 | public release cannot be recalled | realized publication boundary | source was published only after explicit owner approval and clean-clone proof |
 | machine-local ignored folders remain on this PC | local-only, expected | ignore rules plus public checker path gate |
 | installed runtime scanned ignored `.tmp` nested instructions | resolved | public `b65b986` is physically installed; fresh before/after discovery moved from 1,055 paths to nine tracked paths and zero `.tmp` entries |
+| legacy `DevSpace Stable` app registration competed with `dpkr helix` | resolved | owner-approved deletion removed only the old ngrok-backed development registration; one fixed-Cloudflare `dpkr helix` entry remains and post-removal read/exec pass |
+| private WS-OPS-05 deployment recovery root remained after live verification | resolved by owner-approved irreversible cleanup | exact temp root was preflighted without reparse points and deleted; the generated archive is not recoverable, while the public Git history remains sufficient to rebuild the source candidate |
 | filesystem aliases differ across operating systems | resolved | canonical comparison at security, query, and repository-fingerprint boundaries; logical workspace identity remains unchanged; hosted run `30749192172` passed Ubuntu/macOS/Windows |
 | Codex SDK compiled spawn shape may change | controlled | postinstall and production audit fail closed until the scoped repair is reviewed against the new shape |
 | this execution context could not register a replacement current-user task | accepted local deployment constraint | reuse the existing limited-user no-console task through canonical recovery; preserve helper-only rollback |
@@ -573,7 +582,8 @@ Direct P02 effort comparison proof:
 
 ## Next executable action
 
-WS-OPS-05 has no remaining executable work. Reconcile this State, the persistent
-handoff, Git, and fresh runtime evidence when the owner supplies the next goal.
-Do not resume WS-QA-09 without a concrete effort-selection decision or observed
+No active DevSpace work remains. Reconcile this State, the persistent handoff,
+Git, and fresh runtime evidence when the owner supplies the next goal.
+WS-QA-09 remains intentionally owner-stopped and incomplete, not pending work;
+do not resume it without a concrete effort-selection decision or observed
 model-quality regression.

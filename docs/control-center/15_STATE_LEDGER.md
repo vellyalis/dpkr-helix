@@ -757,3 +757,23 @@ and Git rather than duplicated here.
 - WS-OPS-05 is `VERIFIED / DONE`. The legacy app-namespace ambiguity remains an
   environment-owned usability residual; no source fallback or duplicate owner
   was added. WS-QA-09 remains owner-stopped and incomplete.
+
+## 2026-08-03 — Final operational cleanup closed
+
+- The owner explicitly approved both remaining operational cleanup actions:
+  irreversible deletion of the private WS-OPS-05 recovery root and deletion of
+  only the legacy `DevSpace Stable` ChatGPT registration.
+- Read-only filesystem preflight resolved the exact recovery root under the
+  Windows temporary directory, found 37,246 files totaling 1,120,679,031 bytes,
+  and found no root or descendant reparse points. PowerShell 7 removed the same
+  exact root after Windows PowerShell stopped on a long path; post-delete
+  inspection confirms the root is absent. The generated recovery archive is not
+  recoverable, while public Git history remains available for source rebuilds.
+- Signed-in ChatGPT inspection identified `DevSpace Stable` as a distinct
+  development App ID at the retired ngrok MCP URL. Deletion removed that one
+  installed entry immediately. `dpkr helix` remained as exactly one installed
+  entry at the fixed Cloudflare MCP endpoint with OAuth, and direct read/exec
+  through the existing workspace passed after deletion.
+- No active DevSpace work remains. WS-QA-09 is still `OWNER STOPPED /
+  INCOMPLETE`, not DONE and not pending; resume it only under its recorded
+  decision or regression condition.
