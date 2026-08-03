@@ -25,11 +25,16 @@
   },
   "attributionGate": {
     "firstCase": "P05",
+    "ordinaryChatControllerEffort": {
+      "medium": "軽",
+      "high": "高い",
+      "xhigh": "非常に高い"
+    },
     "rules": [
-      "Record the ChatGPT controller model and effort selected immediately before every Web turn.",
+      "Use ordinary Chat, never Work, and record the ChatGPT controller model plus the mapped UI effort selected immediately before every Web turn.",
       "Every delegated provider session must report gpt-5.6-sol and the target effort; a managed gpt-5.5 fallback is mixed and is not a usable cell.",
       "Local Codex must report gpt-5.6-sol and the target effort in its JSONL trace.",
-      "If model or effort attribution is missing or mismatched, mark the cell capability-blocked and do not score it as gpt-5.6-sol."
+      "If the ordinary-Chat controller setting, delegated-worker attribution, or local-Codex attribution is missing or mismatched, mark the cell capability-blocked and do not score it as gpt-5.6-sol."
     ]
   },
   "historicalEvidencePolicy": {

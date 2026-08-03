@@ -30,16 +30,19 @@ session with `Use bankers rounding.`, and expose the worker's model and effort.
 
 A cell is usable only when all of the following are true:
 
-- the controller selection is `GPT-5.6 Sol` at the target effort;
+- the Web surface is ordinary Chat, never Work;
+- the controller selection is `GPT-5.6 Sol` with `軽` for medium, `高い` for
+  high, or `非常に高い` for xhigh, recorded immediately before the turn;
 - the delegated worker reports `gpt-5.6-sol` at that same effort;
 - local Codex JSONL reports `gpt-5.6-sol` at that same effort; and
 - the exact seed commit, starting diff, manifest digest, profile revision,
   server revision, and tool-catalog revision are recorded.
 
-If a worker falls back to managed `gpt-5.5`, if the effort is missing, or if
-the host cannot select the requested effort, record `capability-blocked`. Do
-not continue the remaining 15 case-attempts for that surface/effort and do not
-report it as a 5.6-sol quality result.
+If the controller setting is not evidenced, if a worker falls back to managed
+`gpt-5.5`, if the effort is missing, or if the host cannot select the requested
+effort, record `capability-blocked`. Do not continue the remaining 15 case-
+attempts for that surface/effort and do not report it as a 5.6-sol quality
+result.
 
 ## Full execution
 

@@ -17,11 +17,11 @@ Last synchronized: 2026-08-03
 - GOAL_10: `DONE`; the standard MCP catalog-change signal is implemented, the
   one-time legacy ChatGPT catalog migration was automated, and live read-only
   status invocation passed.
-- WS-QA-09: `IN PROGRESS / CHAT CANARY PASSED`; the owner rejected the ChatGPT
-  Work surface and requires ordinary Chat. Fresh ordinary-Chat P05 canaries
-  passed for medium, high, and xhigh managed implementers. Two Work-surface P05
-  interactions are excluded and their workspaces are consumed. Do not count or
-  reuse them.
+- WS-QA-09: `IN PROGRESS / WORKER CANARY PASSED`; the owner rejected the
+  ChatGPT Work surface and requires ordinary Chat. Fresh P05 canaries proved
+  medium, high, and xhigh managed workers, but recorded only `Pro` for the
+  controller and therefore did not prove its selectable effort. Two Work-
+  surface P05 interactions are excluded and consumed.
 - Active managed profiles are `codex-explorer=gpt-5.6-luna/max`,
   `codex-implementer=gpt-5.6-sol/medium`,
   `codex-implementer-high=gpt-5.6-sol/high`, and
@@ -31,10 +31,10 @@ Last synchronized: 2026-08-03
   each requested effort. Every worker first returned `needs_input` with zero
   workspace changes, then completed through the same provider session after the
   bankers answer. Each changed only the two permitted fixture files and passed
-  `node --test` 2/2. The ChatGPT controller displayed Pro; only the delegated
-  worker is attributed to Sol. A wrong `DevSpace Portable` selection was
-  rejected before workspace open, created no agent record or change, and is
-  excluded.
+  `node --test` 2/2. This remains worker-routing and continuation evidence, not
+  a comparable Web cell, until the ordinary-Chat controller is also recorded at
+  `軽`/`高い`/`非常に高い`. A wrong `DevSpace Portable` selection was rejected
+  before workspace open, created no agent record or change, and is excluded.
 - Installed working directory: unchanged.
 - Remote history replacement and visibility change were completed with explicit
   owner approval. No tag, GitHub Release, or npm publication was created.
@@ -354,16 +354,17 @@ commands merely because the preparation work is complete.
   accepted all four combinations. Source checkpoint `370aa04` records the
   managed profile repair, and the installed setup script matches its source
   SHA-256. No delegated worker remains active.
-- 2026-08-03 ordinary-Chat attribution canary: medium, high, and xhigh each
-  proved correct managed profile/model/effort attribution, question-before-
+- 2026-08-03 ordinary-Chat managed-worker canary: medium, high, and xhigh each
+  proved correct worker profile/model/effort attribution, question-before-
   write, same-provider-session continuation, bounded two-file changes, and a
-  passing 2/2 focused test run. Work and Portable interactions are excluded.
+  passing 2/2 focused test run. Controller effort was not recorded, so these are
+  not scored Web comparison cells. Work and Portable interactions are excluded.
 
 ## Exact next action
 
-Run fresh local P05 canaries for Sol medium, high, and xhigh. Require question-
-before-write, exact model/effort attribution, and same-provider-session
-continuation. If all three pass, materialize the fresh complete matrix and use
-ordinary Chat, never Work, for its Web surface. Treat ChatGPT Pro as the Web
-controller and the explicit managed Sol profile as the helix worker; do not
-merge those identities. The two Work interactions remain invalid evidence.
+Run fresh ordinary-Chat P05 canaries with controller `GPT-5.6 Sol` set to `軽`,
+`高い`, and `非常に高い` for medium, high, and xhigh and require a matching Sol
+worker. Then run the matching local P05 canaries. Require question-before-write,
+exact attribution, and same-provider-session continuation. If all six pass,
+materialize the complete matrix. Never use Work or reuse a provider-turn
+workspace.

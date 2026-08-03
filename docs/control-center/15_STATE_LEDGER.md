@@ -494,3 +494,19 @@ and Git rather than duplicated here.
   active.
 - WS-QA-09 advances to the remaining fresh local P05 attribution canaries. A
   complete comparison matrix is not yet attributed or ranked.
+
+## 2026-08-03 — Ordinary-Chat controller effort attribution corrected
+
+- The owner confirmed that ordinary Chat exposes selectable controller effort:
+  `高い` maps to high and `非常に高い` maps to xhigh. Existing recorded medium
+  evidence uses `軽`.
+- The prior ordinary-Chat P05 canaries recorded the controller only as `Pro`.
+  They remain valid evidence for explicit Sol worker routing, question-before-
+  write, same-session continuation, bounded changes, and focused verification,
+  but they are not comparable Web cells because controller effort was not
+  evidenced.
+- The comparison contract now requires ordinary Chat, controller `GPT-5.6 Sol`
+  at `軽`/`高い`/`非常に高い`, a matching delegated Sol worker, and matching local
+  Codex model/effort before a medium/high/xhigh cell is scored.
+- No frozen case, seed, acceptance rule, result schema, product code, profile,
+  provider session, or external account setting changed.

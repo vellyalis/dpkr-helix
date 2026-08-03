@@ -123,7 +123,7 @@ publishing the compatibility package accidentally.
 | MWU-08.04 structured Codex outcome | installed Codex SDK per-turn schema plus existing LocalAgentService/store and operation/MCP/UI projections; nullable disposition/question and same-session continuation | prose parsing silently manufactures completion; a second message/store/notification owner duplicates lifecycle state; changing non-Codex adapters without native schema breaks compatibility |
 | MWU-08.05 bounded wait | optional 0..30000 ms wait on the existing status tool/service path with explicit timeout metadata | duplicate workers, background polling, cancellation, or another wait owner add risk without improving the measured workflow |
 | MWU-08.06 parity convergence | existing server/workspace/read metadata explicitly preserves narrower task read boundaries over advertised Skills; signed-in Web 8/8 versus retained local 5/8 | a new per-turn permission language/enforcement owner is not justified by the advisory-metadata experiment; repeated wording tuning or a model/default change lacks evidence |
-| WS-QA-09 `gpt-5.6-sol` effort | ordinary-Chat delegated P05 canary passes at medium/high/xhigh; no selected effort yet | ChatGPT controller was Pro, while helix workers were explicitly Sol/medium, Sol/high, and Sol/xhigh; fresh local P05 attribution and the complete matrix are still required |
+| WS-QA-09 `gpt-5.6-sol` effort | ordinary-Chat delegated-worker P05 canary passes at medium/high/xhigh; no selected effort yet | recording only `Pro` did not prove the controller model/effort; fresh ordinary-Chat and local P05 attribution plus the complete matrix are still required |
 | Managed Codex subagent profiles | owner-selected Luna/max explorer plus Sol medium/high/xhigh implementers; Sol/high reviewer retained | legacy managed GPT-5.5 profiles caused false candidate attribution and are no longer active defaults |
 
 ## Workstream portfolio
@@ -141,7 +141,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
 | WS-QA-08 measured coding parity | VERIFIED / DONE | signed-in Web passes 8/8 versus retained local 5/8 with zero mandatory safety regression |
-| WS-QA-09 GPT-5.6 Sol effort comparison | IN PROGRESS / CHAT CANARY PASSED | fresh local P05 attribution passes at medium/high/xhigh, then fresh medium/high/xhigh P01-P08 results and any required tie-breaks close the matrix |
+| WS-QA-09 GPT-5.6 Sol effort comparison | IN PROGRESS / WORKER CANARY PASSED | fresh ordinary-Chat controller/worker and local P05 attribution pass at medium/high/xhigh, then fresh medium/high/xhigh P01-P08 results and any required tie-breaks close the matrix |
 
 ## Architecture and complexity decision
 
@@ -479,7 +479,7 @@ Cutover outcome:
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
 | ChatGPT Web does not currently honor MCP tool-list-change for newly added names | external host behavior, one-time migration closed | automate the approved developer-mode connection update during legacy migration; keep the two update tool names stable so later self-updates need only reconnect |
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
-| historical Web delegation used managed `gpt-5.5` medium under a different controller | cause removed from active configuration | keep historical records mixed; fresh ordinary Chat now proves explicit Sol medium/high/xhigh worker targets, without claiming its Pro controller is Sol |
+| ordinary-Chat P05 evidence recorded `Pro` but not the selectable controller effort | attribution gap; worker routing remains proven | keep the worker canaries as routing/continuation evidence only; rerun fresh Web cells with controller `軽`/`高い`/`非常に高い` aligned to medium/high/xhigh |
 | candidate medium and high settings regress mandatory safety or continuation behavior | adoption blockers; both candidates rejected | retain the measured current setting and never trade efficiency for a mandatory pass |
 | should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
 | repository context and verification-basis capture observe a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/review or re-verification produces a new fingerprint, exact equality is required for `fresh`, and locks or double fingerprinting remain deferred without a measured inconsistency |
@@ -487,10 +487,9 @@ Cutover outcome:
 
 ## Next executable action
 
-Run the remaining local P05 attribution canaries with `gpt-5.6-sol` at medium,
-high, and xhigh on fresh copies, preserving question-before-write and the same
-provider thread on continuation. If all three pass, materialize a fresh complete
-matrix using ordinary Chat for the Web surface and explicit managed worker
-profiles for helix delegation. Record the ChatGPT controller as Pro rather than
-manufacturing a Sol controller attribution. Do not reuse the two Work-surface
-workspaces or relabel their interactions as Chat evidence.
+Rerun fresh ordinary-Chat P05 attribution cells with controller `GPT-5.6 Sol`
+set to `軽`, `高い`, and `非常に高い` for medium, high, and xhigh while the helix
+worker uses the matching Sol effort. Then run the matching local P05 cells,
+preserving question-before-write and the same provider thread on continuation.
+If all six pass, materialize the fresh complete matrix. Do not reuse any prior
+provider-turn workspace or count Work-surface evidence.
