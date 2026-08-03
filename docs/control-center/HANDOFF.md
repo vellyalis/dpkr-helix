@@ -27,12 +27,11 @@ Last synchronized: 2026-08-03
   matrix because it no longer changes a current product, release, or setting
   decision. Exactly 24/96 records are terminal. They remain diagnostic only;
   no effort ranking, completion claim, or default change is permitted.
-- WS-OPS-05: `SOURCE VERIFIED / PUBLICATION PENDING`; a fresh dpkr helix
-  workflow exposed 1,055 nested-instruction paths because ignored `.tmp`
-  evaluation copies were scanned. The local candidate skips the existing
-  ephemeral `.tmp` boundary and reduces the same production-artifact result to
-  the nine real tracked nested instructions without changing other workspace
-  behavior.
+- WS-OPS-05: `VERIFIED / DONE`; source checkpoint `b65b986` is public and the
+  physical installed package now skips the existing ephemeral `.tmp` boundary.
+  The same fresh-workspace surface fell from 1,055 advertised nested instruction
+  paths to the nine real tracked paths with zero `.tmp` entries. Reconnect,
+  direct read/exec, doctor, and local/public health all pass.
 - Active managed profiles are `codex-explorer=gpt-5.6-luna/max`,
   `codex-implementer=gpt-5.6-sol/medium`,
   `codex-implementer-high=gpt-5.6-sol/high`, and
@@ -418,11 +417,20 @@ commands merely because the preparation work is complete.
   bound. No P02 final-quality gain appears at high or xhigh. The difference is
   attributed to direct helix read/edit/context primitives versus the isolated
   Codex CLI tool surface, not to a different model; both use `gpt-5.6-sol`.
+- 2026-08-03 WS-OPS-05 deployment: `b65b986` fast-forwarded public `main`
+  without force. The first managed request truthfully ended `UP_TO_DATE`
+  because the managed source had already been advanced, so it did not replace
+  the still-old physical package. Direct installed/source artifact comparison
+  identified that boundary. A rollback package was captured before the same
+  package/runtime owners installed the verified candidate and restarted once;
+  no credential, permission, setting, dependency, source-history, or remote
+  change was introduced. Fresh live discovery now reports nine tracked paths
+  and zero `.tmp` paths; direct read/exec, doctor, local/public health and OAuth
+  metadata, Git tracking, and the advertised remote ref pass.
 
 ## Exact next action
 
-After explicit publication and live-update approval, push the verified local
-checkpoint, run the canonical managed update, reconnect once, and open a fresh
-dpkr helix workspace. Confirm that `availableAgentsFiles` contains the nine real
-tracked nested instructions and no ignored `.tmp` copies. Do not publish or
-replace the installed runtime without that approval.
+WS-OPS-05 has no remaining executable work. On the next owner request, reconcile
+the persistent handoff with Git and live evidence, then select only that new
+goal. Do not resume the stopped WS-QA-09 matrix without a concrete effort-choice
+decision or observed model-quality regression.

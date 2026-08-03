@@ -16,15 +16,16 @@ Last synchronized: 2026-08-03
 - License: MIT, upstream copyright retained
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
-  intact and WS-OPS-05 has a verified local source candidate pending approved
-  publication and live application.
-- Current program unit: WS-OPS-05 is `SOURCE VERIFIED / PUBLICATION PENDING`.
-  The fresh dpkr helix workflow opened one workspace and reused it for direct
-  read, patch, verification, bounded process polling, and handoff updates. The
-  initial response exposed 1,055 nested-instruction paths, predominantly ignored
-  `.tmp` evaluation copies. The existing WorkspaceRegistry exclusion boundary
-  now skips `.tmp`; the production artifact returns the nine real tracked nested
-  instructions and zero `.tmp` entries.
+  intact and WS-OPS-05 is live-verified and complete.
+- Current program unit: WS-OPS-05 is `VERIFIED / DONE`. Source checkpoint
+  `b65b986` is public and installed. The fresh dpkr helix workflow opened and
+  reused workspaces for direct read, patch, verification, bounded process
+  polling, restart continuity, and handoff updates. The original installed
+  response exposed 1,055 nested-instruction paths, predominantly ignored `.tmp`
+  evaluation copies; the final fresh installed response exposes the nine real
+  tracked nested instructions and zero `.tmp` entries. Direct read/exec, doctor,
+  local/public health and OAuth metadata, Git tracking, and advertised remote
+  identity all pass.
 - The owner stopped WS-QA-09 incomplete because its remaining comparison no
   longer changes a current product, release, or model-setting decision. Exactly
   24 of 96 result records are terminal and 72 remain `not_run`; partial results
@@ -156,7 +157,7 @@ publishing the compatibility package accidentally.
 | WS-UPD-02 historical update-status clarity | VERIFIED / DONE | public fast-forward, managed replacement, and installed MCP status show historical scope plus fresh-request availability |
 | WS-QA-08 measured coding parity | VERIFIED / DONE | signed-in Web passes 8/8 versus retained local 5/8 with zero mandatory safety regression |
 | WS-QA-09 GPT-5.6 Sol effort comparison | OWNER STOPPED / INCOMPLETE | no active exit work; resume only for a concrete effort-selection decision or observed model-quality regression |
-| WS-OPS-05 daily operation quality and continuity | SOURCE VERIFIED / PUBLICATION PENDING | approved publication and canonical live update reproduce nine real nested instructions, zero `.tmp` copies, healthy reconnect, and unchanged direct-tool behavior |
+| WS-OPS-05 daily operation quality and continuity | VERIFIED / DONE | public source and the physical installed package reproduce nine real nested instructions, zero `.tmp` copies, healthy reconnect, and unchanged direct-tool behavior |
 
 ## Architecture and complexity decision
 
@@ -554,7 +555,7 @@ Direct P02 effort comparison proof:
 | host capability changes by plan/workspace | external compatibility residual | README links current official host docs and avoids universal write claims |
 | public release cannot be recalled | realized publication boundary | source was published only after explicit owner approval and clean-clone proof |
 | machine-local ignored folders remain on this PC | local-only, expected | ignore rules plus public checker path gate |
-| installed runtime still scans ignored `.tmp` nested instructions | verified local source candidate, not yet deployed | publish and apply only after explicit approval, then require a fresh open result with nine tracked paths and zero `.tmp` entries |
+| installed runtime scanned ignored `.tmp` nested instructions | resolved | public `b65b986` is physically installed; fresh before/after discovery moved from 1,055 paths to nine tracked paths and zero `.tmp` entries |
 | filesystem aliases differ across operating systems | resolved | canonical comparison at security, query, and repository-fingerprint boundaries; logical workspace identity remains unchanged; hosted run `30749192172` passed Ubuntu/macOS/Windows |
 | Codex SDK compiled spawn shape may change | controlled | postinstall and production audit fail closed until the scoped repair is reviewed against the new shape |
 | this execution context could not register a replacement current-user task | accepted local deployment constraint | reuse the existing limited-user no-console task through canonical recovery; preserve helper-only rollback |
@@ -572,7 +573,7 @@ Direct P02 effort comparison proof:
 
 ## Next executable action
 
-After explicit publication and live-update approval, push the verified local
-checkpoint, run the canonical managed update, reconnect once, and open a fresh
-dpkr helix workspace. Confirm nine tracked `availableAgentsFiles`, zero ignored
-`.tmp` entries, current status truth, and healthy direct read/exec continuity.
+WS-OPS-05 has no remaining executable work. Reconcile this State, the persistent
+handoff, Git, and fresh runtime evidence when the owner supplies the next goal.
+Do not resume WS-QA-09 without a concrete effort-selection decision or observed
+model-quality regression.

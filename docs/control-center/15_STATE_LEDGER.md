@@ -731,3 +731,29 @@ and Git rather than duplicated here.
 - Publication, installed-package replacement, reconnect, and a fresh live
   `open_workspace` result are not claimed. They require explicit approval and
   are the only next work unit.
+
+## 2026-08-03 — WS-OPS-05 published and live verified
+
+- The owner approved publication and live application. Verified source
+  checkpoint `b65b986` fast-forwarded public `origin/main` without force or
+  unrelated commits; local HEAD, tracking, and the advertised remote ref then
+  matched with a clean tree.
+- The first canonical managed request ended `UP_TO_DATE` because the same
+  managed checkout had already been advanced before the request. Its historical
+  source/target status was truthful, but the documented no-op branch performed
+  no physical package replacement or restart. A fresh live workspace therefore
+  still reproduced all 1,055 advertised instruction paths.
+- Direct comparison proved the installed global artifact lacked the `.tmp`
+  exclusion while the verified source artifact contained it. Before recovery,
+  the old physical package was captured as a rollback archive. The existing
+  package-install and managed-runtime owners then installed the exact verified
+  candidate and restarted once without changing credentials, permissions,
+  settings, dependencies, source history, or remote refs.
+- The final installed fresh-workspace result contains the nine tracked nested
+  instruction paths and zero `.tmp` entries. Direct read and exec succeed after
+  reconnect; `devspace doctor`, local/public `/healthz`, local/public OAuth
+  metadata, managed PID/port ownership, Git tracking, and the advertised remote
+  ref all pass.
+- WS-OPS-05 is `VERIFIED / DONE`. The legacy app-namespace ambiguity remains an
+  environment-owned usability residual; no source fallback or duplicate owner
+  was added. WS-QA-09 remains owner-stopped and incomplete.
