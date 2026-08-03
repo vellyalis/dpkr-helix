@@ -39,10 +39,11 @@ Last synchronized: 2026-08-03
 - No-focus Codex review, bounded MCP session retention, health-gated Windows
   recovery, low-downtime reinstall, and ChatGPT-initiated managed update remain
   on `main`, locally deployed, and verified.
-- WS-UPD-02 locally corrects the model-visible status ambiguity that let an
+- WS-UPD-02 corrects the model-visible status ambiguity that let an
   inactive historical `DIRTY_WORKTREE` rejection be read as a current blocker.
-  The candidate is fully verified in a separate worktree; public fast-forward,
-  managed replacement, and live ChatGPT confirmation remain approval-gated.
+  Public fast-forward, canonical managed replacement, Git/remote reconciliation,
+  process health, doctor, and installed-artifact MCP output are verified at
+  `f1c1041`; the workstream is DONE.
 
 ## Goal status
 
@@ -153,7 +154,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-03 lifecycle fault tolerance | VERIFIED | desired state survives failed Start; operations serialize; healthy Start preserves PID/session |
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
-| WS-UPD-02 historical update-status clarity | VERIFIED LOCALLY / PUBLICATION PENDING | public fast-forward, managed replacement, and live ChatGPT status show historical scope plus fresh-request availability |
+| WS-UPD-02 historical update-status clarity | VERIFIED / DONE | public fast-forward, managed replacement, and installed MCP status show historical scope plus fresh-request availability |
 | WS-QA-08 measured coding parity | VERIFIED / DONE | signed-in Web passes 8/8 versus retained local 5/8 with zero mandatory safety regression |
 | WS-QA-09 GPT-5.6 Sol effort comparison | IN PROGRESS / DIRECT CANARY PASSED | fresh medium/high/xhigh P01-P08 direct results and any required tie-breaks close the matrix |
 
@@ -475,7 +476,11 @@ ChatGPT self-update recheck:
   An inactive rejected result renders as historical, the old code is labeled
   `Last attempt code`, and a fresh explicit request remains available. Focused
   and full tests, typecheck, build, public-release check, and diff checks pass;
-  public and installed-runtime evidence remain pending approval.
+  `f1c1041` was published by normal fast-forward and the canonical updater
+  recorded `succeeded/SUCCEEDED` from `e353009` to `f1c1041`. Managed source,
+  tracking, and advertised remote refs match; the replacement PID is alive;
+  doctor passes; and the installed package returns `statusScope=last_attempt`,
+  `canRequestUpdate=true`, historical text, and fresh-preflight guidance.
 
 Cutover outcome:
 
@@ -554,7 +559,7 @@ Direct P02 effort comparison proof:
 | this execution context could not register a replacement current-user task | accepted local deployment constraint | reuse the existing limited-user no-console task through canonical recovery; preserve helper-only rollback |
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
 | ChatGPT Web does not currently honor MCP tool-list-change for newly added names | external host behavior, one-time migration closed | automate the approved developer-mode connection update during legacy migration; keep the two update tool names stable so later self-updates need only reconnect |
-| the installed ChatGPT status still presents the old `DIRTY_WORKTREE` result without explicit historical scope | local fix verified; public/live rollout pending | publish WS-UPD-02 from its separate worktree, apply it through the existing managed updater, and verify `last_attempt` plus `canRequestUpdate` in a fresh Chat |
+| the installed ChatGPT status presented an old `DIRTY_WORKTREE` result without explicit historical scope | resolved | installed MCP output now separates `last_attempt` from current request availability and directs explicit updates through fresh preflight |
 | Codex CLI 0.146.0 rejects the permitted P01 workload under `workspace-write` on this Windows installation | local runner capability degradation; direct coding remains available | keep the valid comparison profile isolated from user config/apps/MCP, disclose `danger-full-access`, and repair/reverify the sandbox before making enforced-safety comparisons |
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
 | delegated Web execution does not answer direct Chat-versus-Codex quality | comparison-class error; worker routing remains separate evidence | score only normal Chat directly using helix file/shell tools at `中程度`/`高い`/`非常に高い`; require zero new local-agent sessions; never use Work |
@@ -565,8 +570,10 @@ Direct P02 effort comparison proof:
 
 ## Next executable action
 
-After explicit owner approval, fast-forward `origin/main` to the verified
-WS-UPD-02 checkpoint from its separate worktree, request the managed update from
-the still-clean source `main`, reconnect, and confirm the live stale rejection
-is labeled `last_attempt` with `canRequestUpdate=true`. Resume WS-QA-09 at P03
-only after that bounded operational correction is closed.
+Run fresh P03 next in the three prepared direct roots with matching
+`gpt-5.6-sol` medium/high/xhigh effort, then continue P04/P06/P07/P08. P01,
+P02, and P05 are complete. Chat must remain normal Chat with Work unselected, use
+helix directly, and create zero local-agent sessions. Local Codex must retain
+the recorded isolated direct profile and sandbox caveat. Preserve attribution,
+mandatory safety, semantic and diff quality, failed operations, verification,
+file hygiene, and timing before any cross-case ranking.

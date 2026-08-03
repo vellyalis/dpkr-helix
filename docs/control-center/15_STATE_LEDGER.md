@@ -667,3 +667,22 @@ and Git rather than duplicated here.
   for a real self-update after explicit publication approval.
 - Publication, installed replacement, reconnect, and fresh ChatGPT observation
   are not yet claimed. They are the next action before resuming WS-QA-09 P03.
+
+## 2026-08-03 — Historical self-update status fix deployed
+
+- The owner approved publication and live application. Verified checkpoint
+  `f1c1041` fast-forwarded public `origin/main` from `e353009` without force or
+  unrelated commits while the managed source remained clean and one commit
+  behind.
+- The canonical managed updater completed in one transaction with
+  `succeeded/SUCCEEDED`, recorded exact source and target commits, replaced the
+  physical installation, fast-forwarded managed `main`, and passed its built-in
+  health and recovery boundary.
+- Managed HEAD, tracking ref, and advertised remote ref all equal `f1c1041`;
+  the replacement process is alive and `devspace doctor` passes.
+- An in-memory MCP call loaded from the installed global package returns
+  `statusScope=last_attempt`, `canRequestUpdate=true`, historical-result text,
+  `Last attempt code: SUCCEEDED`, and explicit current-preflight guidance. The
+  old terminal result can no longer be mistaken for a current update blocker.
+- WS-UPD-02 is `VERIFIED / DONE`. The next executable action returns to
+  WS-QA-09 P03.
