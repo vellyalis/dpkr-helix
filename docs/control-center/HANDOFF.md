@@ -27,10 +27,12 @@ Last synchronized: 2026-08-03
   matrix because it no longer changes a current product, release, or setting
   decision. Exactly 24/96 records are terminal. They remain diagnostic only;
   no effort ranking, completion claim, or default change is permitted.
-- WS-OPS-05: `NEXT / FRESH SESSION BASELINE`; observe one real normal-Chat
-  workflow through dpkr helix and select one implementation only when repeated,
-  high-impact correctness, continuity, status, or operational friction is
-  directly evidenced.
+- WS-OPS-05: `SOURCE VERIFIED / PUBLICATION PENDING`; a fresh dpkr helix
+  workflow exposed 1,055 nested-instruction paths because ignored `.tmp`
+  evaluation copies were scanned. The local candidate skips the existing
+  ephemeral `.tmp` boundary and reduces the same production-artifact result to
+  the nine real tracked nested instructions without changing other workspace
+  behavior.
 - Active managed profiles are `codex-explorer=gpt-5.6-luna/max`,
   `codex-implementer=gpt-5.6-sol/medium`,
   `codex-implementer-high=gpt-5.6-sol/high`, and
@@ -419,9 +421,8 @@ commands merely because the preparation work is complete.
 
 ## Exact next action
 
-After the session is cleared, run one fresh signed-in normal-Chat workflow
-through dpkr helix. Open one workspace once and reuse it; observe direct
-read/edit/verification/review continuity, unintended delegation or duplicate
-work, bounded waiting, reconnect behavior, and status truth. Record the highest-
-impact repeated friction and its causal boundary. If none is observed, close
-the baseline without inventing a feature.
+After explicit publication and live-update approval, push the verified local
+checkpoint, run the canonical managed update, reconnect once, and open a fresh
+dpkr helix workspace. Confirm that `availableAgentsFiles` contains the nine real
+tracked nested instructions and no ignored `.tmp` copies. Do not publish or
+replace the installed runtime without that approval.

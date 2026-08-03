@@ -706,3 +706,28 @@ and Git rather than duplicated here.
 - The observation must select one repeated high-impact friction with a causal
   boundary before implementation. If no actionable gap is observed, close the
   baseline without adding generic automation, UI, infrastructure, or tests.
+
+## 2026-08-03 — WS-OPS-05 ignored instruction-copy scan repaired locally
+
+- The fresh workflow first selected the wrong legacy `DevSpace Stable`
+  namespace and received opaque MCP internal errors; the correct `dpkr helix`
+  namespace then opened one checkout workspace and reused its ID throughout.
+  The app-registration ambiguity remains environment-owned and was not turned
+  into a source fallback.
+- The correct open succeeded but advertised 1,055 nested `AGENTS.md` paths and
+  produced a truncated roughly 96k-token result. Git confirmed the dominant
+  `.tmp` tree is explicitly ignored while only nine real nested instruction
+  files are tracked below the workspace root.
+- The causal owner is the existing `WorkspaceRegistry` context walk. Its fixed
+  ephemeral/build exclusion set did not include `.tmp`, so every ignored parity
+  fixture copy was recursively advertised.
+- The accepted candidate adds only `.tmp` to that existing exclusion set. It
+  adds no Gitignore interpreter, dependency, setting, API, service, store,
+  worker, pagination contract, fallback, or test artifact.
+- Focused workspace tests, typecheck, full tests, production build, public
+  release check, and `git diff --check` pass. A direct run of the production
+  artifact on the same checkout reports nine tracked nested instructions and
+  zero `.tmp` entries versus the observed installed baseline of 1,055.
+- Publication, installed-package replacement, reconnect, and a fresh live
+  `open_workspace` result are not claimed. They require explicit approval and
+  are the only next work unit.

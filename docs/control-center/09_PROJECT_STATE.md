@@ -16,12 +16,15 @@ Last synchronized: 2026-08-03
 - License: MIT, upstream copyright retained
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
-  intact and WS-OPS-05 is next.
-- Current program unit: WS-OPS-05 is `NEXT / FRESH SESSION BASELINE`. After a
-  session clear, observe one real signed-in normal-Chat workflow through the
-  existing production path. Select one implementation work unit only if direct
-  evidence identifies a repeated high-impact correctness, continuity, status,
-  or operational-friction gap.
+  intact and WS-OPS-05 has a verified local source candidate pending approved
+  publication and live application.
+- Current program unit: WS-OPS-05 is `SOURCE VERIFIED / PUBLICATION PENDING`.
+  The fresh dpkr helix workflow opened one workspace and reused it for direct
+  read, patch, verification, bounded process polling, and handoff updates. The
+  initial response exposed 1,055 nested-instruction paths, predominantly ignored
+  `.tmp` evaluation copies. The existing WorkspaceRegistry exclusion boundary
+  now skips `.tmp`; the production artifact returns the nine real tracked nested
+  instructions and zero `.tmp` entries.
 - The owner stopped WS-QA-09 incomplete because its remaining comparison no
   longer changes a current product, release, or model-setting decision. Exactly
   24 of 96 result records are terminal and 72 remain `not_run`; partial results
@@ -133,7 +136,7 @@ publishing the compatibility package accidentally.
 | MWU-08.05 bounded wait | optional 0..30000 ms wait on the existing status tool/service path with explicit timeout metadata | duplicate workers, background polling, cancellation, or another wait owner add risk without improving the measured workflow |
 | MWU-08.06 parity convergence | existing server/workspace/read metadata explicitly preserves narrower task read boundaries over advertised Skills; signed-in Web 8/8 versus retained local 5/8 | a new per-turn permission language/enforcement owner is not justified by the advisory-metadata experiment; repeated wording tuning or a model/default change lacks evidence |
 | WS-QA-09 `gpt-5.6-sol` effort | no selection; 24/96 terminal records retained as partial diagnostics and current settings unchanged | owner stopped the incomplete matrix because no current decision justifies the remaining cost; resume only for a concrete effort decision or observed regression |
-| WS-OPS-05 daily operation quality | shipped production workflow is the baseline; no new mechanism selected | a fresh-session real workflow must identify a repeated high-impact friction before implementation |
+| WS-OPS-05 daily operation quality | existing WorkspaceRegistry context discovery with `.tmp` treated like the existing ephemeral/build exclusions | scanning ignored evaluation copies produced 1,055 advertised paths and a truncated roughly 96k-token open result; Gitignore integration, pagination, a new context service, and generic automation add unjustified owners or complexity |
 | Managed Codex subagent profiles | owner-selected Luna/max explorer plus Sol medium/high/xhigh implementers; Sol/high reviewer retained | legacy managed GPT-5.5 profiles caused false candidate attribution and are no longer active defaults |
 
 ## Workstream portfolio
@@ -153,7 +156,7 @@ publishing the compatibility package accidentally.
 | WS-UPD-02 historical update-status clarity | VERIFIED / DONE | public fast-forward, managed replacement, and installed MCP status show historical scope plus fresh-request availability |
 | WS-QA-08 measured coding parity | VERIFIED / DONE | signed-in Web passes 8/8 versus retained local 5/8 with zero mandatory safety regression |
 | WS-QA-09 GPT-5.6 Sol effort comparison | OWNER STOPPED / INCOMPLETE | no active exit work; resume only for a concrete effort-selection decision or observed model-quality regression |
-| WS-OPS-05 daily operation quality and continuity | NEXT / BASELINE NOT RUN | one fresh real workflow selects one evidence-backed improvement or proves no actionable product gap |
+| WS-OPS-05 daily operation quality and continuity | SOURCE VERIFIED / PUBLICATION PENDING | approved publication and canonical live update reproduce nine real nested instructions, zero `.tmp` copies, healthy reconnect, and unchanged direct-tool behavior |
 
 ## Architecture and complexity decision
 
@@ -551,6 +554,7 @@ Direct P02 effort comparison proof:
 | host capability changes by plan/workspace | external compatibility residual | README links current official host docs and avoids universal write claims |
 | public release cannot be recalled | realized publication boundary | source was published only after explicit owner approval and clean-clone proof |
 | machine-local ignored folders remain on this PC | local-only, expected | ignore rules plus public checker path gate |
+| installed runtime still scans ignored `.tmp` nested instructions | verified local source candidate, not yet deployed | publish and apply only after explicit approval, then require a fresh open result with nine tracked paths and zero `.tmp` entries |
 | filesystem aliases differ across operating systems | resolved | canonical comparison at security, query, and repository-fingerprint boundaries; logical workspace identity remains unchanged; hosted run `30749192172` passed Ubuntu/macOS/Windows |
 | Codex SDK compiled spawn shape may change | controlled | postinstall and production audit fail closed until the scoped repair is reviewed against the new shape |
 | this execution context could not register a replacement current-user task | accepted local deployment constraint | reuse the existing limited-user no-console task through canonical recovery; preserve helper-only rollback |
@@ -568,9 +572,7 @@ Direct P02 effort comparison proof:
 
 ## Next executable action
 
-After the session is cleared, start one fresh signed-in normal-Chat workflow
-through dpkr helix. Reuse one workspace and observe app/tool choice, direct
-read/edit/verification/review continuity, unintended delegation or duplicate
-work, bounded waiting, reconnect behavior, and status truth. Record the highest-
-impact repeated friction and its causal boundary; implement nothing if no
-actionable product gap is observed.
+After explicit publication and live-update approval, push the verified local
+checkpoint, run the canonical managed update, reconnect once, and open a fresh
+dpkr helix workspace. Confirm nine tracked `availableAgentsFiles`, zero ignored
+`.tmp` entries, current status truth, and healthy direct read/exec continuity.
