@@ -620,3 +620,29 @@ and Git rather than duplicated here.
   quality evidence is valid; enforced sandbox parity is not claimed.
 - All twelve records pass `result.schema.json`; the frozen suite materializer
   still validates. P01 and P05 are complete, and P02 is the next fresh case.
+
+## 2026-08-03 — Direct P02 effort batch completed
+
+- Twelve fresh records cover normal Chat and direct local Codex at medium,
+  high, and xhigh, two attempts each. Work and every prohibited delegation path
+  remain absent.
+- Both surfaces pass 6/6 and produce the exact required two-file semantic diff:
+  one alias entry in `aliases.js`, one public locale in `supported.js`, and no
+  resolver or test change. Independent tests pass 2/2 and diff checks pass.
+- Chat preserves CRLF in every cell and records no failed tool operation.
+  Codex converts both modified files to LF in every cell. It uses a temporary
+  test to inspect files through the only permitted shell command and removes it
+  before completion; 14 failed test commands include six expected baselines
+  and eight inspection-harness runs.
+- Web completion detection averages about 120 seconds versus about 74 seconds
+  for Codex, with the Web number treated as a polling upper bound. Medium, high,
+  and xhigh all end with the same exact diff; high adds time and intermediate
+  file changes without a final-quality gain on P02.
+- Since both surfaces use `gpt-5.6-sol`, the observed quality difference is
+  attributed to the surface/context/tool path. Helix gives normal Chat direct
+  open/read/edit primitives; isolated Codex CLI must work around the strict
+  shell boundary. This supports helix coding use without claiming a superior
+  ChatGPT model or OS-sandbox parity.
+- All twelve P02 records pass `result.schema.json`; the frozen suite
+  materializer still validates. P01, P02, and P05 are complete, and P03 is the
+  next fresh case.

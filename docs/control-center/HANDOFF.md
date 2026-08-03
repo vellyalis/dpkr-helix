@@ -384,11 +384,22 @@ commands merely because the preparation work is complete.
   in both attempts. The Codex 0.146.0 `workspace-write` failure is disclosed;
   accepted cells use isolated direct tools in disposable fixtures with
   `danger-full-access` and make no OS-sandbox-parity claim.
+- 2026-08-03 direct P02 batch: all twelve Chat/Codex medium/high/xhigh records
+  are terminal and schema-valid, and both surfaces pass 6/6 with the exact same
+  two-file data-only semantic diff. Chat preserves CRLF and has no failed tool
+  operation in all six cells. Codex converts both modified files to LF in all
+  six cells and uses temporary inspection tests under the `node --test`-only
+  shell boundary; its 14 failed commands comprise six declared baselines and
+  eight inspection-harness runs. Observed completion averages about 120 seconds
+  for Web versus 74 seconds for Codex, with Web polling treated as an upper
+  bound. No P02 final-quality gain appears at high or xhigh. The difference is
+  attributed to direct helix read/edit/context primitives versus the isolated
+  Codex CLI tool surface, not to a different model; both use `gpt-5.6-sol`.
 
 ## Exact next action
 
-Run P02 next in all three direct effort roots, then P03/P04/P06/P07/P08. P01
-and P05 are complete. Require normal Chat with Work unselected, direct helix
+Run P03 next in all three direct effort roots, then P04/P06/P07/P08. P01,
+P02, and P05 are complete. Require normal Chat with Work unselected, direct helix
 tools, zero local-agent sessions, and exact `gpt-5.6-sol` effort attribution.
 Keep local Codex isolated from user config/apps/MCP and retain the documented
 0.146.0 sandbox caveat. Record final semantics and diff quality, safety/scope,

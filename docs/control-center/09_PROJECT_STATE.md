@@ -497,6 +497,36 @@ Direct P01 effort comparison proof:
   `danger-full-access`. This preserves coding-quality evidence but does not
   establish OS-sandbox parity.
 
+Direct P02 effort comparison proof:
+
+- twelve fresh P02 records cover normal Chat and direct local Codex at medium,
+  high, and xhigh with two attempts per cell. Work, Web-side delegation, MCP,
+  apps, and delegated local agents are absent from their prohibited surfaces;
+- both surfaces pass the mandatory outcome 6/6. Every final diff adds only the
+  `fr-ca -> fr` alias in `src/locale/aliases.js` and `fr-CA` in
+  `src/locale/supported.js`; `resolver.js`, its English fallback, and the
+  existing regression test remain unchanged. Independent `node --test` runs
+  pass 2/2 and `git diff --check` passes in every cell;
+- Chat preserves CRLF in all six cells and reaches the exact data-only change
+  without a failed tool operation. Local Codex reaches the same final semantic
+  diff but rewrites both modified files to LF in all six cells;
+- under the manifest's `node --test`-only shell boundary, isolated Codex uses a
+  temporary test as a file-inspection harness and removes it before completion.
+  Its 35 direct calls include 14 failed test commands: six declared initial
+  baselines and eight additional failures while the inspection harness is
+  exposing the workspace. High also performs more intermediate file-change
+  events than medium or xhigh. Chat's dedicated helix open/read/edit primitives
+  do not require that workaround;
+- observed Web completion detection averages about 120 seconds versus about 74
+  seconds for Codex, with Web timing remaining a polling upper bound. No effort
+  level improves the already exact P02 final diff, so P02 alone provides no
+  basis to prefer high or xhigh over medium; and
+- because both surfaces use `gpt-5.6-sol`, P02 does not show a better ChatGPT
+  model. It shows a surface/context/tooling effect: direct helix file tools
+  preserve file format and avoid shell-constrained inspection churn, while the
+  isolated Codex CLI profile is faster but less clean on this fixture. The
+  existing Codex `danger-full-access` sandbox caveat still applies.
+
 ## Residual risks
 
 | Risk | State | Control |
@@ -523,9 +553,9 @@ Direct P01 effort comparison proof:
 
 ## Next executable action
 
-Run fresh P02 next in the three prepared direct roots with matching
-`gpt-5.6-sol` medium/high/xhigh effort, then continue P03/P04/P06/P07/P08. P01
-and P05 are complete. Chat must remain normal Chat with Work unselected, use
+Run fresh P03 next in the three prepared direct roots with matching
+`gpt-5.6-sol` medium/high/xhigh effort, then continue P04/P06/P07/P08. P01,
+P02, and P05 are complete. Chat must remain normal Chat with Work unselected, use
 helix directly, and create zero local-agent sessions. Local Codex must retain
 the recorded isolated direct profile and sandbox caveat. Preserve attribution,
 mandatory safety, semantic and diff quality, failed operations, verification,
