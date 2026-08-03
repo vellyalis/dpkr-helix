@@ -25,13 +25,17 @@
   },
   "attributionGate": {
     "firstCase": "P05",
+    "chatgptSurface": {
+      "required": "chat",
+      "forbidden": ["work"]
+    },
     "ordinaryChatControllerEffort": {
-      "medium": "軽",
+      "medium": "中程度",
       "high": "高い",
       "xhigh": "非常に高い"
     },
     "rules": [
-      "Use ordinary Chat, never Work, and record the ChatGPT controller model plus the mapped UI effort selected immediately before every Web turn.",
+      "Use Chat. Work is prohibited and no Work interaction may be recorded or scored. Record the ChatGPT controller model plus the mapped UI effort selected immediately before every Web turn.",
       "Every delegated provider session must report gpt-5.6-sol and the target effort; a managed gpt-5.5 fallback is mixed and is not a usable cell.",
       "Local Codex must report gpt-5.6-sol and the target effort in its JSONL trace.",
       "If the ordinary-Chat controller setting, delegated-worker attribution, or local-Codex attribution is missing or mismatched, mark the cell capability-blocked and do not score it as gpt-5.6-sol."

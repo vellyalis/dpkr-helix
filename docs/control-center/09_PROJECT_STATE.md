@@ -17,9 +17,9 @@ Last synchronized: 2026-08-03
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-QA-09 is the next evaluation.
-- Current program unit: WS-QA-09 is `IN PROGRESS / CHAT CANARY PASSED`. The
-  owner explicitly rejected the ChatGPT Work surface and required ordinary
-  Chat. Fresh ordinary-Chat P05 canaries passed for the three managed Sol
+- Current program unit: WS-QA-09 is `IN PROGRESS / WORKER CANARY PASSED`. The
+  owner requires Chat and absolutely prohibits Work; no Work interaction may be
+  recorded, reused, or scored. Fresh Chat P05 canaries passed for three Sol
   implementer efforts; two earlier Work interactions remain excluded and their
   workspaces must not be reused. The frozen suite and remaining prepared
   workspaces retain their preflight state.
@@ -479,7 +479,7 @@ Cutover outcome:
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
 | ChatGPT Web does not currently honor MCP tool-list-change for newly added names | external host behavior, one-time migration closed | automate the approved developer-mode connection update during legacy migration; keep the two update tool names stable so later self-updates need only reconnect |
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
-| ordinary-Chat P05 evidence recorded `Pro` but not the selectable controller effort | attribution gap; worker routing remains proven | keep the worker canaries as routing/continuation evidence only; rerun fresh Web cells with controller `軽`/`高い`/`非常に高い` aligned to medium/high/xhigh |
+| Chat P05 evidence recorded `Pro` but not the selectable controller effort | attribution gap; worker routing remains proven | keep the worker canaries as routing/continuation evidence only; rerun fresh Web cells with controller `中程度`/`高い`/`非常に高い` aligned to medium/high/xhigh; never use Work |
 | candidate medium and high settings regress mandatory safety or continuation behavior | adoption blockers; both candidates rejected | retain the measured current setting and never trade efficiency for a mandatory pass |
 | should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
 | repository context and verification-basis capture observe a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/review or re-verification produces a new fingerprint, exact equality is required for `fresh`, and locks or double fingerprinting remain deferred without a measured inconsistency |
@@ -487,9 +487,9 @@ Cutover outcome:
 
 ## Next executable action
 
-Rerun fresh ordinary-Chat P05 attribution cells with controller `GPT-5.6 Sol`
-set to `軽`, `高い`, and `非常に高い` for medium, high, and xhigh while the helix
+Rerun fresh Chat P05 attribution cells with controller `GPT-5.6 Sol` set to
+`中程度`, `高い`, and `非常に高い` for medium, high, and xhigh while the helix
 worker uses the matching Sol effort. Then run the matching local P05 cells,
 preserving question-before-write and the same provider thread on continuation.
 If all six pass, materialize the fresh complete matrix. Do not reuse any prior
-provider-turn workspace or count Work-surface evidence.
+provider-turn workspace. Work is prohibited and must not be recorded or scored.

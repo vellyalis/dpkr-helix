@@ -17,8 +17,9 @@ Last synchronized: 2026-08-03
 - GOAL_10: `DONE`; the standard MCP catalog-change signal is implemented, the
   one-time legacy ChatGPT catalog migration was automated, and live read-only
   status invocation passed.
-- WS-QA-09: `IN PROGRESS / WORKER CANARY PASSED`; the owner rejected the
-  ChatGPT Work surface and requires ordinary Chat. Fresh P05 canaries proved
+- WS-QA-09: `IN PROGRESS / WORKER CANARY PASSED`; the owner requires Chat and
+  absolutely prohibits Work. No Work interaction may be recorded, reused, or
+  scored. Fresh Chat P05 canaries proved
   medium, high, and xhigh managed workers, but recorded only `Pro` for the
   controller and therefore did not prove its selectable effort. Two Work-
   surface P05 interactions are excluded and consumed.
@@ -32,8 +33,8 @@ Last synchronized: 2026-08-03
   workspace changes, then completed through the same provider session after the
   bankers answer. Each changed only the two permitted fixture files and passed
   `node --test` 2/2. This remains worker-routing and continuation evidence, not
-  a comparable Web cell, until the ordinary-Chat controller is also recorded at
-  `軽`/`高い`/`非常に高い`. A wrong `DevSpace Portable` selection was rejected
+  a comparable Web cell, until the Chat controller is also recorded at
+  `中程度`/`高い`/`非常に高い`. A wrong `DevSpace Portable` selection was rejected
   before workspace open, created no agent record or change, and is excluded.
 - Installed working directory: unchanged.
 - Remote history replacement and visibility change were completed with explicit
@@ -362,9 +363,9 @@ commands merely because the preparation work is complete.
 
 ## Exact next action
 
-Run fresh ordinary-Chat P05 canaries with controller `GPT-5.6 Sol` set to `軽`,
+Run fresh Chat P05 canaries with controller `GPT-5.6 Sol` set to `中程度`,
 `高い`, and `非常に高い` for medium, high, and xhigh and require a matching Sol
 worker. Then run the matching local P05 canaries. Require question-before-write,
 exact attribution, and same-provider-session continuation. If all six pass,
-materialize the complete matrix. Never use Work or reuse a provider-turn
-workspace.
+materialize the complete matrix. Work is prohibited and must not be recorded,
+reused, or scored. Do not reuse any provider-turn workspace.

@@ -30,8 +30,9 @@ session with `Use bankers rounding.`, and expose the worker's model and effort.
 
 A cell is usable only when all of the following are true:
 
-- the Web surface is ordinary Chat, never Work;
-- the controller selection is `GPT-5.6 Sol` with `軽` for medium, `高い` for
+- the Web surface is Chat. Work is prohibited; no Work interaction may be
+  recorded, reused, or scored;
+- the controller selection is `GPT-5.6 Sol` with `中程度` for medium, `高い` for
   high, or `非常に高い` for xhigh, recorded immediately before the turn;
 - the delegated worker reports `gpt-5.6-sol` at that same effort;
 - local Codex JSONL reports `gpt-5.6-sol` at that same effort; and
