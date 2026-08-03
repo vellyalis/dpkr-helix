@@ -17,15 +17,24 @@ Last synchronized: 2026-08-03
 - GOAL_10: `DONE`; the standard MCP catalog-change signal is implemented, the
   one-time legacy ChatGPT catalog migration was automated, and live read-only
   status invocation passed.
-- WS-QA-09: `READY / FRESH CHAT CANARY REQUIRED`; the owner resumed execution,
-  rejected the ChatGPT Work surface, and requires ordinary Chat. Two
-  Work-surface P05 interactions are excluded and their workspaces are consumed.
-  Do not count or reuse them.
+- WS-QA-09: `IN PROGRESS / CHAT CANARY PASSED`; the owner rejected the ChatGPT
+  Work surface and requires ordinary Chat. Fresh ordinary-Chat P05 canaries
+  passed for medium, high, and xhigh managed implementers. Two Work-surface P05
+  interactions are excluded and their workspaces are consumed. Do not count or
+  reuse them.
 - Active managed profiles are `codex-explorer=gpt-5.6-luna/max`,
   `codex-implementer=gpt-5.6-sol/medium`,
   `codex-implementer-high=gpt-5.6-sol/high`, and
   `codex-implementer-xhigh=gpt-5.6-sol/xhigh`; the reviewer remains Sol/high.
   The runtime profile catalog and all four provider combinations were verified.
+- Live ordinary Chat plus the correct `dpkr helix` app created one worker at
+  each requested effort. Every worker first returned `needs_input` with zero
+  workspace changes, then completed through the same provider session after the
+  bankers answer. Each changed only the two permitted fixture files and passed
+  `node --test` 2/2. The ChatGPT controller displayed Pro; only the delegated
+  worker is attributed to Sol. A wrong `DevSpace Portable` selection was
+  rejected before workspace open, created no agent record or change, and is
+  excluded.
 - Installed working directory: unchanged.
 - Remote history replacement and visibility change were completed with explicit
   owner approval. No tag, GitHub Release, or npm publication was created.
@@ -342,13 +351,19 @@ commands merely because the preparation work is complete.
 - 2026-08-03 managed-profile correction: source installer, bootstrap, and active
   profile files no longer select GPT-5.5. Setup tests pass, the profile loader
   reports Luna/max and Sol/medium/high/xhigh, and the bundled Codex provider
-  accepted all four combinations. No delegated worker remains active.
+  accepted all four combinations. Source checkpoint `370aa04` records the
+  managed profile repair, and the installed setup script matches its source
+  SHA-256. No delegated worker remains active.
+- 2026-08-03 ordinary-Chat attribution canary: medium, high, and xhigh each
+  proved correct managed profile/model/effort attribution, question-before-
+  write, same-provider-session continuation, bounded two-file changes, and a
+  passing 2/2 focused test run. Work and Portable interactions are excluded.
 
 ## Exact next action
 
-Create a fresh P05 canary workspace, open ordinary Chat rather than Work, and
-delegate medium/high/xhigh to the three explicit implementer targets. Require
-matching controller and provider attribution plus same-thread P05 continuation.
-Only after all six surface/effort cells pass should a fresh complete matrix be
-materialized. The two Work-surface interactions are invalid evidence and their
-workspaces must not be reused.
+Run fresh local P05 canaries for Sol medium, high, and xhigh. Require question-
+before-write, exact model/effort attribution, and same-provider-session
+continuation. If all three pass, materialize the fresh complete matrix and use
+ordinary Chat, never Work, for its Web surface. Treat ChatGPT Pro as the Web
+controller and the explicit managed Sol profile as the helix worker; do not
+merge those identities. The two Work interactions remain invalid evidence.

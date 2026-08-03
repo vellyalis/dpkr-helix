@@ -17,11 +17,12 @@ Last synchronized: 2026-08-03
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-QA-09 is the next evaluation.
-- Current program unit: WS-QA-09 is `READY / FRESH CHAT CANARY REQUIRED`. The
-  owner resumed it on 2026-08-03, then explicitly rejected the ChatGPT Work
-  surface and required ordinary Chat. Two Work-surface P05 interactions are
-  excluded from the comparison and their workspaces must not be reused. The
-  frozen suite and remaining prepared workspaces retain their preflight state.
+- Current program unit: WS-QA-09 is `IN PROGRESS / CHAT CANARY PASSED`. The
+  owner explicitly rejected the ChatGPT Work surface and required ordinary
+  Chat. Fresh ordinary-Chat P05 canaries passed for the three managed Sol
+  implementer efforts; two earlier Work interactions remain excluded and their
+  workspaces must not be reused. The frozen suite and remaining prepared
+  workspaces retain their preflight state.
 - The owner explicitly replaced the active managed Codex profile setting that
   caused delegated GPT-5.5 execution. The installed catalog now maps read-only
   exploration to `gpt-5.6-luna/max` and implementation to `gpt-5.6-sol` at
@@ -122,7 +123,7 @@ publishing the compatibility package accidentally.
 | MWU-08.04 structured Codex outcome | installed Codex SDK per-turn schema plus existing LocalAgentService/store and operation/MCP/UI projections; nullable disposition/question and same-session continuation | prose parsing silently manufactures completion; a second message/store/notification owner duplicates lifecycle state; changing non-Codex adapters without native schema breaks compatibility |
 | MWU-08.05 bounded wait | optional 0..30000 ms wait on the existing status tool/service path with explicit timeout metadata | duplicate workers, background polling, cancellation, or another wait owner add risk without improving the measured workflow |
 | MWU-08.06 parity convergence | existing server/workspace/read metadata explicitly preserves narrower task read boundaries over advertised Skills; signed-in Web 8/8 versus retained local 5/8 | a new per-turn permission language/enforcement owner is not justified by the advisory-metadata experiment; repeated wording tuning or a model/default change lacks evidence |
-| WS-QA-09 `gpt-5.6-sol` effort | no selected effort yet; full fresh matrix required | historical medium is mixed, High is a mixed four-case subset, and xhigh is absent, so none can close the owner-requested comparison |
+| WS-QA-09 `gpt-5.6-sol` effort | ordinary-Chat delegated P05 canary passes at medium/high/xhigh; no selected effort yet | ChatGPT controller was Pro, while helix workers were explicitly Sol/medium, Sol/high, and Sol/xhigh; fresh local P05 attribution and the complete matrix are still required |
 | Managed Codex subagent profiles | owner-selected Luna/max explorer plus Sol medium/high/xhigh implementers; Sol/high reviewer retained | legacy managed GPT-5.5 profiles caused false candidate attribution and are no longer active defaults |
 
 ## Workstream portfolio
@@ -140,7 +141,7 @@ publishing the compatibility package accidentally.
 | WS-OPS-04 bounded connection retention | VERIFIED | 200 abandoned creations plateau heap while active and reused sessions remain valid |
 | WS-UPD-01 ChatGPT-initiated update | VERIFIED / DONE | `main`, three-platform CI, physical live install, exact dependency, controller request/status, and local/public health verified |
 | WS-QA-08 measured coding parity | VERIFIED / DONE | signed-in Web passes 8/8 versus retained local 5/8 with zero mandatory safety regression |
-| WS-QA-09 GPT-5.6 Sol effort comparison | READY / RESET CANARY | ordinary Chat passes all six fresh attribution cells, then fresh medium/high/xhigh P01-P08 results and any required tie-breaks close the matrix |
+| WS-QA-09 GPT-5.6 Sol effort comparison | IN PROGRESS / CHAT CANARY PASSED | fresh local P05 attribution passes at medium/high/xhigh, then fresh medium/high/xhigh P01-P08 results and any required tie-breaks close the matrix |
 
 ## Architecture and complexity decision
 
@@ -478,7 +479,7 @@ Cutover outcome:
 | in-flight MCP requests cannot survive an actual process/OS loss or the short verified replacement window | external protocol/platform residual | prevent avoidable restarts, persist workspace and update status, recover the stable endpoint, reconnect once, and read the completed result |
 | ChatGPT Web does not currently honor MCP tool-list-change for newly added names | external host behavior, one-time migration closed | automate the approved developer-mode connection update during legacy migration; keep the two update tool names stable so later self-updates need only reconnect |
 | canonical Git remote, npm registry, or owner-account compromise | external trust boundary | require exact origin/clean fast-forward main, locked dependencies, preflight tests, health verification, and rollback; do not add an unsafe fallback |
-| historical Web delegation used managed `gpt-5.5` medium under a `GPT-5.6 Sol` controller | cause removed from active configuration | keep historical records mixed; ordinary Chat must prove the new explicit Sol medium/high/xhigh targets before any fresh result is attributed |
+| historical Web delegation used managed `gpt-5.5` medium under a different controller | cause removed from active configuration | keep historical records mixed; fresh ordinary Chat now proves explicit Sol medium/high/xhigh worker targets, without claiming its Pro controller is Sol |
 | candidate medium and high settings regress mandatory safety or continuation behavior | adoption blockers; both candidates rejected | retain the measured current setting and never trade efficiency for a mandatory pass |
 | should-not-use metadata prompt invokes project listing | measured low-severity tool-selection defect | keep the failed M03 evidence; change one coherent metadata group only if a later work unit prioritizes and re-evaluates it |
 | repository context and verification-basis capture observe a live tree through multiple Git reads | accepted concurrent-external-edit residual | no atomic live-tree contract is claimed; reopen/review or re-verification produces a new fingerprint, exact equality is required for `fresh`, and locks or double fingerprinting remain deferred without a measured inconsistency |
@@ -486,10 +487,10 @@ Cutover outcome:
 
 ## Next executable action
 
-Create a fresh P05 canary workspace and use ordinary Chat, never Work. Delegate
-to `codex-implementer`, `codex-implementer-high`, and
-`codex-implementer-xhigh` for medium, high, and xhigh respectively. Continue to
-a freshly materialized 96-record matrix only when every controller and provider
-session is attributable to `gpt-5.6-sol` at the requested effort and P05
-continuation completes in the same provider thread. Do not reuse the two
-Work-surface workspaces or relabel their interactions as Chat evidence.
+Run the remaining local P05 attribution canaries with `gpt-5.6-sol` at medium,
+high, and xhigh on fresh copies, preserving question-before-write and the same
+provider thread on continuation. If all three pass, materialize a fresh complete
+matrix using ordinary Chat for the Web surface and explicit managed worker
+profiles for helix delegation. Record the ChatGPT controller as Pro rather than
+manufacturing a Sol controller attribution. Do not reuse the two Work-surface
+workspaces or relabel their interactions as Chat evidence.

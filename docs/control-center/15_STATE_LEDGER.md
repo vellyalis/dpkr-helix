@@ -467,3 +467,30 @@ and Git rather than duplicated here.
   probe remains active.
 - Historical GOAL_08 evidence remains unchanged. WS-QA-09 must restart with a
   fresh ordinary-Chat P05 canary before any complete matrix is attributed.
+
+## 2026-08-03 — Ordinary-Chat managed-worker canary passed
+
+- The signed-in Web surface was explicitly switched to ordinary Chat for every
+  accepted attempt. The ChatGPT controller displayed Pro; this evidence makes
+  no claim that the controller itself was a Sol effort variant.
+- A preliminary `DevSpace Portable` selection was the wrong connector. It
+  rejected the canary path before opening a workspace, created no local-agent
+  record or filesystem change, and is excluded. The accepted attempts used the
+  `dpkr helix` app. Earlier Work attempts remain excluded and consumed.
+- Fresh P05 canaries delegated to `codex-implementer`,
+  `codex-implementer-high`, and `codex-implementer-xhigh`. Runtime records
+  attributed them respectively to `gpt-5.6-sol` at medium, high, and xhigh.
+- At the material-question boundary, all three workers were `needs_input` and
+  their workspaces had zero changes. Each asked one closed half-up-versus-
+  bankers question.
+- The bankers answer resumed the same agent and provider session in every cell;
+  no replacement worker was delegated. All three finished `completed`, changed
+  only `src/config.js` and `test/round.test.js`, and independently passed
+  `node --test` with 2/2 tests.
+- Active profile/bootstrap scans contain no managed GPT-5.5 selection. The
+  source and installed setup scripts share SHA-256
+  `3B56BB3DABAFEC74FFA61A94E8A2FEF66E85FACB3A1D77D59FF2FB8F6381B9D6`.
+  Source checkpoint `370aa04` contains the repair. No delegated worker remains
+  active.
+- WS-QA-09 advances to the remaining fresh local P05 attribution canaries. A
+  complete comparison matrix is not yet attributed or ranked.
