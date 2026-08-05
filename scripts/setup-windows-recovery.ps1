@@ -6,9 +6,10 @@ Installs, removes, previews, or runs optional no-console dpkr helix recovery.
 
 .DESCRIPTION
 The recovery task is available only for a portable Windows installation using
-TunnelMode External with a stable HTTPS origin. It checks the installer-owned
-runtime record and local/public health, then calls the managed
-setup-windows.ps1 Start mode only when the local service is unhealthy.
+TunnelMode External with a stable HTTPS origin. It calls the existing managed
+setup-windows.ps1 Start mode to attest package/runtime identity, configuration,
+local health, and local OAuth metadata without restarting a healthy generation,
+then verifies the public health and OAuth boundary.
 
 Install and Remove change the current user's Task Scheduler state and must be
 run only after explicit user approval. Run is intended for the managed
@@ -28,6 +29,7 @@ $script:ManagedMarker = "managed-by-dpkr-helix-windows-recovery"
 $script:DevSpaceDir = Join-Path $env:USERPROFILE ".devspace"
 $script:SettingsPath = Join-Path $script:DevSpaceDir "windows-bootstrap.json"
 $script:RuntimeStatePath = Join-Path $script:DevSpaceDir "windows-runtime.json"
+$script:RecoveryStatusPath = Join-Path $script:DevSpaceDir "windows-recovery.json"
 $script:ManagedSetupPath = Join-Path $script:DevSpaceDir "setup-windows.ps1"
 $script:ManagedRecoveryPath = Join-Path $script:DevSpaceDir "setup-windows-recovery.ps1"
 $script:HiddenLauncherPath = Join-Path $script:DevSpaceDir "start-windows-recovery-hidden.vbs"
@@ -46,6 +48,31 @@ function Write-Utf8NoBom {
   )
   $encoding = New-Object System.Text.UTF8Encoding($false)
   [System.IO.File]::WriteAllText($Path, $Content, $encoding)
+}
+
+function Write-JsonAtomic {
+  param(
+    [Parameter(Mandatory = $true)][string] $Path,
+    [Parameter(Mandatory = $true)] $Value
+  )
+  $directory = Split-Path -Parent $Path
+  if (-not (Test-Path -LiteralPath $directory -PathType Container)) {
+    New-Item -ItemType Directory -Path $directory -Force | Out-Null
+  }
+  $temporaryPath = Join-Path $directory (
+    ".tmp-" + [Guid]::NewGuid().ToString("N") + ".json"
+  )
+  try {
+    Write-Utf8NoBom `
+      -Path $temporaryPath `
+      -Content (($Value | ConvertTo-Json -Depth 8) + "`n")
+    Move-Item -LiteralPath $temporaryPath -Destination $Path -Force
+  }
+  finally {
+    if (Test-Path -LiteralPath $temporaryPath -PathType Leaf) {
+      Remove-Item -LiteralPath $temporaryPath -Force
+    }
+  }
 }
 
 function Read-Utf8Text {
@@ -154,6 +181,213 @@ function Test-HttpEndpoint {
   }
 }
 
+function Get-UriOrigin {
+  param([Parameter(Mandatory = $true)][string] $Value)
+  try {
+    $uri = New-Object System.Uri($Value)
+  }
+  catch {
+    throw "OAuth metadata contains an invalid absolute URL."
+  }
+  if (-not $uri.IsAbsoluteUri -or -not $uri.Host) {
+    throw "OAuth metadata contains an invalid absolute URL."
+  }
+  return $uri.GetLeftPart([System.UriPartial]::Authority).TrimEnd("/")
+}
+
+function Assert-UriUsesOrigin {
+  param(
+    [Parameter(Mandatory = $true)][string] $Value,
+    [Parameter(Mandatory = $true)][string] $ExpectedOrigin,
+    [Parameter(Mandatory = $true)][string] $FieldName
+  )
+  $actualOrigin = Get-UriOrigin -Value $Value
+  if (-not [string]::Equals(
+      $actualOrigin,
+      $ExpectedOrigin,
+      [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    throw "$FieldName advertises $actualOrigin instead of $ExpectedOrigin."
+  }
+}
+
+function Test-OAuthMetadata {
+  param(
+    [Parameter(Mandatory = $true)][string] $Origin,
+    [Parameter(Mandatory = $true)][string] $ExpectedPublicOrigin,
+    [int] $TimeoutSeconds = 10
+  )
+  $expectedOrigin = Normalize-StableOrigin -Value $ExpectedPublicOrigin
+  $requestOrigin = $Origin.TrimEnd("/")
+  $authorizationMetadataUri = $requestOrigin + "/.well-known/oauth-authorization-server"
+  $response = Invoke-WebRequest `
+    -UseBasicParsing `
+    -Uri $authorizationMetadataUri `
+    -Headers @{
+      Accept = "application/json"
+      "User-Agent" = "dpkr-helix-windows-recovery/1.0"
+    } `
+    -TimeoutSec $TimeoutSeconds
+  if ([int] $response.StatusCode -ne 200) {
+    throw "OAuth metadata returned HTTP $($response.StatusCode)."
+  }
+  $metadata = $response.Content | ConvertFrom-Json
+  foreach ($fieldName in @(
+      "issuer",
+      "authorization_endpoint",
+      "token_endpoint",
+      "registration_endpoint"
+    )) {
+    $value = [string](Get-PropertyValue -InputObject $metadata -Name $fieldName)
+    if (-not $value) {
+      throw "OAuth metadata is missing $fieldName."
+    }
+    Assert-UriUsesOrigin `
+      -Value $value `
+      -ExpectedOrigin $expectedOrigin `
+      -FieldName $fieldName
+  }
+  $revocationEndpoint = [string](
+    Get-PropertyValue -InputObject $metadata -Name "revocation_endpoint"
+  )
+  if ($revocationEndpoint) {
+    Assert-UriUsesOrigin `
+      -Value $revocationEndpoint `
+      -ExpectedOrigin $expectedOrigin `
+      -FieldName "revocation_endpoint"
+  }
+
+  $protectedResourceUri = $requestOrigin + "/.well-known/oauth-protected-resource/mcp"
+  $protectedResponse = Invoke-WebRequest `
+    -UseBasicParsing `
+    -Uri $protectedResourceUri `
+    -Headers @{
+      Accept = "application/json"
+      "User-Agent" = "dpkr-helix-windows-recovery/1.0"
+    } `
+    -TimeoutSec $TimeoutSeconds
+  if ([int] $protectedResponse.StatusCode -ne 200) {
+    throw "OAuth protected-resource metadata returned HTTP $($protectedResponse.StatusCode)."
+  }
+  $protected = $protectedResponse.Content | ConvertFrom-Json
+  $expectedResource = $expectedOrigin + "/mcp"
+  if (-not [string]::Equals(
+      [string](Get-PropertyValue -InputObject $protected -Name "resource"),
+      $expectedResource,
+      [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    throw "OAuth protected-resource metadata does not advertise $expectedResource."
+  }
+  $authorizationServerMatches = $false
+  foreach ($server in @(
+      Get-PropertyValue -InputObject $protected -Name "authorization_servers"
+    )) {
+    if (-not $server) {
+      continue
+    }
+    try {
+      if ([string]::Equals(
+          (Get-UriOrigin -Value ([string] $server)),
+          $expectedOrigin,
+          [System.StringComparison]::OrdinalIgnoreCase
+        )) {
+        $authorizationServerMatches = $true
+        break
+      }
+    }
+    catch {
+      continue
+    }
+  }
+  if (-not $authorizationServerMatches) {
+    throw "OAuth protected-resource metadata advertises the wrong authorization server."
+  }
+}
+
+function Write-RecoveryStatus {
+  param(
+    [Parameter(Mandatory = $true)]
+    [ValidateSet("healthy", "recovered", "skipped", "failed")]
+    [string] $State,
+    [Parameter(Mandatory = $true)][string] $Code,
+    [Parameter(Mandatory = $true)][string] $Message
+  )
+  Write-JsonAtomic -Path $script:RecoveryStatusPath -Value ([ordered]@{
+      schema = "dpkr-helix-windows-recovery/v1"
+      state = $State
+      code = $Code
+      message = $Message
+      checkedAt = [DateTime]::UtcNow.ToString("o")
+    })
+}
+
+function Throw-RecoveryFailure {
+  param(
+    [Parameter(Mandatory = $true)][string] $Code,
+    [Parameter(Mandatory = $true)][string] $Message
+  )
+  throw "DPKR_RECOVERY[$Code] $Message"
+}
+
+function Get-RecoveryFailureCode {
+  param([Parameter(Mandatory = $true)] $ErrorRecord)
+  $match = [regex]::Match(
+    [string] $ErrorRecord.Exception.Message,
+    "^DPKR_RECOVERY\[([A-Z0-9_]+)\]"
+  )
+  if ($match.Success) {
+    return $match.Groups[1].Value
+  }
+  return "RECOVERY_FAILED"
+}
+
+function Get-RecoveryStatusMessage {
+  param([Parameter(Mandatory = $true)][string] $Code)
+  switch ($Code) {
+    "MANAGED_RECONCILIATION_FAILED" {
+      return "Managed DevSpace reconciliation failed. Review the local recovery and DevSpace logs."
+    }
+    "LOCAL_HEALTH_UNRECOVERED" {
+      return "Local DevSpace health remains unavailable after managed reconciliation."
+    }
+    "PUBLIC_ENDPOINT_UNHEALTHY" {
+      return "The public endpoint is unavailable while the attested local process remains healthy."
+    }
+    "PUBLIC_HEALTH_UNRECOVERED" {
+      return "The public endpoint remains unavailable after local DevSpace recovery."
+    }
+    "OAUTH_METADATA_MISMATCH" {
+      return "OAuth metadata does not match the saved stable origin."
+    }
+    default {
+      return "Recovery failed before a safe detailed status could be recorded. Review the local recovery logs."
+    }
+  }
+}
+
+function Get-RuntimeIdentityStamp {
+  try {
+    $runtime = Read-JsonFile -Path $script:RuntimeStatePath
+    if (-not $runtime) {
+      return $null
+    }
+    $pidValue = [int](Get-PropertyValue -InputObject $runtime -Name "devspacePid")
+    $started = [long](
+      Get-PropertyValue -InputObject $runtime -Name "devspaceStartTimeFileTimeUtc"
+    )
+    $fingerprint = [string](
+      Get-PropertyValue -InputObject $runtime -Name "devspaceRuntimeFingerprint"
+    )
+    if ($pidValue -le 0 -or $started -le 0) {
+      return $null
+    }
+    return "$pidValue|$started|$fingerprint"
+  }
+  catch {
+    return $null
+  }
+}
+
 function Test-RuntimeOperationInProgress {
   $mutex = New-Object System.Threading.Mutex($false, $script:RuntimeMutexName)
   $acquired = $false
@@ -191,46 +425,95 @@ function Invoke-ManagedStart {
     ) `
     -WindowStyle Hidden `
     -PassThru
-  $process.WaitForExit()
+  if (-not $process.WaitForExit(120000)) {
+    Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+    throw "Managed DevSpace reconciliation exceeded 120 seconds."
+  }
   if ($process.ExitCode -ne 0) {
-    throw "Managed DevSpace restart failed with exit code $($process.ExitCode)."
+    throw "Managed DevSpace reconciliation failed with exit code $($process.ExitCode)."
   }
 }
 
 function Invoke-Recovery {
   $settings = Get-RecoverySettings
   if ($settings.DesiredState -ne "running") {
-    Write-Host "Recovery skipped: DevSpace was intentionally stopped."
-    return
+    return [pscustomobject]@{
+      State = "skipped"
+      Code = "INTENTIONALLY_STOPPED"
+      Message = "Recovery skipped: DevSpace was intentionally stopped."
+    }
   }
   if (Test-RuntimeOperationInProgress) {
-    Write-Host "Recovery skipped: another managed start, stop, or install is active."
-    return
+    return [pscustomobject]@{
+      State = "skipped"
+      Code = "OPERATION_IN_PROGRESS"
+      Message = "Recovery skipped: another managed start, stop, install, or update is active."
+    }
   }
 
   $localHealth = "http://127.0.0.1:$($settings.Port)/healthz"
   $publicHealth = "$($settings.PublicBaseUrl)/healthz"
-  $localHealthy = Test-HttpEndpoint -Uri $localHealth -TimeoutSeconds 3
-  if (-not $localHealthy) {
+  $localWasHealthy = Test-HttpEndpoint -Uri $localHealth -TimeoutSeconds 3
+  if (-not $localWasHealthy) {
     Start-Sleep -Seconds 1
-    $localHealthy = Test-HttpEndpoint -Uri $localHealth -TimeoutSeconds 3
+    $localWasHealthy = Test-HttpEndpoint -Uri $localHealth -TimeoutSeconds 3
   }
-  if ($localHealthy) {
-    if (Test-HttpEndpoint -Uri $publicHealth) {
-      Write-Host "Recovery check: local and public health pass."
-      return
+  $identityBefore = Get-RuntimeIdentityStamp
+  try {
+    Invoke-ManagedStart
+  }
+  catch {
+    Throw-RecoveryFailure `
+      -Code "MANAGED_RECONCILIATION_FAILED" `
+      -Message (Get-RecoveryStatusMessage -Code "MANAGED_RECONCILIATION_FAILED")
+  }
+  $identityAfter = Get-RuntimeIdentityStamp
+  $runtimeChanged = -not [string]::Equals(
+    [string] $identityBefore,
+    [string] $identityAfter,
+    [System.StringComparison]::Ordinal
+  )
+  if (-not (Test-HttpEndpoint -Uri $localHealth -TimeoutSeconds 3)) {
+    Throw-RecoveryFailure `
+      -Code "LOCAL_HEALTH_UNRECOVERED" `
+      -Message "Local DevSpace health remains unavailable after managed reconciliation."
+  }
+  if (-not (Test-HttpEndpoint -Uri $publicHealth)) {
+    if ($localWasHealthy -and -not $runtimeChanged) {
+      Throw-RecoveryFailure `
+        -Code "PUBLIC_ENDPOINT_UNHEALTHY" `
+        -Message "The public endpoint is unhealthy while the attested local process remains healthy; recover the external tunnel owner without restarting DevSpace."
     }
-    throw "Public endpoint is unhealthy while local DevSpace is healthy; preserve the local process and recover the external tunnel owner."
+    Throw-RecoveryFailure `
+      -Code "PUBLIC_HEALTH_UNRECOVERED" `
+      -Message "The public endpoint remains unavailable after local DevSpace recovery."
   }
-
-  Invoke-ManagedStart
-  if (
-    -not (Test-HttpEndpoint -Uri $localHealth -TimeoutSeconds 3) -or
-    -not (Test-HttpEndpoint -Uri $publicHealth)
-  ) {
-    throw "DevSpace health did not recover on both local and public endpoints."
+  try {
+    Test-OAuthMetadata `
+      -Origin "http://127.0.0.1:$($settings.Port)" `
+      -ExpectedPublicOrigin $settings.PublicBaseUrl `
+      -TimeoutSeconds 3
+    Test-OAuthMetadata `
+      -Origin $settings.PublicBaseUrl `
+      -ExpectedPublicOrigin $settings.PublicBaseUrl
   }
-  Write-Host "Recovery check: DevSpace restarted and local/public health pass."
+  catch {
+    Throw-RecoveryFailure `
+      -Code "OAUTH_METADATA_MISMATCH" `
+      -Message (Get-RecoveryStatusMessage -Code "OAUTH_METADATA_MISMATCH")
+  }
+  if ($runtimeChanged) {
+    return [pscustomobject]@{
+      State = "recovered"
+      Code = "RUNTIME_RECOVERED"
+      Message = "Recovery check: runtime integrity, local/public health, and OAuth metadata were restored."
+    }
+  }
+  return [pscustomobject]@{
+    State = "healthy"
+    Code = "HEALTHY"
+    Message = "Recovery check: runtime integrity, local/public health, and OAuth metadata pass."
+  }
 }
 
 function Get-HiddenLauncherContent {
@@ -444,6 +727,17 @@ function Remove-Recovery {
       Remove-Item -LiteralPath $path -Force
     }
   }
+  if (Test-Path -LiteralPath $script:RecoveryStatusPath -PathType Leaf) {
+    $status = Read-JsonFile -Path $script:RecoveryStatusPath
+    if (
+      -not $status -or
+      [string](Get-PropertyValue -InputObject $status -Name "schema") -ne
+        "dpkr-helix-windows-recovery/v1"
+    ) {
+      throw "Refusing to remove an unmanaged recovery status file."
+    }
+    Remove-Item -LiteralPath $script:RecoveryStatusPath -Force
+  }
   Write-Host "Removed managed dpkr helix recovery."
 }
 
@@ -462,8 +756,8 @@ function Show-Plan {
     TaskName = $script:TaskName
     Action = "$script:WscriptPath //B //NoLogo `"$script:HiddenLauncherPath`""
     Triggers = "current-user logon and every five minutes"
-    Writes = "$script:ManagedRecoveryPath; $script:HiddenLauncherPath; current-user Scheduled Task"
-    RestartRule = "restart only when a managed runtime record exists and local health is bad"
+    Writes = "$script:ManagedRecoveryPath; $script:HiddenLauncherPath; $script:RecoveryStatusPath; current-user Scheduled Task"
+    RestartRule = "reconcile runtime identity, package fingerprint, config origin, and local OAuth metadata; restart only when attestation fails"
     PublicOutageRule = "never restart a healthy local process for a public-only outage"
     Secrets = "no Owner password, Cloudflare token, credential file, cookie, or browser profile is read"
     Rollback = "& `"$script:ManagedRecoveryPath`" -Mode Remove"
@@ -481,6 +775,25 @@ switch ($Mode) {
     Remove-Recovery
   }
   "Run" {
-    Invoke-Recovery
+    try {
+      $result = Invoke-Recovery
+      Write-RecoveryStatus `
+        -State ([string] $result.State) `
+        -Code ([string] $result.Code) `
+        -Message ([string] $result.Message)
+      Write-Host ([string] $result.Message)
+    }
+    catch {
+      $failure = $_
+      $code = Get-RecoveryFailureCode -ErrorRecord $failure
+      $message = Get-RecoveryStatusMessage -Code $code
+      try {
+        Write-RecoveryStatus -State "failed" -Code $code -Message $message
+      }
+      catch {
+        Write-Warning "Recovery status could not be persisted: $($_.Exception.Message)"
+      }
+      throw $failure
+    }
   }
 }

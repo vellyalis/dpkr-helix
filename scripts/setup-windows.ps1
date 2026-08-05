@@ -86,6 +86,7 @@ $script:DevSpaceAuthPath = Join-Path $script:DevSpaceDir "auth.json"
 $script:ManagedScriptPath = Join-Path $script:DevSpaceDir "setup-windows.ps1"
 $script:ManagedRecoveryPath = Join-Path $script:DevSpaceDir "setup-windows-recovery.ps1"
 $script:UpdateStatusPath = Join-Path $script:DevSpaceDir "windows-update.json"
+$script:RuntimePackageDir = Join-Path $script:DevSpaceDir "runtime-packages"
 $script:LogDir = Join-Path $script:DevSpaceDir "logs"
 $script:RuntimeMutexName = "Local\dpkr-helix-windows-runtime"
 $script:UpdateMutexName = "Local\dpkr-helix-windows-update"
@@ -642,6 +643,22 @@ function Invoke-UpdatePreflight {
     Invoke-Checked -FilePath $npm -Arguments @("test")
     Invoke-Checked -FilePath $npm -Arguments @("run", "build")
     Invoke-Checked -FilePath $npm -Arguments @("run", "check:public")
+    $powershell = Get-CommandPath -Name "powershell.exe"
+    if (-not $powershell) {
+      throw "Windows PowerShell is required for portable recovery verification."
+    }
+    foreach ($testScript in @(
+        "scripts\setup-windows.test.ps1",
+        "scripts\setup-windows-recovery.test.ps1"
+      )) {
+      Invoke-Checked -FilePath $powershell -Arguments @(
+        "-NoLogo",
+        "-NoProfile",
+        "-NonInteractive",
+        "-ExecutionPolicy", "Bypass",
+        "-File", (Join-Path $Root $testScript)
+      )
+    }
   }
   catch {
     Throw-UpdateFailure -Code "PREFLIGHT_FAILED" -Message (
@@ -703,6 +720,28 @@ function New-DevSpacePackage {
 
 function New-InstalledDevSpaceRollbackPackage {
   param([Parameter(Mandatory = $true)][string] $Destination)
+  $settings = Read-JsonFile -Path $script:SettingsPath
+  if ($settings) {
+    try {
+      $cached = Get-ValidatedRuntimePackage -Settings $settings
+      $cachedCopy = Join-Path $Destination (
+        "devspace-rollback-" + ([string] $cached.Hash) + ".tgz"
+      )
+      Copy-FileAtomic -SourcePath ([string] $cached.Path) -DestinationPath $cachedCopy
+      return $cachedCopy
+    }
+    catch {
+      Write-Warning (
+        "The managed recovery package is unavailable; attempting to capture the installed runtime. " +
+        $_.Exception.Message
+      )
+    }
+  }
+  return New-InstalledDevSpacePackage -Destination $Destination
+}
+
+function New-InstalledDevSpacePackage {
+  param([Parameter(Mandatory = $true)][string] $Destination)
   $npm = Get-CommandPath -Name "npm.cmd"
   if (-not $npm) {
     $npm = Get-CommandPath -Name "npm"
@@ -720,7 +759,7 @@ function New-InstalledDevSpaceRollbackPackage {
   foreach ($relativePath in @("package.json", "npm-shrinkwrap.json", "dist\cli.js")) {
     if (-not (Test-Path -LiteralPath (Join-Path $installedRoot $relativePath) -PathType Leaf)) {
       Throw-UpdateFailure -Code "ROLLBACK_SOURCE_INVALID" -Message (
-        "The installed runtime is incomplete and cannot be captured safely."
+        "The installed runtime is incomplete and no verified recovery package is available."
       )
     }
   }
@@ -751,14 +790,16 @@ function Install-BuiltDevSpacePackage {
   if (-not $npm) {
     throw "npm is not available."
   }
+  $globalPrefix = Get-GlobalNpmPrefix
   Invoke-Checked -FilePath $npm -Arguments @(
     "install",
     "--global",
+    "--prefix", $globalPrefix,
     "--prefer-offline",
     "--allow-scripts=@waishnav/devspace",
     $PackagePath
   )
-  $installedRoot = Join-Path (Get-GlobalNpmRoot) "@waishnav\devspace"
+  $installedRoot = Join-Path $globalPrefix "node_modules\@waishnav\devspace"
   $installedItem = Get-Item -LiteralPath $installedRoot -Force -ErrorAction Stop
   if ($installedItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
     throw "The installed DevSpace runtime is linked to a mutable source directory."
@@ -777,6 +818,7 @@ function Install-BuiltDevSpacePackage {
   finally {
     Pop-Location
   }
+  Get-InstalledDevSpaceRuntimeFingerprint | Out-Null
 }
 
 function Ensure-WingetPackage {
@@ -948,15 +990,28 @@ function Install-PreparedDevSpace {
   if (-not $npm) {
     $npm = Get-CommandPath -Name "npm"
   }
+  $globalPrefix = Get-GlobalNpmPrefix
   Install-BuiltDevSpacePackage -PackagePath $PackagePath
   Invoke-Checked -FilePath $npm -Arguments @(
     "install",
     "--global",
+    "--prefix", $globalPrefix,
     "@openai/codex@$CodexCliVersion"
   )
 }
 
 function Get-GlobalNpmRoot {
+  return Join-Path (Get-GlobalNpmPrefix) "node_modules"
+}
+
+function Get-GlobalNpmPrefix {
+  $environmentPrefix = [Environment]::GetEnvironmentVariable(
+    "npm_config_prefix",
+    [EnvironmentVariableTarget]::Process
+  )
+  if (-not [string]::IsNullOrWhiteSpace($environmentPrefix)) {
+    return [System.IO.Path]::GetFullPath($environmentPrefix.Trim())
+  }
   $npm = Get-CommandPath -Name "npm.cmd"
   if (-not $npm) {
     $npm = Get-CommandPath -Name "npm"
@@ -964,11 +1019,304 @@ function Get-GlobalNpmRoot {
   if (-not $npm) {
     throw "npm is not available."
   }
-  $root = (& $npm root --global | Select-Object -Last 1).Trim()
-  if ($LASTEXITCODE -ne 0 -or -not $root) {
-    throw "Unable to resolve the global npm root."
+  $lines = @(& $npm prefix --global 2>$null)
+  if ($LASTEXITCODE -ne 0 -or $lines.Count -eq 0) {
+    throw "Unable to resolve the global npm prefix."
   }
-  return $root
+  $prefix = [string] $lines[-1]
+  if ([string]::IsNullOrWhiteSpace($prefix)) {
+    throw "Unable to resolve the global npm prefix."
+  }
+  return [System.IO.Path]::GetFullPath($prefix.Trim())
+}
+
+function Get-InstalledDevSpaceRoot {
+  $root = Join-Path (Get-GlobalNpmRoot) "@waishnav\devspace"
+  $item = Get-Item -LiteralPath $root -Force -ErrorAction Stop
+  if ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+    throw "The installed DevSpace runtime is linked to a mutable source directory."
+  }
+  return [System.IO.Path]::GetFullPath($item.FullName)
+}
+
+function Get-ExtendedLengthPath {
+  param([Parameter(Mandatory = $true)][string] $Path)
+  $fullPath = [System.IO.Path]::GetFullPath($Path)
+  if ($fullPath.StartsWith("\\?\", [System.StringComparison]::Ordinal)) {
+    return $fullPath
+  }
+  if ($fullPath.StartsWith("\\", [System.StringComparison]::Ordinal)) {
+    return "\\?\UNC\" + $fullPath.Substring(2)
+  }
+  return "\\?\" + $fullPath
+}
+
+function Get-Sha256 {
+  param([Parameter(Mandatory = $true)][string] $Path)
+  $stream = $null
+  $sha = $null
+  try {
+    $stream = New-Object System.IO.FileStream(
+      (Get-ExtendedLengthPath -Path $Path),
+      [System.IO.FileMode]::Open,
+      [System.IO.FileAccess]::Read,
+      [System.IO.FileShare]::Read
+    )
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $hash = $sha.ComputeHash($stream)
+    return ([System.BitConverter]::ToString($hash)).Replace("-", "").ToLowerInvariant()
+  }
+  catch {
+    throw "Unable to hash the required file: $Path"
+  }
+  finally {
+    if ($sha) {
+      $sha.Dispose()
+    }
+    if ($stream) {
+      $stream.Dispose()
+    }
+  }
+}
+
+function Get-InstalledDevSpaceRuntimeFingerprint {
+  $root = Get-InstalledDevSpaceRoot
+  $piRoot = Join-Path $root "node_modules\@earendil-works\pi-coding-agent"
+  $requiredFiles = @(
+    (Join-Path $root "package.json"),
+    (Join-Path $root "npm-shrinkwrap.json"),
+    (Join-Path $root "dist\cli.js"),
+    (Join-Path $root "scripts\fix-node-pty-permissions.mjs"),
+    (Join-Path $root "scripts\fix-pi-brace-expansion.mjs"),
+    (Join-Path $root "scripts\fix-pi-undici.mjs"),
+    (Join-Path $root "scripts\fix-codex-sdk-windows-hide.mjs"),
+    (Join-Path $root "node_modules\.package-lock.json"),
+    (Join-Path $piRoot "package.json"),
+    (Join-Path $piRoot "npm-shrinkwrap.json")
+  )
+  foreach ($path in $requiredFiles) {
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+      throw "The installed DevSpace runtime is incomplete: $path"
+    }
+  }
+  $requiredDirectories = @(
+    (Join-Path $root "dist"),
+    (Join-Path $root "node_modules\brace-expansion"),
+    (Join-Path $root "node_modules\undici"),
+    (Join-Path $piRoot "node_modules\brace-expansion"),
+    (Join-Path $piRoot "node_modules\undici"),
+    (Join-Path $root "node_modules\@openai\codex-sdk")
+  )
+  foreach ($path in $requiredDirectories) {
+    $item = Get-Item -LiteralPath $path -Force -ErrorAction Stop
+    if (-not $item.PSIsContainer) {
+      throw "The installed DevSpace runtime directory is missing: $path"
+    }
+    if ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+      throw "The installed DevSpace runtime contains a linked dependency directory: $path"
+    }
+  }
+  $files = @(
+    foreach ($path in $requiredFiles) {
+      Get-Item -LiteralPath $path -Force
+    }
+    foreach ($path in $requiredDirectories) {
+      Get-ChildItem -LiteralPath $path -Recurse -File -Force
+    }
+  ) | Sort-Object -Property FullName -Unique
+  if (@($files).Count -lt 10) {
+    throw "The installed DevSpace runtime contains no verifiable build output."
+  }
+  $rootPrefix = $root.TrimEnd("\") + "\"
+  $entries = foreach ($file in $files) {
+    if ($file.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+      throw "Runtime fingerprint encountered a linked file."
+    }
+    $fullPath = [System.IO.Path]::GetFullPath($file.FullName)
+    if (-not $fullPath.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+      throw "Runtime fingerprint encountered an unexpected path."
+    }
+    $relativePath = $fullPath.Substring($rootPrefix.Length).Replace("\", "/")
+    "$relativePath|$($file.Length)|$(Get-Sha256 -Path $fullPath)"
+  }
+  $manifest = (@($entries) -join "`n") + "`n"
+  $sha = [System.Security.Cryptography.SHA256]::Create()
+  try {
+    $bytes = (New-Object System.Text.UTF8Encoding($false)).GetBytes($manifest)
+    $hash = $sha.ComputeHash($bytes)
+  }
+  finally {
+    $sha.Dispose()
+  }
+  return ([System.BitConverter]::ToString($hash)).Replace("-", "").ToLowerInvariant()
+}
+
+function Get-InstalledDevSpaceRuntimeStatus {
+  try {
+    return [pscustomobject]@{
+      Complete = $true
+      Fingerprint = Get-InstalledDevSpaceRuntimeFingerprint
+      Failure = $null
+    }
+  }
+  catch {
+    return [pscustomobject]@{
+      Complete = $false
+      Fingerprint = $null
+      Failure = $_.Exception.Message
+    }
+  }
+}
+
+function Get-RuntimePackagePath {
+  param([Parameter(Mandatory = $true)][string] $Hash)
+  if ($Hash -notmatch "^[0-9a-f]{64}$") {
+    throw "Saved runtime package hash is invalid."
+  }
+  return Join-Path $script:RuntimePackageDir ("devspace-" + $Hash + ".tgz")
+}
+
+function Save-RuntimePackageCache {
+  param([Parameter(Mandatory = $true)][string] $PackagePath)
+  $hash = Get-Sha256 -Path $PackagePath
+  if (-not (Test-Path -LiteralPath $script:RuntimePackageDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $script:RuntimePackageDir -Force | Out-Null
+  }
+  $destination = Get-RuntimePackagePath -Hash $hash
+  $copyRequired = -not (Test-Path -LiteralPath $destination -PathType Leaf)
+  if (-not $copyRequired) {
+    $copyRequired = (Get-Sha256 -Path $destination) -ne $hash
+  }
+  if ($copyRequired) {
+    Copy-FileAtomic -SourcePath $PackagePath -DestinationPath $destination
+  }
+  if ((Get-Sha256 -Path $destination) -ne $hash) {
+    throw "The managed runtime recovery package failed integrity verification."
+  }
+  return [pscustomobject]@{
+    Hash = $hash
+    Path = $destination
+  }
+}
+
+function Get-ValidatedRuntimePackage {
+  param([Parameter(Mandatory = $true)] $Settings)
+  $hash = [string](Get-PropertyValue -InputObject $Settings -Name "runtimePackageSha256")
+  if ($hash -notmatch "^[0-9a-f]{64}$") {
+    throw "No valid managed runtime recovery package is recorded."
+  }
+  $path = Get-RuntimePackagePath -Hash $hash
+  if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+    throw "The managed runtime recovery package is missing."
+  }
+  if ((Get-Sha256 -Path $path) -ne $hash) {
+    throw "The managed runtime recovery package is corrupt."
+  }
+  return [pscustomobject]@{
+    Hash = $hash
+    Path = $path
+  }
+}
+
+function Set-RuntimeRecoveryState {
+  param(
+    [Parameter(Mandatory = $true)][string] $PackageHash,
+    [Parameter(Mandatory = $true)][string] $RuntimeFingerprint
+  )
+  if ($PackageHash -notmatch "^[0-9a-f]{64}$") {
+    throw "Runtime package hash is invalid."
+  }
+  if ($RuntimeFingerprint -notmatch "^[0-9a-f]{64}$") {
+    throw "Runtime fingerprint is invalid."
+  }
+  $settings = Read-JsonFile -Path $script:SettingsPath
+  if (-not $settings) {
+    throw "Portable setup settings are missing."
+  }
+  $settings | Add-Member -NotePropertyName "runtimePackageSha256" -NotePropertyValue $PackageHash -Force
+  $settings | Add-Member -NotePropertyName "runtimeFingerprint" -NotePropertyValue $RuntimeFingerprint -Force
+  Write-JsonAtomic -Path $script:SettingsPath -Value $settings
+  return $settings
+}
+
+function Ensure-RuntimeRecoveryState {
+  param([Parameter(Mandatory = $true)] $Settings)
+  $cached = $null
+  $cacheFailure = $null
+  try {
+    $cached = Get-ValidatedRuntimePackage -Settings $Settings
+  }
+  catch {
+    $cacheFailure = $_.Exception.Message
+  }
+  $installed = Get-InstalledDevSpaceRuntimeStatus
+  if (-not $cached) {
+    if (-not $installed.Complete) {
+      throw (
+        "The installed DevSpace runtime is damaged and no verified recovery package is available. " +
+        "Installed runtime: $($installed.Failure) Recovery package: $cacheFailure"
+      )
+    }
+    $temporaryRoot = New-UpdateTemporaryRoot
+    try {
+      $packageDirectory = Join-Path $temporaryRoot "installed-package"
+      New-Item -ItemType Directory -Path $packageDirectory | Out-Null
+      $installedPackage = New-InstalledDevSpacePackage -Destination $packageDirectory
+      $cached = Save-RuntimePackageCache -PackagePath $installedPackage
+      $Settings = Set-RuntimeRecoveryState `
+        -PackageHash ([string] $cached.Hash) `
+        -RuntimeFingerprint ([string] $installed.Fingerprint)
+    }
+    finally {
+      Remove-UpdateTemporaryRoot -Path $temporaryRoot
+    }
+  }
+
+  $expectedFingerprint = [string](
+    Get-PropertyValue -InputObject $Settings -Name "runtimeFingerprint"
+  )
+  if ($expectedFingerprint -and $expectedFingerprint -notmatch "^[0-9a-f]{64}$") {
+    throw "Saved runtime fingerprint is invalid."
+  }
+  if (-not $expectedFingerprint -and $installed.Complete) {
+    $expectedFingerprint = [string] $installed.Fingerprint
+    $Settings = Set-RuntimeRecoveryState `
+      -PackageHash ([string] $cached.Hash) `
+      -RuntimeFingerprint $expectedFingerprint
+  }
+  $matches = $installed.Complete -and $expectedFingerprint -and [string]::Equals(
+    [string] $installed.Fingerprint,
+    $expectedFingerprint,
+    [System.StringComparison]::OrdinalIgnoreCase
+  )
+  return [pscustomobject]@{
+    Settings = $Settings
+    PackageHash = [string] $cached.Hash
+    PackagePath = [string] $cached.Path
+    ExpectedFingerprint = $expectedFingerprint
+    InstalledFingerprint = [string] $installed.Fingerprint
+    InstalledMatches = [bool] $matches
+    InstalledFailure = $installed.Failure
+  }
+}
+
+function Repair-InstalledDevSpaceRuntime {
+  param([Parameter(Mandatory = $true)] $RecoveryState)
+  Install-BuiltDevSpacePackage `
+    -PackagePath ([string] $RecoveryState.PackagePath) |
+    Out-Null
+  $fingerprint = Get-InstalledDevSpaceRuntimeFingerprint
+  $expected = [string] $RecoveryState.ExpectedFingerprint
+  if ($expected -and -not [string]::Equals(
+      $fingerprint,
+      $expected,
+      [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    throw "The recovery package restored an unexpected runtime fingerprint."
+  }
+  return Set-RuntimeRecoveryState `
+    -PackageHash ([string] $RecoveryState.PackageHash) `
+    -RuntimeFingerprint $fingerprint
 }
 
 function Get-DevSpaceCliPath {
@@ -1534,9 +1882,72 @@ function Test-LocalDevSpaceHealth {
 }
 
 function Get-HealthyManagedRuntime {
-  param([Parameter(Mandatory = $true)] $Settings)
+  param(
+    [Parameter(Mandatory = $true)] $Settings,
+    [string] $InstalledFingerprint
+  )
   $runtime = Read-JsonFile -Path $script:RuntimeStatePath
   if (-not $runtime) {
+    return $null
+  }
+  if ([string](Get-PropertyValue -InputObject $runtime -Name "schema") -ne "devspace-windows-runtime/v3") {
+    return $null
+  }
+  $expectedFingerprint = [string](
+    Get-PropertyValue -InputObject $Settings -Name "runtimeFingerprint"
+  )
+  $expectedPackageHash = [string](
+    Get-PropertyValue -InputObject $Settings -Name "runtimePackageSha256"
+  )
+  if (
+    $expectedFingerprint -notmatch "^[0-9a-f]{64}$" -or
+    $expectedPackageHash -notmatch "^[0-9a-f]{64}$"
+  ) {
+    return $null
+  }
+  if (-not $InstalledFingerprint) {
+    try {
+      $InstalledFingerprint = Get-InstalledDevSpaceRuntimeFingerprint
+    }
+    catch {
+      return $null
+    }
+  }
+  if (
+    -not [string]::Equals(
+      $InstalledFingerprint,
+      $expectedFingerprint,
+      [System.StringComparison]::OrdinalIgnoreCase
+    ) -or
+    -not [string]::Equals(
+      [string](Get-PropertyValue -InputObject $runtime -Name "devspaceRuntimeFingerprint"),
+      $expectedFingerprint,
+      [System.StringComparison]::OrdinalIgnoreCase
+    ) -or
+    -not [string]::Equals(
+      [string](Get-PropertyValue -InputObject $runtime -Name "runtimePackageSha256"),
+      $expectedPackageHash,
+      [System.StringComparison]::OrdinalIgnoreCase
+    )
+  ) {
+    return $null
+  }
+  try {
+    $currentCli = [System.IO.Path]::GetFullPath((Get-DevSpaceCliPath))
+    $recordedCli = [string](Get-PropertyValue -InputObject $runtime -Name "devspaceCommandFragment")
+    if (-not $recordedCli) {
+      return $null
+    }
+    $recordedCli = [System.IO.Path]::GetFullPath($recordedCli)
+    if (-not [string]::Equals(
+        $currentCli,
+        $recordedCli,
+        [System.StringComparison]::OrdinalIgnoreCase
+      )) {
+      return $null
+    }
+  }
+  catch {
     return $null
   }
   $identity = Get-TrackedProcessIdentity `
@@ -1550,12 +1961,45 @@ function Get-HealthyManagedRuntime {
   if (-not (Test-LocalDevSpaceHealth -Port ([int] $Settings.port))) {
     return $null
   }
-  $origin = [string](Get-PropertyValue -InputObject $runtime -Name "publicBaseUrl")
-  if (-not $origin) {
-    $origin = [string](Get-PropertyValue -InputObject $Settings -Name "publicBaseUrl")
+  try {
+    $runtimeOrigin = Normalize-HttpsOrigin -Value ([string](
+        Get-PropertyValue -InputObject $runtime -Name "publicBaseUrl"
+      ))
+    $expectedOrigin = if ([string] $Settings.tunnelMode -eq "External") {
+      Normalize-HttpsOrigin -Value ([string] $Settings.publicBaseUrl)
+    }
+    else {
+      $runtimeOrigin
+    }
+    if (-not [string]::Equals(
+        $runtimeOrigin,
+        $expectedOrigin,
+        [System.StringComparison]::OrdinalIgnoreCase
+      )) {
+      return $null
+    }
+    $config = Read-JsonFile -Path $script:DevSpaceConfigPath
+    if (-not $config) {
+      return $null
+    }
+    $configOrigin = Normalize-HttpsOrigin -Value ([string] $config.publicBaseUrl)
+    if (-not [string]::Equals(
+        $configOrigin,
+        $expectedOrigin,
+        [System.StringComparison]::OrdinalIgnoreCase
+      )) {
+      return $null
+    }
+    Test-OAuthMetadata `
+      -Origin "http://127.0.0.1:$([int] $Settings.port)" `
+      -ExpectedPublicOrigin $expectedOrigin `
+      -TimeoutSeconds 3
+  }
+  catch {
+    return $null
   }
   return [pscustomobject]@{
-    PublicBaseUrl = $origin
+    PublicBaseUrl = $expectedOrigin
     DevSpacePid = [int](Get-PropertyValue -InputObject $runtime -Name "devspacePid")
     CloudflaredPid = Get-PropertyValue -InputObject $runtime -Name "cloudflaredPid"
     Reused = $true
@@ -1736,16 +2180,31 @@ function Start-QuickTunnel {
 function Start-DevSpaceRuntime {
   param(
     [Parameter(Mandatory = $true)] $Settings,
-    [switch] $ForceRestart
+    [switch] $ForceRestart,
+    [switch] $RepairAttempted
   )
-  if (-not $ForceRestart) {
-    $existing = Get-HealthyManagedRuntime -Settings $Settings
+  $repairWasAttempted = [bool] $RepairAttempted
+  $recoveryState = Ensure-RuntimeRecoveryState -Settings $Settings
+  $Settings = $recoveryState.Settings
+  if (-not $ForceRestart -and $recoveryState.InstalledMatches) {
+    $existing = Get-HealthyManagedRuntime `
+      -Settings $Settings `
+      -InstalledFingerprint ([string] $recoveryState.InstalledFingerprint)
     if ($existing) {
       Write-Host "DevSpace is already healthy; preserving the current MCP sessions."
       return $existing
     }
   }
   Stop-DevSpaceRuntime
+  if (-not $recoveryState.InstalledMatches) {
+    Write-Step "Repairing the installed DevSpace runtime from the verified local package"
+    $Settings = Repair-InstalledDevSpaceRuntime -RecoveryState $recoveryState
+    $repairWasAttempted = $true
+    $recoveryState = Ensure-RuntimeRecoveryState -Settings $Settings
+    if (-not $recoveryState.InstalledMatches) {
+      throw "The installed DevSpace runtime still fails integrity verification after repair."
+    }
+  }
   $localPort = [int] $Settings.port
   Assert-TcpPortAvailable -LocalPort $localPort
 
@@ -1804,12 +2263,17 @@ function Start-DevSpaceRuntime {
       throw "DevSpace did not claim port $localPort. Check $stderrPath"
     }
 
+    $runtimeFingerprint = Get-InstalledDevSpaceRuntimeFingerprint
     $runtime = [ordered]@{
-      schema = "devspace-windows-runtime/v2"
+      schema = "devspace-windows-runtime/v3"
       devspacePid = $devspaceProcess.Id
       devspaceExecutablePath = $node
       devspaceCommandFragment = $devspaceCli
       devspaceStartTimeFileTimeUtc = $devspaceProcess.StartTime.ToUniversalTime().ToFileTimeUtc()
+      devspaceRuntimeFingerprint = $runtimeFingerprint
+      runtimePackageSha256 = [string](
+        Get-PropertyValue -InputObject $Settings -Name "runtimePackageSha256"
+      )
       cloudflaredPid = if ($cloudflaredProcess) { $cloudflaredProcess.Id } else { $null }
       cloudflaredExecutablePath = if ($cloudflaredProcess) {
         Get-CommandPath -Name "cloudflared.exe"
@@ -1841,6 +2305,7 @@ function Start-DevSpaceRuntime {
     }
   }
   catch {
+    $launchFailure = $_
     if ($devspaceProcess -and -not $devspaceProcess.HasExited) {
       Stop-Process -Id $devspaceProcess.Id -ErrorAction SilentlyContinue
       Wait-Process -Id $devspaceProcess.Id -Timeout 10 -ErrorAction SilentlyContinue
@@ -1849,26 +2314,130 @@ function Start-DevSpaceRuntime {
       Stop-Process -Id $cloudflaredProcess.Id -ErrorAction SilentlyContinue
       Wait-Process -Id $cloudflaredProcess.Id -Timeout 10 -ErrorAction SilentlyContinue
     }
-    throw
+    if (-not $repairWasAttempted -and $devspaceProcess) {
+      Write-Warning "DevSpace failed to start from an intact-looking installation; restoring the verified local package once."
+      $Settings = Repair-InstalledDevSpaceRuntime -RecoveryState $recoveryState
+      return Start-DevSpaceRuntime `
+        -Settings $Settings `
+        -ForceRestart `
+        -RepairAttempted
+    }
+    throw $launchFailure
+  }
+}
+
+function Get-UriOrigin {
+  param([Parameter(Mandatory = $true)][string] $Value)
+  try {
+    $uri = New-Object System.Uri($Value)
+  }
+  catch {
+    throw "OAuth metadata contains an invalid absolute URL."
+  }
+  if (-not $uri.IsAbsoluteUri -or -not $uri.Host) {
+    throw "OAuth metadata contains an invalid absolute URL."
+  }
+  return $uri.GetLeftPart([System.UriPartial]::Authority).TrimEnd("/")
+}
+
+function Assert-UriUsesOrigin {
+  param(
+    [Parameter(Mandatory = $true)][string] $Value,
+    [Parameter(Mandatory = $true)][string] $ExpectedOrigin,
+    [Parameter(Mandatory = $true)][string] $FieldName
+  )
+  $actualOrigin = Get-UriOrigin -Value $Value
+  if (-not [string]::Equals(
+      $actualOrigin,
+      $ExpectedOrigin,
+      [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    throw "$FieldName advertises $actualOrigin instead of $ExpectedOrigin."
   }
 }
 
 function Test-OAuthMetadata {
   param(
     [Parameter(Mandatory = $true)][string] $Origin,
+    [Parameter(Mandatory = $true)][string] $ExpectedPublicOrigin,
     [int] $TimeoutSeconds = 10
   )
-  $uri = $Origin.TrimEnd("/") + "/.well-known/oauth-authorization-server"
-  $response = Invoke-WebRequest -UseBasicParsing -Uri $uri -Headers @{
+  $expectedOrigin = Normalize-HttpsOrigin -Value $ExpectedPublicOrigin
+  $requestOrigin = $Origin.TrimEnd("/")
+  $authorizationMetadataUri = $requestOrigin + "/.well-known/oauth-authorization-server"
+  $response = Invoke-WebRequest -UseBasicParsing -Uri $authorizationMetadataUri -Headers @{
     Accept = "application/json"
     "User-Agent" = "DevSpace-Windows-Setup/1.0"
   } -TimeoutSec $TimeoutSeconds
   if ([int] $response.StatusCode -ne 200) {
-    throw "OAuth metadata returned HTTP $($response.StatusCode): $uri"
+    throw "OAuth metadata returned HTTP $($response.StatusCode): $authorizationMetadataUri"
   }
   $metadata = $response.Content | ConvertFrom-Json
-  if (-not $metadata.authorization_endpoint -or -not $metadata.token_endpoint) {
-    throw "OAuth metadata is incomplete: $uri"
+  foreach ($fieldName in @(
+      "issuer",
+      "authorization_endpoint",
+      "token_endpoint",
+      "registration_endpoint"
+    )) {
+    $value = [string](Get-PropertyValue -InputObject $metadata -Name $fieldName)
+    if (-not $value) {
+      throw "OAuth metadata is missing $fieldName`: $authorizationMetadataUri"
+    }
+    Assert-UriUsesOrigin `
+      -Value $value `
+      -ExpectedOrigin $expectedOrigin `
+      -FieldName $fieldName
+  }
+  $revocationEndpoint = [string](
+    Get-PropertyValue -InputObject $metadata -Name "revocation_endpoint"
+  )
+  if ($revocationEndpoint) {
+    Assert-UriUsesOrigin `
+      -Value $revocationEndpoint `
+      -ExpectedOrigin $expectedOrigin `
+      -FieldName "revocation_endpoint"
+  }
+
+  $protectedResourceUri = $requestOrigin + "/.well-known/oauth-protected-resource/mcp"
+  $protectedResponse = Invoke-WebRequest -UseBasicParsing -Uri $protectedResourceUri -Headers @{
+    Accept = "application/json"
+    "User-Agent" = "DevSpace-Windows-Setup/1.0"
+  } -TimeoutSec $TimeoutSeconds
+  if ([int] $protectedResponse.StatusCode -ne 200) {
+    throw "OAuth protected-resource metadata returned HTTP $($protectedResponse.StatusCode): $protectedResourceUri"
+  }
+  $protected = $protectedResponse.Content | ConvertFrom-Json
+  $expectedResource = $expectedOrigin + "/mcp"
+  if (-not [string]::Equals(
+      [string](Get-PropertyValue -InputObject $protected -Name "resource"),
+      $expectedResource,
+      [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    throw "OAuth protected-resource metadata does not advertise $expectedResource."
+  }
+  $authorizationServerMatches = $false
+  foreach ($server in @(
+      Get-PropertyValue -InputObject $protected -Name "authorization_servers"
+    )) {
+    if (-not $server) {
+      continue
+    }
+    try {
+      if ([string]::Equals(
+          (Get-UriOrigin -Value ([string] $server)),
+          $expectedOrigin,
+          [System.StringComparison]::OrdinalIgnoreCase
+        )) {
+        $authorizationServerMatches = $true
+        break
+      }
+    }
+    catch {
+      continue
+    }
+  }
+  if (-not $authorizationServerMatches) {
+    throw "OAuth protected-resource metadata advertises the wrong authorization server."
   }
 }
 
@@ -1928,8 +2497,10 @@ function Invoke-SetupVerification {
   Write-Step "Verifying the installation"
   $node = Get-CommandPath -Name "node.exe"
   Invoke-Checked -FilePath $node -Arguments @((Get-DevSpaceCliPath), "doctor")
-  Test-OAuthMetadata -Origin "http://127.0.0.1:$($Settings.port)"
-  Test-OAuthMetadata -Origin $Origin
+  Test-OAuthMetadata `
+    -Origin "http://127.0.0.1:$($Settings.port)" `
+    -ExpectedPublicOrigin $Origin
+  Test-OAuthMetadata -Origin $Origin -ExpectedPublicOrigin $Origin
   Test-CodexDelegation -Root ([string] $Settings.sourceRoot) -Model ([string] $Settings.codexModel)
   Write-Host "OAuth metadata: local and public pass"
 }
@@ -2079,8 +2650,10 @@ function Invoke-UpdateRuntimeVerification {
   )
   $node = Get-CommandPath -Name "node.exe"
   Invoke-Checked -FilePath $node -Arguments @((Get-DevSpaceCliPath), "doctor")
-  Test-OAuthMetadata -Origin "http://127.0.0.1:$($Settings.port)"
-  Test-OAuthMetadata -Origin $Origin
+  Test-OAuthMetadata `
+    -Origin "http://127.0.0.1:$($Settings.port)" `
+    -ExpectedPublicOrigin $Origin
+  Test-OAuthMetadata -Origin $Origin -ExpectedPublicOrigin $Origin
   if (-not $SkipVerification) {
     Test-CodexDelegation `
       -Root $CandidateRoot `
@@ -2093,6 +2666,7 @@ function Restore-UpdateDeployment {
     [Parameter(Mandatory = $true)] $Plan,
     [Parameter(Mandatory = $true)][string] $PreviousDesiredState,
     [Parameter(Mandatory = $true)][string] $RollbackPackage,
+    [Parameter(Mandatory = $true)][string] $SettingsBackup,
     [Parameter(Mandatory = $true)][string] $SetupBackup,
     [string] $RecoveryBackup,
     [Parameter(Mandatory = $true)][bool] $HadRecovery
@@ -2116,6 +2690,7 @@ function Restore-UpdateDeployment {
   }
 
   Install-BuiltDevSpacePackage -PackagePath $RollbackPackage
+  Copy-FileAtomic -SourcePath $SettingsBackup -DestinationPath $script:SettingsPath
   Copy-FileAtomic -SourcePath $SetupBackup -DestinationPath $script:ManagedScriptPath
   if ($HadRecovery) {
     Copy-FileAtomic -SourcePath $RecoveryBackup -DestinationPath $script:ManagedRecoveryPath
@@ -2126,8 +2701,12 @@ function Restore-UpdateDeployment {
     $runtime = Start-DevSpaceRuntime -Settings $restoredSettings -ForceRestart
     $node = Get-CommandPath -Name "node.exe"
     Invoke-Checked -FilePath $node -Arguments @((Get-DevSpaceCliPath), "doctor")
-    Test-OAuthMetadata -Origin "http://127.0.0.1:$($restoredSettings.port)"
-    Test-OAuthMetadata -Origin $runtime.PublicBaseUrl
+    Test-OAuthMetadata `
+      -Origin "http://127.0.0.1:$($restoredSettings.port)" `
+      -ExpectedPublicOrigin $runtime.PublicBaseUrl
+    Test-OAuthMetadata `
+      -Origin $runtime.PublicBaseUrl `
+      -ExpectedPublicOrigin $runtime.PublicBaseUrl
   }
   else {
     Set-DesiredRuntimeState -State "stopped" | Out-Null
@@ -2193,15 +2772,12 @@ function Invoke-UpdateMode {
     $candidatePackage = New-DevSpacePackage `
       -Root $worktreePath `
       -Destination $candidatePackagePath
-    $rollbackPackage = New-InstalledDevSpaceRollbackPackage -Destination $backupPath
+    $candidateRecoveryPackage = Save-RuntimePackageCache -PackagePath $candidatePackage
+    $rollbackPackage = $null
+    $settingsBackup = Join-Path $backupPath "windows-bootstrap.previous.json"
     $setupBackup = Join-Path $backupPath "setup-windows.previous.ps1"
-    Copy-FileAtomic -SourcePath $script:ManagedScriptPath -DestinationPath $setupBackup
-    $hadRecovery = Test-Path -LiteralPath $script:ManagedRecoveryPath -PathType Leaf
+    $hadRecovery = $false
     $recoveryBackup = $null
-    if ($hadRecovery) {
-      $recoveryBackup = Join-Path $backupPath "setup-windows-recovery.previous.ps1"
-      Copy-FileAtomic -SourcePath $script:ManagedRecoveryPath -DestinationPath $recoveryBackup
-    }
 
     $runtimeMutex = Enter-RuntimeOperation
     Assert-UpdatePlanStillCurrent -Plan $plan
@@ -2219,6 +2795,14 @@ function Invoke-UpdateMode {
         "Portable setup settings changed while the candidate was being verified."
       )
     }
+    $rollbackPackage = New-InstalledDevSpaceRollbackPackage -Destination $backupPath
+    Copy-FileAtomic -SourcePath $script:SettingsPath -DestinationPath $settingsBackup
+    Copy-FileAtomic -SourcePath $script:ManagedScriptPath -DestinationPath $setupBackup
+    $hadRecovery = Test-Path -LiteralPath $script:ManagedRecoveryPath -PathType Leaf
+    if ($hadRecovery) {
+      $recoveryBackup = Join-Path $backupPath "setup-windows-recovery.previous.ps1"
+      Copy-FileAtomic -SourcePath $script:ManagedRecoveryPath -DestinationPath $recoveryBackup
+    }
     $previousDesiredState = Get-DesiredRuntimeState -Settings $settings
     Write-UpdateStatus `
       -State "applying" `
@@ -2230,6 +2814,10 @@ function Invoke-UpdateMode {
     try {
       Stop-DevSpaceRuntime
       Install-BuiltDevSpacePackage -PackagePath $candidatePackage
+      $candidateFingerprint = Get-InstalledDevSpaceRuntimeFingerprint
+      $settings = Set-RuntimeRecoveryState `
+        -PackageHash ([string] $candidateRecoveryPackage.Hash) `
+        -RuntimeFingerprint $candidateFingerprint
 
       if ($previousDesiredState -eq "running") {
         $runtime = Start-DevSpaceRuntime -Settings $settings -ForceRestart
@@ -2264,6 +2852,7 @@ function Invoke-UpdateMode {
           -Plan $plan `
           -PreviousDesiredState $previousDesiredState `
           -RollbackPackage $rollbackPackage `
+          -SettingsBackup $settingsBackup `
           -SetupBackup $setupBackup `
           -RecoveryBackup $recoveryBackup `
           -HadRecovery $hadRecovery
@@ -2362,7 +2951,7 @@ function Invoke-UpdateLaunchMode {
   New-Item -ItemType Directory -Path $script:LogDir -Force | Out-Null
   $stdoutPath = Join-Path $script:LogDir "windows-update.out.log"
   $stderrPath = Join-Path $script:LogDir "windows-update.err.log"
-  $argumentLine = @(
+  $arguments = @(
     "-NoLogo",
     "-NoProfile",
     "-NonInteractive",
@@ -2374,7 +2963,11 @@ function Invoke-UpdateLaunchMode {
     "Update",
     "-UpdateRequestId",
     $UpdateRequestId
-  ) -join " "
+  )
+  if ($SkipVerification) {
+    $arguments += "-SkipVerification"
+  }
+  $argumentLine = $arguments -join " "
   Start-Process `
     -FilePath $powershell `
     -ArgumentList $argumentLine `
@@ -2442,6 +3035,8 @@ try {
 Write-Step "Checking prerequisites"
 Ensure-Prerequisites
 $preparedInstallation = New-PreparedDevSpacePackage -Root $resolvedSourceRoot
+$preparedRecoveryPackage = Save-RuntimePackageCache `
+  -PackagePath $preparedInstallation.PackagePath
 
 Write-Step "Creating per-PC DevSpace configuration"
 $initialOrigin = if ($TunnelMode -eq "External") { $PublicBaseUrl } else { $null }
@@ -2466,6 +3061,8 @@ $settings = [ordered]@{
 Set-DesiredRuntimeState -State "stopped" | Out-Null
 Stop-DevSpaceRuntime
 Install-PreparedDevSpace -PackagePath $preparedInstallation.PackagePath
+$settings["runtimePackageSha256"] = [string] $preparedRecoveryPackage.Hash
+$settings["runtimeFingerprint"] = Get-InstalledDevSpaceRuntimeFingerprint
 Install-AgentProfiles -Model $CodexModel
 Ensure-CodexLogin
 if (-not $SkipBrowser) {

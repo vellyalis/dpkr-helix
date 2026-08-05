@@ -1,6 +1,6 @@
 {
   "name": "@waishnav/devspace",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "dpkr helix — a secure local coding workspace for ChatGPT and Codex.",
   "private": true,
   "homepage": "https://dpkr.dev",
@@ -35,11 +35,11 @@
     "build": "npm run clean && npm run build:app && tsc -p tsconfig.build.json",
     "build:app": "vite build",
     "dev": "node scripts/dev-server.mjs",
-    "postinstall": "node scripts/fix-node-pty-permissions.mjs && node scripts/fix-pi-brace-expansion.mjs && node scripts/fix-codex-sdk-windows-hide.mjs",
+    "postinstall": "node scripts/fix-node-pty-permissions.mjs && node scripts/fix-pi-brace-expansion.mjs && node scripts/fix-pi-undici.mjs && node scripts/fix-codex-sdk-windows-hide.mjs",
     "start": "node dist/cli.js serve",
     "check:public": "node scripts/check-public-release.mjs",
     "check:public:history": "node scripts/check-public-release.mjs --history",
-    "audit:production": "node scripts/fix-pi-brace-expansion.mjs --check && node scripts/fix-codex-sdk-windows-hide.mjs --check && npm audit --omit=dev --audit-level=high",
+    "audit:production": "node scripts/fix-pi-brace-expansion.mjs --check && node scripts/fix-pi-undici.mjs --check && node scripts/fix-codex-sdk-windows-hide.mjs --check && npm audit --omit=dev --audit-level=high",
     "test:policy": "tsx src/projects/project-policy.test.ts && tsx src/projects/project-registry.test.ts && tsx src/projects/workspace-association.test.ts && tsx src/projects/project-file-policy.test.ts && tsx src/apply-patch.test.ts && tsx src/projects/project-patch-policy.test.ts && tsx src/artifact-download.test.ts && tsx src/projects/project-artifact-shell-policy.test.ts && tsx src/local-agent-policy.test.ts && tsx src/local-agent-mcp-server.test.ts && tsx src/cli.test.ts && tsx src/projects/project-mcp-server.test.ts && tsx src/admin/admin-server.test.ts",
     "test": "tsx src/config.test.ts && tsx src/db/migrations.test.ts && tsx src/managed-restart-reconciliation.test.ts && tsx src/system-update.test.ts && tsx src/operations/operation-contracts.test.ts && tsx src/operations/repository-diff.test.ts && tsx src/operations/operation-store.test.ts && tsx src/operations/operation-run-service.test.ts && tsx src/operations/verification-projector.test.ts && tsx src/operations/process-session-projector.test.ts && tsx src/operations/mcp-tool-operation-projector.test.ts && tsx src/operations/local-agent-operation-projector.test.ts && tsx src/projects/project-registry.test.ts && tsx src/projects/project-discovery.test.ts && tsx src/projects/project-policy.test.ts && tsx src/projects/project-file-policy.test.ts && tsx src/projects/project-patch-policy.test.ts && tsx src/projects/project-artifact-shell-policy.test.ts && tsx src/projects/project-mcp.test.ts && tsx src/projects/project-mcp-server.test.ts && tsx src/projects/workspace-association.test.ts && tsx src/workspace-handoff-store.test.ts && tsx src/admin/browser-open.test.ts && tsx src/admin/folder-picker.test.ts && tsx src/admin/admin-server.test.ts && tsx src/dashboard/api.test.ts && tsx src/dashboard/shell.test.ts && tsx src/dashboard/projects-screen.test.ts && tsx src/dashboard/runs-screen.test.ts && tsx src/dashboard/agents-screen.test.ts && tsx src/dashboard/system-screen.test.ts && tsx src/incoming-artifacts.test.ts && tsx src/artifact-download.test.ts && tsx src/ui/card-types.test.ts && tsx src/ui/project-actions.test.ts && tsx src/ui/patch-display.test.ts && tsx src/ui/tool-display.test.ts && tsx src/apply-patch.test.ts && tsx src/process-platform.test.ts && tsx src/process-sessions.test.ts && tsx src/mcp-sessions.test.ts && tsx src/server-shutdown.test.ts && tsx src/local-agent-runtime.test.ts && tsx src/local-agent-policy.test.ts && tsx src/local-agent-handoff.test.ts && tsx src/local-agent-mcp.test.ts && tsx src/local-agent-mcp-server.test.ts && tsx src/local-agent-service.test.ts && tsx src/local-agent-adapters.test.ts && tsx src/local-agent-availability.test.ts && tsx src/local-agent-profiles.test.ts && tsx src/local-agent-targets.test.ts && tsx src/local-agent-store.test.ts && tsx src/roots.test.ts && tsx src/skills.test.ts && tsx src/workspaces.test.ts && tsx src/review-checkpoints.test.ts && tsx src/review-bundle.test.ts && tsx src/oauth-store.test.ts && tsx src/cli.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -66,6 +66,7 @@
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "semver": "^7.8.4",
+    "undici": "8.10.0",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
   },
@@ -82,10 +83,15 @@
     "vite": "^8.0.14"
   },
   "overrides": {
+    "@earendil-works/pi-coding-agent": {
+      "undici": "8.10.0"
+    },
     "brace-expansion": "$brace-expansion",
+    "fast-uri": "3.1.5",
+    "hono": "4.13.0",
+    "ip-address": "10.4.0",
     "protobufjs": "7.6.5",
-    "ws": "8.21.0",
-    "undici": "8.5.0"
+    "ws": "8.21.0"
   },
   "optionalDependencies": {
     "node-pty": "^1.1.0"

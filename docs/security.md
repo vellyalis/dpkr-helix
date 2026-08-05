@@ -95,10 +95,18 @@ PowerShell with no window. It reads the saved public origin and port but does
 not read the Owner password, Cloudflare credentials, browser profiles, or
 cookies.
 
-The installer-owned runtime record is the desired-running marker. An
-intentional `setup-windows.ps1 -Mode Stop` removes it, so scheduled recovery
-does not restart the service. A public-only outage also does not restart a
-healthy local process; the external tunnel remains a separate owner.
+The explicit desired state lives in installer-owned bootstrap settings. An
+intentional `setup-windows.ps1 -Mode Stop` persists `stopped` before removing
+the runtime record, so scheduled recovery does not restart the service. A
+public-only outage also does not restart an attested healthy local process; the
+external tunnel remains a separate owner.
+
+Recovery verifies the saved package SHA-256, deployed application fingerprint,
+recorded process identity, configured stable origin, and local/public OAuth
+metadata. The retained package contains reviewed application files and a
+deployment lock, not configuration, credentials, logs, browser state, or
+workspace data. The last recovery result contains only a bounded state, reason
+code, message, and UTC timestamp.
 
 Removal is explicit and fails closed if a same-named task or helper file is not
 recognized as managed by dpkr helix.
@@ -127,6 +135,11 @@ process stops and installed from a package archive, then the installed productio
 tree is restored from the verified deployment lock. The running installation
 therefore neither retains a link to the temporary worktree nor keeps
 semver-compatible versions resolved independently during global installation.
+The verified archive is retained under the current user's DevSpace directory;
+runtime reuse fails closed when its SHA-256 or the deployed application
+fingerprint no longer matches. Rollback restores the prior archive, bootstrap
+settings, managed scripts, source commit, desired state, and health as one
+deployment generation.
 Update status returns only bounded state, timestamps, commit IDs, and reason
 codes. Local paths, Git/npm output, prompts, file contents, and credentials are
 excluded. The hidden launcher redirects updater output to two fixed local log
@@ -146,6 +159,17 @@ Windows user can still affect the installation. Branch protection, pinned
 workflow actions, production audit, postinstall integrity checks, and local
 preflight reduce that supply-chain risk; rollback preserves the previous local
 package when candidate deployment itself fails.
+
+One upstream agent package publishes its own shrinkwrap, which can otherwise
+reinstall older nested packages even when the root lock is safe. The reviewed
+root lock therefore pins both the direct and embedded entries. Postinstall then
+stages reviewed package files and reconciles only that package's installed
+metadata plus npm's disposable hidden lock, verifies actual module resolution,
+and rolls the replacements back together on failure. Production audit refuses
+to pass unless the deployed files, embedded metadata, root lock, hidden lock,
+and npm dependency graph agree. This repair is confined to `node_modules`; it
+does not read or modify DevSpace configuration, credentials, logs, browser
+state, or workspace files.
 
 ## Worktrees
 

@@ -12,29 +12,26 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const nodeModulesRoot = join(projectRoot, "node_modules");
-const patchedSource = join(nodeModulesRoot, "brace-expansion");
+const patchedSource = join(nodeModulesRoot, "undici");
 const piRoot = join(
   nodeModulesRoot,
   "@earendil-works",
   "pi-coding-agent",
 );
+const piPackagePath = join(piRoot, "package.json");
 const piShrinkwrapPath = join(piRoot, "npm-shrinkwrap.json");
-const nestedTarget = join(piRoot, "node_modules", "brace-expansion");
-const minimatchPackage = join(piRoot, "node_modules", "minimatch", "package.json");
+const nestedTarget = join(piRoot, "node_modules", "undici");
 const hiddenLockPath = join(nodeModulesRoot, ".package-lock.json");
-const reviewedVersion = "5.0.9";
-const reviewedResolved = "https://registry.npmjs.org/brace-expansion/-/brace-expansion-5.0.9.tgz";
-const reviewedIntegrity = "sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg==";
+const reviewedVersion = "8.10.0";
+const reviewedResolved = "https://registry.npmjs.org/undici/-/undici-8.10.0.tgz";
+const reviewedIntegrity = "sha512-HvltHd7avK13QIw/oLe4qoOLyoVSoafqJ2jYOrtMRBkbYT31eiBQ8O0ehRKZiEZCMEyLFQNIADpgCWC5fALvYQ==";
 const reviewedLockEntry = {
   version: reviewedVersion,
   resolved: reviewedResolved,
   integrity: reviewedIntegrity,
   license: "MIT",
-  dependencies: {
-    "balanced-match": "^4.0.2",
-  },
   engines: {
-    node: "20 || >=22",
+    node: ">=22.19.0",
   },
 };
 
@@ -59,7 +56,7 @@ function readVersion(packageRoot) {
   const packageJsonPath = join(packageRoot, "package.json");
   const packageJson = readJson(packageJsonPath);
   if (
-    packageJson.name !== "brace-expansion" ||
+    packageJson.name !== "undici" ||
     typeof packageJson.version !== "string"
   ) {
     throw new Error(
@@ -76,9 +73,7 @@ function assertReviewedLockEntry(entry, label) {
     entry.resolved !== reviewedResolved ||
     entry.integrity !== reviewedIntegrity
   ) {
-    throw new Error(
-      `${label} does not pin reviewed brace-expansion ${reviewedVersion}.`,
-    );
+    throw new Error(`${label} does not pin reviewed undici ${reviewedVersion}.`);
   }
 }
 
@@ -91,21 +86,31 @@ function rootDeploymentLockPath() {
 }
 
 function verifyRootDeploymentLock() {
-  const lock = readJson(rootDeploymentLockPath());
-  if (lock.packages?.[""]?.dependencies?.["brace-expansion"] !== reviewedVersion) {
+  const lockPath = rootDeploymentLockPath();
+  const lock = readJson(lockPath);
+  const rootPackage = lock.packages?.[""];
+  const piPackage = lock.packages?.[
+    "node_modules/@earendil-works/pi-coding-agent"
+  ];
+  if (rootPackage?.dependencies?.undici !== reviewedVersion) {
     throw new Error(
-      `The root deployment lock does not require brace-expansion ${reviewedVersion}.`,
+      `The root deployment lock does not require undici ${reviewedVersion}.`,
+    );
+  }
+  if (piPackage?.dependencies?.undici !== reviewedVersion) {
+    throw new Error(
+      `The root deployment lock does not override Pi undici to ${reviewedVersion}.`,
     );
   }
   assertReviewedLockEntry(
-    lock.packages?.["node_modules/brace-expansion"],
-    "The root brace-expansion lock entry",
+    lock.packages?.["node_modules/undici"],
+    "The root undici lock entry",
   );
   assertReviewedLockEntry(
     lock.packages?.[
-      "node_modules/@earendil-works/pi-coding-agent/node_modules/brace-expansion"
+      "node_modules/@earendil-works/pi-coding-agent/node_modules/undici"
     ],
-    "The Pi brace-expansion lock entry",
+    "The Pi undici lock entry",
   );
 }
 
@@ -116,7 +121,7 @@ function findPackageRoot(entryPath) {
     if (existsSync(packageJsonPath)) {
       const packageJson = readJson(packageJsonPath);
       if (
-        packageJson.name === "brace-expansion" &&
+        packageJson.name === "undici" &&
         typeof packageJson.version === "string"
       ) {
         return current;
@@ -126,15 +131,15 @@ function findPackageRoot(entryPath) {
     if (parent === current) break;
     current = parent;
   }
-  throw new Error("Could not locate the resolved brace-expansion package root.");
+  throw new Error("Could not locate the resolved Pi undici package root.");
 }
 
-function resolvedPiVersion() {
-  if (!existsSync(minimatchPackage)) {
+function resolvedPiUndici() {
+  if (!existsSync(piPackagePath)) {
     return null;
   }
-  const requireFromMinimatch = createRequire(minimatchPackage);
-  const entryPath = requireFromMinimatch.resolve("brace-expansion");
+  const requireFromPi = createRequire(piPackagePath);
+  const entryPath = requireFromPi.resolve("undici");
   const root = findPackageRoot(entryPath);
   return {
     root,
@@ -143,48 +148,90 @@ function resolvedPiVersion() {
 }
 
 function verifyInstalledMetadata() {
+  const piPackage = readJson(piPackagePath);
+  if (
+    piPackage.name !== "@earendil-works/pi-coding-agent" ||
+    piPackage.dependencies?.undici !== reviewedVersion
+  ) {
+    throw new Error(
+      `Installed Pi package metadata does not require undici ${reviewedVersion}.`,
+    );
+  }
+
   const piShrinkwrap = readJson(piShrinkwrapPath);
+  if (
+    piShrinkwrap.packages?.[""]?.dependencies?.undici !== reviewedVersion
+  ) {
+    throw new Error(
+      `Installed Pi shrinkwrap does not require undici ${reviewedVersion}.`,
+    );
+  }
   assertReviewedLockEntry(
-    piShrinkwrap.packages?.["node_modules/brace-expansion"],
+    piShrinkwrap.packages?.["node_modules/undici"],
     "Installed Pi shrinkwrap",
   );
+
   if (existsSync(hiddenLockPath)) {
     const hiddenLock = readJson(hiddenLockPath);
+    if (
+      hiddenLock.packages?.[
+        "node_modules/@earendil-works/pi-coding-agent"
+      ]?.dependencies?.undici !== reviewedVersion
+    ) {
+      throw new Error(
+        `npm hidden lock does not require Pi undici ${reviewedVersion}.`,
+      );
+    }
     assertReviewedLockEntry(
       hiddenLock.packages?.[
-        "node_modules/@earendil-works/pi-coding-agent/node_modules/brace-expansion"
+        "node_modules/@earendil-works/pi-coding-agent/node_modules/undici"
       ],
-      "npm hidden Pi brace-expansion lock entry",
+      "npm hidden Pi undici lock entry",
     );
   }
 }
 
 function verifyResolvedVersion() {
-  const resolved = resolvedPiVersion();
+  const resolved = resolvedPiUndici();
   if (!resolved) {
-    console.log("Pi minimatch is not installed; brace-expansion patch is not required.");
+    console.log("Pi is not installed; undici patch is not required.");
     return;
   }
   if (resolved.version !== reviewedVersion) {
     throw new Error(
-      `Pi resolves unreviewed brace-expansion ${resolved.version}; expected ${reviewedVersion}.`,
+      `Pi resolves unreviewed undici ${resolved.version}; expected ${reviewedVersion}.`,
     );
   }
   verifyInstalledMetadata();
-  console.log(`Pi resolves reviewed brace-expansion ${resolved.version}.`);
+  console.log(`Pi resolves reviewed undici ${resolved.version}.`);
+}
+
+function patchPiPackageMetadata() {
+  const value = readJson(piPackagePath);
+  if (value.name !== "@earendil-works/pi-coding-agent") {
+    throw new Error("Installed Pi package metadata has an unexpected name.");
+  }
+  const current = value.dependencies?.undici;
+  if (current !== "8.5.0" && current !== reviewedVersion) {
+    throw new Error(`Installed Pi requires unexpected undici ${current}.`);
+  }
+  value.dependencies.undici = reviewedVersion;
+  return value;
 }
 
 function patchPiShrinkwrap() {
   const value = readJson(piShrinkwrapPath);
-  const current = value.packages?.["node_modules/brace-expansion"]?.version;
-  if (current !== "5.0.7" && current !== reviewedVersion) {
-    throw new Error(
-      `Installed Pi shrinkwrap contains unexpected brace-expansion ${current}.`,
-    );
+  if (value.packages?.[""]?.name !== "@earendil-works/pi-coding-agent") {
+    throw new Error("Installed Pi shrinkwrap has an unexpected root package.");
   }
-  value.packages["node_modules/brace-expansion"] = { ...reviewedLockEntry };
-  if (value.dependencies?.["brace-expansion"]) {
-    value.dependencies["brace-expansion"] = { ...reviewedLockEntry };
+  const current = value.packages[""].dependencies?.undici;
+  if (current !== "8.5.0" && current !== reviewedVersion) {
+    throw new Error(`Installed Pi shrinkwrap requires unexpected undici ${current}.`);
+  }
+  value.packages[""].dependencies.undici = reviewedVersion;
+  value.packages["node_modules/undici"] = { ...reviewedLockEntry };
+  if (value.dependencies?.undici) {
+    value.dependencies.undici = { ...reviewedLockEntry };
   }
   return value;
 }
@@ -192,16 +239,19 @@ function patchPiShrinkwrap() {
 function patchHiddenLock() {
   if (!existsSync(hiddenLockPath)) return null;
   const value = readJson(hiddenLockPath);
-  const current = value.packages?.[
-    "node_modules/@earendil-works/pi-coding-agent/node_modules/brace-expansion"
-  ]?.version;
-  if (current !== "5.0.7" && current !== reviewedVersion) {
-    throw new Error(
-      `npm hidden lock contains unexpected Pi brace-expansion ${current}.`,
-    );
+  const piPackage = value.packages?.[
+    "node_modules/@earendil-works/pi-coding-agent"
+  ];
+  if (!piPackage?.dependencies) {
+    throw new Error("npm hidden lock is missing installed Pi metadata.");
   }
+  const current = piPackage.dependencies.undici;
+  if (current !== "8.5.0" && current !== reviewedVersion) {
+    throw new Error(`npm hidden lock requires unexpected Pi undici ${current}.`);
+  }
+  piPackage.dependencies.undici = reviewedVersion;
   value.packages[
-    "node_modules/@earendil-works/pi-coding-agent/node_modules/brace-expansion"
+    "node_modules/@earendil-works/pi-coding-agent/node_modules/undici"
   ] = { ...reviewedLockEntry };
   return value;
 }
@@ -250,20 +300,21 @@ if (process.argv.includes("--check")) {
 
 if (!existsSync(patchedSource)) {
   throw new Error(
-    "Pinned brace-expansion is missing. Run npm ci from the reviewed lockfile.",
+    "Pinned undici is missing. Run npm ci from the reviewed lockfile.",
   );
 }
 if (readVersion(patchedSource) !== reviewedVersion) {
   throw new Error(
-    `Pinned brace-expansion does not match reviewed ${reviewedVersion}.`,
+    `Pinned undici does not match reviewed ${reviewedVersion}.`,
   );
 }
-if (!existsSync(piShrinkwrapPath)) {
-  console.log("Pi minimatch is not installed; brace-expansion patch is not required.");
+if (!existsSync(piPackagePath) || !existsSync(piShrinkwrapPath)) {
+  console.log("Pi is not installed; undici patch is not required.");
   process.exit(0);
 }
 
 const metadataReplacements = [
+  stageJsonReplacement(piPackagePath, patchPiPackageMetadata()),
   stageJsonReplacement(piShrinkwrapPath, patchPiShrinkwrap()),
 ];
 const hiddenLock = patchHiddenLock();
@@ -273,7 +324,7 @@ if (hiddenLock) {
   );
 }
 
-const before = resolvedPiVersion();
+const before = resolvedPiUndici();
 const replaceRuntime = !before || before.version !== reviewedVersion;
 const runtimeSuffix = `.dpkr-safe-${process.pid}`;
 const stagedTarget = `${nestedTarget}${runtimeSuffix}`;
@@ -289,7 +340,7 @@ if (replaceRuntime) {
   cpSync(patchedSource, stagedTarget, { recursive: true });
   if (readVersion(stagedTarget) !== reviewedVersion) {
     rmSync(stagedTarget, { recursive: true, force: true });
-    throw new Error("Staged brace-expansion copy failed verification.");
+    throw new Error("Staged undici copy failed verification.");
   }
 }
 

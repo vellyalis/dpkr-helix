@@ -221,6 +221,7 @@ try {
 
   $config = Read-Utf8Text -Path $configPath | ConvertFrom-Json
   $auth = Read-Utf8Text -Path $authPath | ConvertFrom-Json
+  $settings = Read-Utf8Text -Path $settingsPath | ConvertFrom-Json
   $runtime = Read-Utf8Text -Path $runtimePath | ConvertFrom-Json
   Assert-True -Condition ($config.host -eq "127.0.0.1") -Message "Config host is not loopback."
   Assert-True -Condition ([int] $config.port -eq $port) -Message "Config port differs from the test port."
@@ -232,6 +233,30 @@ try {
   Assert-True -Condition (($auth.ownerToken -as [string]).Length -ge 40) -Message "Owner token is invalid."
   Assert-True -Condition (-not $runtime.cloudflaredPid) -Message "External mode started cloudflared."
   Assert-True -Condition ([int] $runtime.devspacePid -gt 0) -Message "DevSpace PID is invalid."
+  Assert-True `
+    -Condition ([string] $settings.runtimePackageSha256 -match "^[0-9a-f]{64}$") `
+    -Message "Portable settings do not record a verified runtime recovery package."
+  Assert-True `
+    -Condition ([string] $settings.runtimeFingerprint -match "^[0-9a-f]{64}$") `
+    -Message "Portable settings do not record the installed runtime fingerprint."
+  $cachedRuntimePackage = Join-Path $devspaceDir (
+    "runtime-packages\devspace-$($settings.runtimePackageSha256).tgz"
+  )
+  Assert-True `
+    -Condition (Test-Path -LiteralPath $cachedRuntimePackage -PathType Leaf) `
+    -Message "Verified runtime recovery package was not retained outside the global installation."
+  Assert-True `
+    -Condition ((Get-FileHash -LiteralPath $cachedRuntimePackage -Algorithm SHA256).Hash.ToLowerInvariant() -eq [string] $settings.runtimePackageSha256) `
+    -Message "Retained runtime recovery package hash does not match portable settings."
+  Assert-True `
+    -Condition ($runtime.schema -eq "devspace-windows-runtime/v3") `
+    -Message "Runtime state does not use the attested v3 schema."
+  Assert-True `
+    -Condition ([string] $runtime.devspaceRuntimeFingerprint -eq [string] $settings.runtimeFingerprint) `
+    -Message "Runtime state fingerprint differs from portable settings."
+  Assert-True `
+    -Condition ([string] $runtime.runtimePackageSha256 -eq [string] $settings.runtimePackageSha256) `
+    -Message "Runtime state package hash differs from portable settings."
   Assert-True -Condition (Test-TcpPort -Port $port) -Message "DevSpace did not listen on the test port."
   $codexConfig = Read-Utf8Text -Path $codexConfigPath
   $browserLauncher = Read-Utf8Text -Path $browserLauncherPath
@@ -284,6 +309,66 @@ try {
   Assert-True `
     -Condition (Test-TcpPort -Port $port) `
     -Message "DevSpace did not listen after managed-script reinstallation."
+
+  $pidBeforeArtifactLoss = [int] $reinstalledRuntime.devspacePid
+  $installedCliPath = Join-Path $installedPackage "dist\cli.js"
+  Remove-Item -LiteralPath $installedCliPath -Force
+  Assert-True `
+    -Condition (-not (Test-Path -LiteralPath $installedCliPath -PathType Leaf)) `
+    -Message "The integration fixture did not remove the installed CLI artifact."
+  Assert-True `
+    -Condition (Test-TcpPort -Port $port) `
+    -Message "Removing the on-disk CLI unexpectedly stopped the already-running service."
+
+  & powershell.exe `
+    -NoProfile `
+    -NonInteractive `
+    -ExecutionPolicy Bypass `
+    -File $copiedSetup `
+    -Mode Start `
+    -SkipVerification `
+    -SkipBrowserLaunch
+  Assert-True `
+    -Condition ($LASTEXITCODE -eq 0) `
+    -Message "Managed Start did not repair a missing installed CLI from the retained package."
+  Assert-True `
+    -Condition (Test-Path -LiteralPath $installedCliPath -PathType Leaf) `
+    -Message "Runtime recovery did not restore the missing CLI artifact."
+  $repairedRuntime = Read-Utf8Text -Path $runtimePath | ConvertFrom-Json
+  Assert-True `
+    -Condition ([int] $repairedRuntime.devspacePid -ne $pidBeforeArtifactLoss) `
+    -Message "Artifact corruption reused the stale process instead of performing a managed repair."
+  Assert-True `
+    -Condition (Test-TcpPort -Port $port) `
+    -Message "DevSpace did not listen after package-based runtime repair."
+
+  $pidBeforeOriginDrift = [int] $repairedRuntime.devspacePid
+  $driftedConfig = Read-Utf8Text -Path $configPath | ConvertFrom-Json
+  $driftedConfig.publicBaseUrl = "https://obsolete.trycloudflare.com"
+  [System.IO.File]::WriteAllText(
+    $configPath,
+    (($driftedConfig | ConvertTo-Json -Depth 12) + "`n"),
+    (New-Object System.Text.UTF8Encoding($false))
+  )
+  & powershell.exe `
+    -NoProfile `
+    -NonInteractive `
+    -ExecutionPolicy Bypass `
+    -File $copiedSetup `
+    -Mode Start `
+    -SkipVerification `
+    -SkipBrowserLaunch
+  Assert-True `
+    -Condition ($LASTEXITCODE -eq 0) `
+    -Message "Managed Start did not reconcile a stale public-origin configuration."
+  $originReconciledRuntime = Read-Utf8Text -Path $runtimePath | ConvertFrom-Json
+  $originReconciledConfig = Read-Utf8Text -Path $configPath | ConvertFrom-Json
+  Assert-True `
+    -Condition ([int] $originReconciledRuntime.devspacePid -ne $pidBeforeOriginDrift) `
+    -Message "A stale advertised origin reused the old process."
+  Assert-True `
+    -Condition ($originReconciledConfig.publicBaseUrl -eq "https://portable-test.invalid") `
+    -Message "Managed Start did not restore the saved stable External origin."
 
   & powershell.exe `
     -NoProfile `

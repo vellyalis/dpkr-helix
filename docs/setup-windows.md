@@ -70,8 +70,10 @@ powershell -ExecutionPolicy Bypass -File .\scripts\setup-windows.test.ps1
 The slower near-fresh-user integration test uses a temporary user profile and
 npm prefix plus an archive of the verified Git `HEAD` (so unrelated working-tree
 changes cannot affect the result), installs the Playwright MCP configuration
-without opening Edge, starts DevSpace on an unused loopback port, then stops and
-removes the isolated installation:
+without opening Edge, starts DevSpace on an unused loopback port, deletes the
+installed CLI while that isolated service is running, proves package-based
+self-repair and stable-origin reconciliation, then stops and removes the
+isolated installation:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\setup-windows.integration.test.ps1
@@ -109,6 +111,18 @@ verified deployment lock. Normal source dependency maintenance therefore cannot
 lock or partially remove files used by the running service, and compatible range
 updates cannot silently change the deployed tree after verification.
 
+Global npm installs pass the resolved prefix explicitly instead of relying only
+on `npm_config_prefix`. On Windows, npm can otherwise report a successful global
+install without creating the advertised package directory when the prefix
+contains spaces and non-ASCII characters. Setup treats the package directory as
+mandatory evidence of success before it can stop or start a managed generation.
+
+The exact package archive is also copied to a content-addressed directory under
+`~/.devspace/runtime-packages`. Bootstrap settings record its SHA-256 plus a
+fingerprint of `package.json`, the deployment lock, and every deployed `dist`
+file. The archive contains application files only, not the Owner password,
+Cloudflare credentials, browser state, user configuration, or workspace data.
+
 The final line prints the MCP URL to enter in ChatGPT Developer mode. ChatGPT
 app creation and its OAuth approval remain interactive account actions.
 
@@ -131,6 +145,15 @@ Start mode only stops processes recorded and owned by this setup before
 restarting them. It refuses to stop a reused PID unless its executable,
 creation time, and command line all match the recorded process identity, and it
 keeps the runtime record when identity cannot be proven.
+
+Before reuse, Start also verifies the retained package hash, deployed runtime
+fingerprint, recorded runtime generation, saved/configured public origin, local
+health, authorization-server metadata, and protected-resource metadata. A fully
+attested process is reused without invalidating MCP sessions. If deployed files
+are missing or changed, Start validates the retained archive before stopping the
+owned process, restores the package and locked production dependencies, and
+starts one new attested generation. A legacy healthy installation creates this
+recovery archive before its first restart under the hardened script.
 
 ## Update From ChatGPT
 
@@ -161,16 +184,19 @@ The updater:
    dirty, non-main, or diverged source;
 2. creates a temporary detached worktree at the exact target commit;
 3. installs dependencies and runs the production audit, typecheck, full tests,
-   build, and public-release check while the current service remains available;
-4. packages both the verified candidate and current installation, avoiding an
-   npm link from the live runtime to the disposable worktree;
+   build, public-release check, and both Windows setup/recovery PowerShell suites
+   while the current service remains available;
+4. stores the verified candidate as a content-addressed recovery package and,
+   under the runtime operation lock, captures the current verified package plus
+   settings and managed scripts for rollback;
 5. stops and replaces dpkr helix from the candidate archive only after
    preflight succeeds, using a short hidden launcher and a separate hidden
    one-shot updater whose two local log files are replaced on every request;
-6. checks the CLI, local/public OAuth metadata, and Codex delegation;
+6. checks the CLI, exact local/public OAuth origin contract, protected-resource
+   metadata, and Codex delegation;
 7. fast-forwards the managed source and updates the managed recovery scripts;
-8. restores the previous package, source commit, scripts, desired state, and
-   health if deployment fails.
+8. restores the previous package, bootstrap settings, source commit, scripts,
+   desired state, and health if deployment fails.
 
 One MCP reconnect is expected after verified deployment begins because the
 server is replacing itself. After reconnecting, ask ChatGPT for the update
@@ -298,26 +324,34 @@ Task registration is transactional with respect to its managed helper files.
 If Windows rejects the Task Scheduler update, the prior helper contents are
 restored and a first-time failed install leaves no managed helper behind.
 
-Recovery reads only the saved External origin, port, desired state, and
-installer-owned runtime record. `Start` and `Stop` persist the desired state in
-the existing bootstrap settings, so an intentional stop stays stopped while a
-failed recovery start remains eligible for the next scheduled attempt. Legacy
-settings without this field retain their previous runtime-record behavior.
+Recovery reads only the saved External origin, port, desired state,
+installer-owned runtime record, application package/fingerprint state, and
+public metadata. `Start` and `Stop` persist the desired state in the existing
+bootstrap settings, so an intentional stop stays stopped while a failed
+recovery start remains eligible for the next scheduled attempt. It never reads
+the Owner password, Cloudflare token, browser state, or workspace contents.
 
-A local failure is confirmed by a second short probe before restart. Public
-health is checked only after local health passes, so a dead local service is not
-held behind a public timeout. If local health passes but public health fails,
-recovery preserves the healthy DevSpace process and reports the external tunnel
-boundary. It invokes the existing managed installer Start mode only after both
-local probes fail, then requires local and public health to recover.
+A local failure is confirmed by a second short probe before reconciliation.
+Every eligible check then enters the existing managed Start path so that a
+health-only response cannot hide missing deployed files, a stale process
+generation, config drift, or OAuth metadata advertising an obsolete Quick
+Tunnel URL. Start performs no public-network check and reuses a fully attested
+local process, so a public-only outage never causes a local restart. Recovery
+then requires local and public health plus both OAuth metadata documents to
+match the saved stable origin.
 
 Start, Stop, and Install share one current-session operation lock. A scheduled
 check skips immediately while one is active, and its internal Start rechecks
 the desired state after acquiring the lock. Start is idempotent: a matching,
 healthy managed process is reused without invalidating MCP sessions. Restart
-keeps one bounded previous generation of stdout/stderr logs for diagnosis.
+keeps one bounded previous generation of stdout/stderr logs for diagnosis. The
+hidden reconciliation wrapper is bounded to 120 seconds. Its last sanitized
+result is written atomically to `~/.devspace/windows-recovery.json`, including a
+state, machine-readable code, message, and UTC check time but no credentials,
+source paths, command output, or file contents.
 
-Remove the exact managed task and helper files with:
+Remove the exact managed task, helper files, and managed recovery-status record
+with:
 
 ```powershell
 & "$env:USERPROFILE\.devspace\setup-windows-recovery.ps1" -Mode Remove
@@ -340,6 +374,9 @@ does not match its managed markers.
   verification failures automatically stop processes started by that attempt.
 - Recovery does not shorten the five-minute interval, probe workspace files,
   add generic mutation retries, or create another service/process owner.
+- The retained recovery package is application code only and is accepted only
+  when its filename and contents match the saved SHA-256. Runtime reuse also
+  requires the saved deployed-file fingerprint and stable OAuth origin.
 - The managed Codex TOML block is replaced atomically and checked with the
   installed Codex CLI; the prior file is restored if validation fails.
 - DevSpace's Codex SDK child is installed with the Windows no-console spawn

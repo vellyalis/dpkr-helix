@@ -74,6 +74,17 @@ function Get-SetupFunctionSource {
         "Get-SourceUpdatePlanWithoutFetch",
         "Assert-UpdatePlanStillCurrent",
         "Restore-UpdateDeployment",
+        "Get-GlobalNpmRoot",
+        "Get-GlobalNpmPrefix",
+        "Get-ExtendedLengthPath",
+        "Get-Sha256",
+        "Get-RuntimePackagePath",
+        "Save-RuntimePackageCache",
+        "Get-ValidatedRuntimePackage",
+        "Set-RuntimeRecoveryState",
+        "Repair-InstalledDevSpaceRuntime",
+        "Get-UriOrigin",
+        "Assert-UriUsesOrigin",
         "Test-OAuthMetadata",
         "New-OwnerToken",
         "ConvertTo-TomlBasicString",
@@ -191,6 +202,108 @@ try {
     -Condition (-not (Test-Path -LiteralPath $updateTemporaryRoot)) `
     -Message "Validated update temporary root was not removed."
 
+  $script:RuntimePackageDir = Join-Path $temporaryRoot "runtime-packages"
+  $runtimePackageSource = Join-Path $temporaryRoot "runtime-package.tgz"
+  [System.IO.File]::WriteAllText($runtimePackageSource, "verified runtime package")
+  $savedNpmPrefix = $env:npm_config_prefix
+  $unicodeNpmPrefix = Join-Path $temporaryRoot (
+    "npm prefix " + [string]([char] 0x6625)
+  )
+  try {
+    $env:npm_config_prefix = $unicodeNpmPrefix
+    Assert-True `
+      -Condition ((Get-GlobalNpmPrefix) -eq [System.IO.Path]::GetFullPath($unicodeNpmPrefix)) `
+      -Message "The exact Unicode npm_config_prefix was not preserved."
+    Assert-True `
+      -Condition ((Get-GlobalNpmRoot) -eq (Join-Path ([System.IO.Path]::GetFullPath($unicodeNpmPrefix)) "node_modules")) `
+      -Message "The global npm root was not derived from the exact configured prefix."
+  }
+  finally {
+    $env:npm_config_prefix = $savedNpmPrefix
+  }
+  Assert-True `
+    -Condition ((Get-ExtendedLengthPath -Path $runtimePackageSource).StartsWith("\\?\")) `
+    -Message "Long-path normalization did not produce an extended Windows path."
+  $longPathRoot = Join-Path $temporaryRoot "long-path-hash"
+  $longPathDirectory = $longPathRoot
+  foreach ($index in 1..4) {
+    $longPathDirectory = Join-Path $longPathDirectory (
+      ("segment-{0}-" -f $index) + ("x" * 56)
+    )
+  }
+  $longPathFile = Join-Path $longPathDirectory "runtime-integrity-payload.txt"
+  Assert-True `
+    -Condition ($longPathFile.Length -gt 260) `
+    -Message "Long-path hash fixture did not exceed the legacy Windows path limit."
+  [System.IO.Directory]::CreateDirectory(
+    (Get-ExtendedLengthPath -Path $longPathDirectory)
+  ) | Out-Null
+  [System.IO.File]::WriteAllText(
+    (Get-ExtendedLengthPath -Path $longPathFile),
+    "verified runtime package"
+  )
+  Assert-True `
+    -Condition ((Get-Sha256 -Path $longPathFile) -eq (Get-Sha256 -Path $runtimePackageSource)) `
+    -Message "Runtime hashing failed beyond the legacy Windows path limit."
+  [System.IO.Directory]::Delete(
+    (Get-ExtendedLengthPath -Path $longPathRoot),
+    $true
+  )
+  $cachedRuntimePackage = Save-RuntimePackageCache -PackagePath $runtimePackageSource
+  Assert-True `
+    -Condition (([string] $cachedRuntimePackage.Hash) -match "^[0-9a-f]{64}$") `
+    -Message "Runtime recovery package hash is invalid."
+  Assert-True `
+    -Condition (Test-Path -LiteralPath $cachedRuntimePackage.Path -PathType Leaf) `
+    -Message "Runtime recovery package was not retained."
+  $runtimePackageSettings = [pscustomobject]@{
+    runtimePackageSha256 = [string] $cachedRuntimePackage.Hash
+  }
+  $validatedRuntimePackage = Get-ValidatedRuntimePackage -Settings $runtimePackageSettings
+  Assert-True `
+    -Condition ($validatedRuntimePackage.Path -eq $cachedRuntimePackage.Path) `
+    -Message "Recorded runtime recovery package did not validate."
+  [System.IO.File]::WriteAllText($cachedRuntimePackage.Path, "corrupt")
+  $corruptRuntimePackageRejected = $false
+  try {
+    Get-ValidatedRuntimePackage -Settings $runtimePackageSettings | Out-Null
+  }
+  catch {
+    $corruptRuntimePackageRejected = $_.Exception.Message.Contains("corrupt")
+  }
+  Assert-True `
+    -Condition $corruptRuntimePackageRejected `
+    -Message "A corrupt runtime recovery package was accepted."
+  $repairedRuntimePackage = Save-RuntimePackageCache -PackagePath $runtimePackageSource
+  Assert-True `
+    -Condition ((Get-Sha256 -Path $repairedRuntimePackage.Path) -eq $repairedRuntimePackage.Hash) `
+    -Message "A corrupt cached package was not repaired atomically."
+  $repairOutput = @(& {
+      function Install-BuiltDevSpacePackage {
+        param([string] $PackagePath)
+        "npm progress that must not escape"
+      }
+      function Get-InstalledDevSpaceRuntimeFingerprint {
+        return "c" * 64
+      }
+      function Set-RuntimeRecoveryState {
+        param([string] $PackageHash, [string] $RuntimeFingerprint)
+        return [pscustomobject]@{
+          port = 17676
+          runtimePackageSha256 = $PackageHash
+          runtimeFingerprint = $RuntimeFingerprint
+        }
+      }
+      Repair-InstalledDevSpaceRuntime -RecoveryState ([pscustomobject]@{
+          PackagePath = $runtimePackageSource
+          PackageHash = "d" * 64
+          ExpectedFingerprint = "c" * 64
+        })
+    })
+  Assert-True `
+    -Condition ($repairOutput.Count -eq 1 -and [int] $repairOutput[0].port -eq 17676) `
+    -Message "Runtime repair leaked installer output into the returned settings object."
+
   $gitFixture = Join-Path $temporaryRoot "git-update"
   $gitOrigin = Join-Path $gitFixture "origin.git"
   $gitSeed = Join-Path $gitFixture "seed"
@@ -277,11 +390,17 @@ try {
   )
   $rollbackSetupBackup = Join-Path $temporaryRoot "rollback-setup.ps1"
   $rollbackRecoveryBackup = Join-Path $temporaryRoot "rollback-recovery.ps1"
+  $rollbackSettingsBackup = Join-Path $temporaryRoot "rollback-settings.json"
   $script:ManagedScriptPath = Join-Path $temporaryRoot "managed-restore\setup-windows.ps1"
   $script:ManagedRecoveryPath = Join-Path $temporaryRoot "managed-restore\setup-windows-recovery.ps1"
   $script:SettingsPath = Join-Path $temporaryRoot "restore-settings.json"
   [System.IO.File]::WriteAllText($rollbackSetupBackup, "previous setup")
   [System.IO.File]::WriteAllText($rollbackRecoveryBackup, "previous recovery")
+  Write-JsonAtomic -Path $rollbackSettingsBackup -Value ([ordered]@{
+      desiredState = "stopped"
+      runtimePackageSha256 = "a" * 64
+      runtimeFingerprint = "b" * 64
+    })
   Write-JsonAtomic -Path $script:SettingsPath -Value ([ordered]@{ desiredState = "running" })
   $script:rollbackPackageSeen = $null
   $script:rollbackStopSeen = $false
@@ -297,6 +416,7 @@ try {
       -Plan $advancePlan `
       -PreviousDesiredState "stopped" `
       -RollbackPackage "previous-package.tgz" `
+      -SettingsBackup $rollbackSettingsBackup `
       -SetupBackup $rollbackSetupBackup `
       -RecoveryBackup $rollbackRecoveryBackup `
       -HadRecovery $true
@@ -422,6 +542,8 @@ try {
 
   $script:capturedOAuthHeaders = $null
   $script:capturedOAuthTimeout = $null
+  $script:capturedOAuthUris = @()
+  $script:staleOAuthOrigin = $false
   function Invoke-WebRequest {
     param(
       [switch] $UseBasicParsing,
@@ -431,13 +553,50 @@ try {
     )
     $script:capturedOAuthHeaders = $Headers
     $script:capturedOAuthTimeout = $TimeoutSec
+    $script:capturedOAuthUris += $Uri
+    $advertisedOrigin = if ($script:staleOAuthOrigin) {
+      "https://obsolete.trycloudflare.com"
+    }
+    else {
+      "https://example.com"
+    }
+    if ($Uri.Contains("oauth-protected-resource")) {
+      return [pscustomobject]@{
+        StatusCode = 200
+        Content = (@{
+            resource = "$advertisedOrigin/mcp"
+            authorization_servers = @("$advertisedOrigin/")
+          } | ConvertTo-Json -Compress)
+      }
+    }
     return [pscustomobject]@{
       StatusCode = 200
-      Content = '{"authorization_endpoint":"https://example.com/authorize","token_endpoint":"https://example.com/token"}'
+      Content = (@{
+          issuer = "$advertisedOrigin/"
+          authorization_endpoint = "$advertisedOrigin/authorize"
+          token_endpoint = "$advertisedOrigin/token"
+          registration_endpoint = "$advertisedOrigin/register"
+          revocation_endpoint = "$advertisedOrigin/revoke"
+        } | ConvertTo-Json -Compress)
     }
   }
   try {
-    Test-OAuthMetadata -Origin "https://example.com"
+    Test-OAuthMetadata `
+      -Origin "http://127.0.0.1:17676" `
+      -ExpectedPublicOrigin "https://example.com"
+    $script:staleOAuthOrigin = $true
+    $staleOAuthRejected = $false
+    try {
+      Test-OAuthMetadata `
+        -Origin "http://127.0.0.1:17676" `
+        -ExpectedPublicOrigin "https://example.com"
+    }
+    catch {
+      $staleOAuthRejected = $_.Exception.Message.Contains("obsolete.trycloudflare.com")
+    }
+    Assert-True `
+      -Condition $staleOAuthRejected `
+      -Message "OAuth metadata advertising an obsolete Quick Tunnel origin was accepted."
   }
   finally {
     Remove-Item function:Invoke-WebRequest -ErrorAction SilentlyContinue
@@ -448,6 +607,12 @@ try {
   Assert-True `
     -Condition ($script:capturedOAuthTimeout -eq 10) `
     -Message "Public metadata verification is not bounded."
+  Assert-True `
+    -Condition ((@(
+          $script:capturedOAuthUris |
+            Where-Object { $_ -match "oauth-protected-resource/mcp" }
+        )).Count -gt 0) `
+    -Message "Protected-resource metadata was not verified."
 
   $toml = ConvertTo-TomlBasicString -Value "C:\Program Files\node.exe"
   Assert-True `
@@ -504,6 +669,37 @@ try {
       $sourceText.Contains('npm-shrinkwrap.json')
     ) `
     -Message "Installed runtime dependencies are not restored from the verified lock."
+  Assert-True `
+    -Condition (
+      $sourceText.Contains('$globalPrefix = Get-GlobalNpmPrefix') -and
+      $sourceText.Contains('"--prefix", $globalPrefix')
+    ) `
+    -Message "Global package deployment does not pass the resolved prefix explicitly to npm."
+  Assert-True `
+    -Condition (
+      $sourceText.Contains('devspace-windows-runtime/v3') -and
+      $sourceText.Contains('runtimePackageSha256') -and
+      $sourceText.Contains('Repair-InstalledDevSpaceRuntime')
+    ) `
+    -Message "Runtime package attestation and repair are not wired into Start."
+  Assert-True `
+    -Condition $sourceText.Contains('/.well-known/oauth-protected-resource/mcp') `
+    -Message "OAuth protected-resource metadata is not part of runtime verification."
+  Assert-True `
+    -Condition (
+      $sourceText.Contains('scripts\setup-windows.test.ps1') -and
+      $sourceText.Contains('scripts\setup-windows-recovery.test.ps1')
+    ) `
+    -Message "Managed update preflight omits Windows recovery regression suites."
+  Assert-True `
+    -Condition $sourceText.Contains('windows-bootstrap.previous.json') `
+    -Message "Managed update rollback does not preserve bootstrap settings."
+  Assert-True `
+    -Condition (
+      $sourceText.Contains('$arguments += "-SkipVerification"') -and
+      $sourceText.Contains('if ($SkipVerification)')
+    ) `
+    -Message "The detached update launcher drops the explicit verification-skip flag."
   Assert-True `
     -Condition ($sourceText.Contains("RecoveryStart") -and $sourceText.Contains("-ForceRestart")) `
     -Message "Recovery start recheck or explicit install restart is missing."

@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { access, stat } from "node:fs/promises";
+import { access, readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { relative, sep } from "node:path";
 import { createRequire } from "node:module";
@@ -237,9 +237,9 @@ export function createAdminServer(config: ServerConfig, options: AdminServerOpti
   }));
 
   app.get("/api/diagnostics/troubleshooting", auth.requireRead.bind(auth), asyncHandler(async (_req, res) => {
-    res.type("text/markdown").sendFile(
-      fileURLToPath(new URL("../../docs/gotchas.md", import.meta.url)),
-    );
+    const troubleshootingPath = fileURLToPath(new URL("../../docs/gotchas.md", import.meta.url));
+    const troubleshooting = await readFile(troubleshootingPath, "utf8");
+    res.type("text/markdown").send(troubleshooting);
   }));
 
   app.use(express.static(dashboardBuildDirectory(), { fallthrough: true }));

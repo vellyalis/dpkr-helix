@@ -48,12 +48,21 @@ function Get-RecoveryFunctionSource {
 . ([ScriptBlock]::Create(
     (Get-RecoveryFunctionSource -Names @(
         "Write-Utf8NoBom",
+        "Write-JsonAtomic",
         "Read-Utf8Text",
         "Read-JsonFile",
         "Get-PropertyValue",
         "Normalize-StableOrigin",
         "Get-RecoverySettings",
         "Test-HttpEndpoint",
+        "Get-UriOrigin",
+        "Assert-UriUsesOrigin",
+        "Test-OAuthMetadata",
+        "Write-RecoveryStatus",
+        "Throw-RecoveryFailure",
+        "Get-RecoveryFailureCode",
+        "Get-RecoveryStatusMessage",
+        "Get-RuntimeIdentityStamp",
         "Test-RuntimeOperationInProgress",
         "Invoke-ManagedStart",
         "Invoke-Recovery",
@@ -73,6 +82,7 @@ $script:ManagedMarker = "managed-by-dpkr-helix-windows-recovery"
 $script:DevSpaceDir = Join-Path $temporaryRoot ".devspace"
 $script:SettingsPath = Join-Path $script:DevSpaceDir "windows-bootstrap.json"
 $script:RuntimeStatePath = Join-Path $script:DevSpaceDir "windows-runtime.json"
+$script:RecoveryStatusPath = Join-Path $script:DevSpaceDir "windows-recovery.json"
 $script:ManagedSetupPath = Join-Path $script:DevSpaceDir "setup-windows.ps1"
 $script:ManagedRecoveryPath = Join-Path $script:DevSpaceDir "setup-windows-recovery.ps1"
 $script:HiddenLauncherPath = Join-Path $script:DevSpaceDir "start-windows-recovery-hidden.vbs"
@@ -126,31 +136,105 @@ try {
 
   $managedStartSource = Get-RecoveryFunctionSource -Names @("Invoke-ManagedStart")
   Assert-True `
-    -Condition ($managedStartSource.Contains('$process.WaitForExit()') -and $managedStartSource -notmatch '(?m)^\s*-Wait') `
-    -Message "Recovery waits for the descendant server instead of only the setup wrapper."
+    -Condition (
+      $managedStartSource.Contains('$process.WaitForExit(120000)') -and
+      $managedStartSource -notmatch '(?m)^\s*-Wait'
+    ) `
+    -Message "Recovery wrapper wait is not bounded independently from the descendant server."
+
+  $script:recoveryOAuthStale = $false
+  function Invoke-WebRequest {
+    param(
+      [switch] $UseBasicParsing,
+      [string] $Uri,
+      [hashtable] $Headers,
+      [int] $TimeoutSec
+    )
+    $advertisedOrigin = if ($script:recoveryOAuthStale) {
+      "https://obsolete.trycloudflare.com"
+    }
+    else {
+      "https://mcp.example.com"
+    }
+    if ($Uri.Contains("oauth-protected-resource")) {
+      return [pscustomobject]@{
+        StatusCode = 200
+        Content = (@{
+            resource = "$advertisedOrigin/mcp"
+            authorization_servers = @("$advertisedOrigin/")
+          } | ConvertTo-Json -Compress)
+      }
+    }
+    return [pscustomobject]@{
+      StatusCode = 200
+      Content = (@{
+          issuer = "$advertisedOrigin/"
+          authorization_endpoint = "$advertisedOrigin/authorize"
+          token_endpoint = "$advertisedOrigin/token"
+          registration_endpoint = "$advertisedOrigin/register"
+        } | ConvertTo-Json -Compress)
+    }
+  }
+  try {
+    Test-OAuthMetadata `
+      -Origin "http://127.0.0.1:17676" `
+      -ExpectedPublicOrigin "https://mcp.example.com" `
+      -TimeoutSeconds 3
+    $script:recoveryOAuthStale = $true
+    $recoveryStaleOAuthRejected = $false
+    try {
+      Test-OAuthMetadata `
+        -Origin "http://127.0.0.1:17676" `
+        -ExpectedPublicOrigin "https://mcp.example.com" `
+        -TimeoutSeconds 3
+    }
+    catch {
+      $recoveryStaleOAuthRejected = $_.Exception.Message.Contains("obsolete.trycloudflare.com")
+    }
+    Assert-True `
+      -Condition $recoveryStaleOAuthRejected `
+      -Message "Recovery accepted OAuth metadata from an obsolete Quick Tunnel origin."
+  }
+  finally {
+    Remove-Item function:Invoke-WebRequest -ErrorAction SilentlyContinue
+  }
 
   $script:startCount = 0
+  $script:identityStamp = "stable-runtime"
   function Invoke-ManagedStart {
     $script:startCount += 1
+  }
+  function Get-RuntimeIdentityStamp {
+    return $script:identityStamp
   }
   function Test-HttpEndpoint {
     param([string] $Uri, [int] $TimeoutSeconds)
     return $true
   }
-  Invoke-Recovery
+  function Test-OAuthMetadata {
+    param([string] $Origin, [string] $ExpectedPublicOrigin, [int] $TimeoutSeconds)
+  }
+  $intentionalStopResult = Invoke-Recovery
   Assert-True `
     -Condition ($script:startCount -eq 0) `
     -Message "Recovery restarted after an intentional Stop state."
+  Assert-True `
+    -Condition ($intentionalStopResult.Code -eq "INTENTIONALLY_STOPPED") `
+    -Message "Intentional Stop did not return a diagnostic result."
 
   Write-Utf8NoBom -Path $script:SettingsPath -Content (
     '{"tunnelMode":"External","port":17676,"publicBaseUrl":"https://mcp.example.com","desiredState":"running"}'
   )
   function Test-RuntimeOperationInProgress { return $true }
-  Invoke-Recovery
+  $operationResult = Invoke-Recovery
   Assert-True -Condition ($script:startCount -eq 0) -Message "Recovery raced an active managed operation."
+  Assert-True `
+    -Condition ($operationResult.Code -eq "OPERATION_IN_PROGRESS") `
+    -Message "Active operation skip did not return a diagnostic result."
   function Test-RuntimeOperationInProgress { return $false }
   $script:healthAfterStart = $false
   $script:unhealthyLocalProbeCount = 0
+  $script:identityStamp = $null
   function Test-HttpEndpoint {
     param([string] $Uri, [int] $TimeoutSeconds)
     if (-not $script:healthAfterStart) { $script:unhealthyLocalProbeCount += 1 }
@@ -159,13 +243,20 @@ try {
   function Invoke-ManagedStart {
     $script:startCount += 1
     $script:healthAfterStart = $true
+    $script:identityStamp = "recovered-runtime"
   }
-  Invoke-Recovery
+  $recoveredResult = Invoke-Recovery
   Assert-True -Condition ($script:startCount -eq 1) -Message "Desired running state did not recover without a runtime record."
   Assert-True -Condition ($script:unhealthyLocalProbeCount -eq 2) -Message "Local failure was not confirmed before restart."
+  Assert-True `
+    -Condition ($recoveredResult.Code -eq "RUNTIME_RECOVERED") `
+    -Message "A changed runtime identity was not reported as recovered."
   $script:startCount = 0
 
-  Write-Utf8NoBom -Path $script:RuntimeStatePath -Content '{"schema":"fixture"}'
+  $script:identityStamp = "stable-runtime"
+  function Invoke-ManagedStart {
+    $script:startCount += 1
+  }
   function Test-HttpEndpoint {
     param([string] $Uri, [int] $TimeoutSeconds)
     return $Uri.StartsWith("http://127.0.0.1:")
@@ -181,10 +272,15 @@ try {
     -Condition $publicOnlyRejected `
     -Message "Public-only failure did not report the external owner."
   Assert-True `
-    -Condition ($script:startCount -eq 0) `
-    -Message "Public-only failure restarted a healthy local DevSpace process."
+    -Condition ($script:startCount -eq 1) `
+    -Message "Public-only failure skipped the managed local attestation gate."
+  Assert-True `
+    -Condition ($script:identityStamp -eq "stable-runtime") `
+    -Message "Public-only failure changed the healthy local runtime identity."
 
+  $script:startCount = 0
   $script:healthAfterStart = $false
+  $script:identityStamp = "old-runtime"
   function Test-HttpEndpoint {
     param([string] $Uri, [int] $TimeoutSeconds)
     return $script:healthAfterStart
@@ -192,11 +288,34 @@ try {
   function Invoke-ManagedStart {
     $script:startCount += 1
     $script:healthAfterStart = $true
+    $script:identityStamp = "new-runtime"
   }
-  Invoke-Recovery
+  $secondRecoveryResult = Invoke-Recovery
   Assert-True `
     -Condition ($script:startCount -eq 1) `
     -Message "Local failure did not perform exactly one managed restart."
+  Assert-True `
+    -Condition ($secondRecoveryResult.State -eq "recovered") `
+    -Message "Recovered runtime was not classified correctly."
+
+  Write-RecoveryStatus `
+    -State "recovered" `
+    -Code "RUNTIME_RECOVERED" `
+    -Message "fixture recovery"
+  $persistedRecovery = Read-JsonFile -Path $script:RecoveryStatusPath
+  Assert-True `
+    -Condition ($persistedRecovery.schema -eq "dpkr-helix-windows-recovery/v1") `
+    -Message "Recovery status schema was not persisted."
+  Assert-True `
+    -Condition ($persistedRecovery.code -eq "RUNTIME_RECOVERED") `
+    -Message "Recovery status code was not persisted."
+  $safeFailureMessage = Get-RecoveryStatusMessage -Code "MANAGED_RECONCILIATION_FAILED"
+  Assert-True `
+    -Condition (
+      -not $safeFailureMessage.Contains($temporaryRoot) -and
+      -not $safeFailureMessage.Contains($env:USERPROFILE)
+    ) `
+    -Message "Recovery status messages expose a local path."
 
   $managedTask = [pscustomobject]@{
     TaskPath = $script:TaskPath
@@ -372,6 +491,9 @@ try {
   Assert-True `
     -Condition (-not (Test-Path -LiteralPath $script:HiddenLauncherPath)) `
     -Message "Recovery rollback left the hidden launcher."
+  Assert-True `
+    -Condition (-not (Test-Path -LiteralPath $script:RecoveryStatusPath)) `
+    -Message "Recovery rollback left the managed status file."
 
   Assert-True `
     -Condition ($sourceText.Contains('New-ScheduledTaskAction `')) `
@@ -385,6 +507,18 @@ try {
   Assert-True `
     -Condition ($sourceText.Contains("New-ScheduledTaskTrigger -AtLogOn")) `
     -Message "Recovery task does not define the accepted logon trigger."
+  Assert-True `
+    -Condition (
+      $sourceText.Contains('windows-recovery.json') -and
+      $sourceText.Contains('dpkr-helix-windows-recovery/v1')
+    ) `
+    -Message "Recovery does not persist a bounded managed diagnostic status."
+  Assert-True `
+    -Condition $sourceText.Contains('/.well-known/oauth-protected-resource/mcp') `
+    -Message "Recovery does not verify OAuth protected-resource metadata."
+  Assert-True `
+    -Condition $sourceText.Contains('MANAGED_RECONCILIATION_FAILED') `
+    -Message "Recovery reconciliation failures do not expose a stable reason code."
 
   $originalUserProfile = $env:USERPROFILE
   $planProfile = Join-Path $temporaryRoot "plan-user"
@@ -407,6 +541,7 @@ try {
     -Message "Recovery Plan created managed DevSpace files."
   Assert-True -Condition $planOutput.Contains("PublicOutageRule") -Message "Recovery Plan omitted outage behavior."
   Assert-True -Condition $planOutput.Contains("no Owner password") -Message "Recovery Plan omitted secret policy."
+  Assert-True -Condition $planOutput.Contains("package fingerprint") -Message "Recovery Plan omitted runtime attestation."
 }
 finally {
   if (Test-Path -LiteralPath $temporaryRoot) {
