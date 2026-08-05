@@ -119,8 +119,12 @@ mandatory evidence of success before it can stop or start a managed generation.
 
 The exact package archive is also copied to a content-addressed directory under
 `~/.devspace/runtime-packages`. Bootstrap settings record its SHA-256 plus a
-fingerprint of `package.json`, the deployment lock, and every deployed `dist`
-file. The archive contains application files only, not the Owner password,
+fingerprint of `package.json`, the deployment/hidden locks, the repair scripts,
+every deployed `dist` file, and the deployed Pi/Codex dependency files whose
+integrity is enforced during postinstall. PowerShell 5.1 computes the fingerprint
+with extended-length Windows paths, so a deep npm tree cannot disappear from
+attestation merely because its absolute path exceeds the legacy 260-character
+limit. The archive contains application files only, not the Owner password,
 Cloudflare credentials, browser state, user configuration, or workspace data.
 
 The final line prints the MCP URL to enter in ChatGPT Developer mode. ChatGPT
