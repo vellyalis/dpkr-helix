@@ -140,6 +140,11 @@ runtime reuse fails closed when its SHA-256 or the deployed application
 fingerprint no longer matches. Rollback restores the prior archive, bootstrap
 settings, managed scripts, source commit, desired state, and health as one
 deployment generation.
+
+Loss of the retained archive does not make the installed tree a new trust root.
+It can be re-cached only when it still matches the previously recorded runtime
+fingerprint. A simultaneous package failure and runtime mismatch fails closed
+before the owned process is stopped or either copy is recorded as trusted.
 Update status returns only bounded state, timestamps, commit IDs, and reason
 codes. Local paths, Git/npm output, prompts, file contents, and credentials are
 excluded. The hidden launcher redirects updater output to two fixed local log

@@ -1241,6 +1241,12 @@ function Set-RuntimeRecoveryState {
 
 function Ensure-RuntimeRecoveryState {
   param([Parameter(Mandatory = $true)] $Settings)
+  $expectedFingerprint = [string](
+    Get-PropertyValue -InputObject $Settings -Name "runtimeFingerprint"
+  )
+  if ($expectedFingerprint -and $expectedFingerprint -notmatch "^[0-9a-f]{64}$") {
+    throw "Saved runtime fingerprint is invalid."
+  }
   $cached = $null
   $cacheFailure = $null
   try {
@@ -1257,27 +1263,37 @@ function Ensure-RuntimeRecoveryState {
         "Installed runtime: $($installed.Failure) Recovery package: $cacheFailure"
       )
     }
+    if (
+      $expectedFingerprint -and
+      -not [string]::Equals(
+        [string] $installed.Fingerprint,
+        $expectedFingerprint,
+        [System.StringComparison]::OrdinalIgnoreCase
+      )
+    ) {
+      throw (
+        "The verified recovery package is unavailable and the installed runtime " +
+        "does not match the saved fingerprint. Refusing to trust either copy automatically."
+      )
+    }
     $temporaryRoot = New-UpdateTemporaryRoot
     try {
       $packageDirectory = Join-Path $temporaryRoot "installed-package"
       New-Item -ItemType Directory -Path $packageDirectory | Out-Null
       $installedPackage = New-InstalledDevSpacePackage -Destination $packageDirectory
       $cached = Save-RuntimePackageCache -PackagePath $installedPackage
+      if (-not $expectedFingerprint) {
+        $expectedFingerprint = [string] $installed.Fingerprint
+      }
       $Settings = Set-RuntimeRecoveryState `
         -PackageHash ([string] $cached.Hash) `
-        -RuntimeFingerprint ([string] $installed.Fingerprint)
+        -RuntimeFingerprint $expectedFingerprint
     }
     finally {
       Remove-UpdateTemporaryRoot -Path $temporaryRoot
     }
   }
 
-  $expectedFingerprint = [string](
-    Get-PropertyValue -InputObject $Settings -Name "runtimeFingerprint"
-  )
-  if ($expectedFingerprint -and $expectedFingerprint -notmatch "^[0-9a-f]{64}$") {
-    throw "Saved runtime fingerprint is invalid."
-  }
   if (-not $expectedFingerprint -and $installed.Complete) {
     $expectedFingerprint = [string] $installed.Fingerprint
     $Settings = Set-RuntimeRecoveryState `

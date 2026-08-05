@@ -126,6 +126,10 @@ with extended-length Windows paths, so a deep npm tree cannot disappear from
 attestation merely because its absolute path exceeds the legacy 260-character
 limit. The archive contains application files only, not the Owner password,
 Cloudflare credentials, browser state, user configuration, or workspace data.
+If that archive is missing or corrupt, setup may rebuild it from the installed
+runtime only when the installed fingerprint still matches the previously saved
+fingerprint. When both copies disagree, Start fails before stopping the recorded
+process and never blesses either copy automatically.
 
 The final line prints the MCP URL to enter in ChatGPT Developer mode. ChatGPT
 app creation and its OAuth approval remain interactive account actions.

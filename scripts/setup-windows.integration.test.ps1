@@ -312,6 +312,12 @@ try {
 
   $pidBeforeArtifactLoss = [int] $reinstalledRuntime.devspacePid
   $installedCliPath = Join-Path $installedPackage "dist\cli.js"
+  $runtimePackageBackup = Join-Path $temporaryRoot "runtime-package.backup.tgz"
+  Copy-Item `
+    -LiteralPath $cachedRuntimePackage `
+    -Destination $runtimePackageBackup `
+    -Force
+  $settingsBeforeFailClosed = Read-Utf8Text -Path $settingsPath | ConvertFrom-Json
   Remove-Item -LiteralPath $installedCliPath -Force
   Assert-True `
     -Condition (-not (Test-Path -LiteralPath $installedCliPath -PathType Leaf)) `
@@ -319,6 +325,56 @@ try {
   Assert-True `
     -Condition (Test-TcpPort -Port $port) `
     -Message "Removing the on-disk CLI unexpectedly stopped the already-running service."
+
+  [System.IO.File]::WriteAllText(
+    $cachedRuntimePackage,
+    "corrupt recovery package",
+    (New-Object System.Text.UTF8Encoding($false))
+  )
+  $previousErrorPreference = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    & powershell.exe `
+      -NoProfile `
+      -NonInteractive `
+      -ExecutionPolicy Bypass `
+      -File $copiedSetup `
+      -Mode Start `
+      -SkipVerification `
+      -SkipBrowserLaunch 2>&1 | Out-Null
+    $untrustedCopiesExitCode = $LASTEXITCODE
+  }
+  finally {
+    $ErrorActionPreference = $previousErrorPreference
+  }
+  Assert-True `
+    -Condition ($untrustedCopiesExitCode -ne 0) `
+    -Message "Start trusted a damaged recovery package and mismatched installed runtime."
+  Assert-True `
+    -Condition ([bool](Get-Process -Id $pidBeforeArtifactLoss -ErrorAction SilentlyContinue)) `
+    -Message "Fail-closed recovery stopped the still-running attested process before trust was resolved."
+  Assert-True `
+    -Condition (Test-TcpPort -Port $port) `
+    -Message "Fail-closed recovery disrupted the still-running service."
+  Assert-True `
+    -Condition (-not (Test-Path -LiteralPath $installedCliPath -PathType Leaf)) `
+    -Message "Fail-closed recovery silently replaced the damaged installed runtime."
+  $settingsAfterFailClosed = Read-Utf8Text -Path $settingsPath | ConvertFrom-Json
+  Assert-True `
+    -Condition (
+      [string] $settingsAfterFailClosed.runtimePackageSha256 -eq
+        [string] $settingsBeforeFailClosed.runtimePackageSha256 -and
+      [string] $settingsAfterFailClosed.runtimeFingerprint -eq
+        [string] $settingsBeforeFailClosed.runtimeFingerprint
+    ) `
+    -Message "Fail-closed recovery blessed a new package hash or runtime fingerprint."
+  Copy-Item `
+    -LiteralPath $runtimePackageBackup `
+    -Destination $cachedRuntimePackage `
+    -Force
+  Assert-True `
+    -Condition ((Get-FileHash -LiteralPath $cachedRuntimePackage -Algorithm SHA256).Hash.ToLowerInvariant() -eq [string] $settingsBeforeFailClosed.runtimePackageSha256) `
+    -Message "The integration fixture did not restore the verified recovery package."
 
   & powershell.exe `
     -NoProfile `

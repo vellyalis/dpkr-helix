@@ -82,6 +82,7 @@ function Get-SetupFunctionSource {
         "Save-RuntimePackageCache",
         "Get-ValidatedRuntimePackage",
         "Set-RuntimeRecoveryState",
+        "Ensure-RuntimeRecoveryState",
         "Repair-InstalledDevSpaceRuntime",
         "Get-UriOrigin",
         "Assert-UriUsesOrigin",
@@ -303,6 +304,38 @@ try {
   Assert-True `
     -Condition ($repairOutput.Count -eq 1 -and [int] $repairOutput[0].port -eq 17676) `
     -Message "Runtime repair leaked installer output into the returned settings object."
+  $untrustedRecacheRejected = & {
+    function Get-ValidatedRuntimePackage {
+      param($Settings)
+      throw "managed recovery package is corrupt"
+    }
+    function Get-InstalledDevSpaceRuntimeStatus {
+      return [pscustomobject]@{
+        Complete = $true
+        Fingerprint = "f" * 64
+        Failure = $null
+      }
+    }
+    function New-UpdateTemporaryRoot {
+      throw "recache must not be reached"
+    }
+    try {
+      Ensure-RuntimeRecoveryState -Settings ([pscustomobject]@{
+          runtimePackageSha256 = "a" * 64
+          runtimeFingerprint = "e" * 64
+        }) | Out-Null
+      return $false
+    }
+    catch {
+      return (
+        $_.Exception.Message.Contains("Refusing to trust either copy automatically") -and
+        -not $_.Exception.Message.Contains("recache must not be reached")
+      )
+    }
+  }
+  Assert-True `
+    -Condition $untrustedRecacheRejected `
+    -Message "A damaged recovery package caused a mismatched installed runtime to be trusted again."
 
   $gitFixture = Join-Path $temporaryRoot "git-update"
   $gitOrigin = Join-Path $gitFixture "origin.git"
