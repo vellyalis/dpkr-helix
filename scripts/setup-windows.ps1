@@ -596,9 +596,7 @@ function Remove-UpdateTemporaryRoot {
   ) {
     throw "Refusing to remove an unexpected update temporary path."
   }
-  if (Test-Path -LiteralPath $resolved -PathType Container) {
-    Remove-Item -LiteralPath $resolved -Recurse -Force
-  }
+  Remove-DirectoryTreeLongPath -Path $resolved
 }
 
 function Add-UpdateWorktree {
@@ -620,6 +618,7 @@ function Remove-UpdateWorktree {
   if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
     return
   }
+  Remove-DirectoryTreeLongPath -Path (Join-Path $Path "node_modules")
   Invoke-Checked -FilePath ([string] $Plan.Git) -Arguments @(
     "-C", ([string] $Plan.Root), "worktree", "remove", "--force", $Path
   )
@@ -1049,6 +1048,14 @@ function Get-ExtendedLengthPath {
     return "\\?\UNC\" + $fullPath.Substring(2)
   }
   return "\\?\" + $fullPath
+}
+
+function Remove-DirectoryTreeLongPath {
+  param([Parameter(Mandatory = $true)][string] $Path)
+  $extendedPath = Get-ExtendedLengthPath -Path $Path
+  if ([System.IO.Directory]::Exists($extendedPath)) {
+    [System.IO.Directory]::Delete($extendedPath, $true)
+  }
 }
 
 function Get-Sha256 {
@@ -2494,6 +2501,13 @@ function Test-CodexDelegation {
         return
       }
       if ($result.Contains(" error ")) {
+        if (Test-CodexDelegationAdvisoryFailure -Result $result) {
+          Write-Warning (
+            "Codex delegation runtime probe is unavailable because the external " +
+            "Codex usage limit is exhausted; local candidate verification remains valid."
+          )
+          return
+        }
         throw "Codex subagent failed: $result"
       }
       Start-Sleep -Seconds 2
@@ -2503,6 +2517,14 @@ function Test-CodexDelegation {
   finally {
     Pop-Location
   }
+}
+
+function Test-CodexDelegationAdvisoryFailure {
+  param([Parameter(Mandatory = $true)][string] $Result)
+  return [regex]::IsMatch(
+    $Result,
+    "(?im)\bfailure=rate_limited\b"
+  )
 }
 
 function Invoke-SetupVerification {
@@ -2863,6 +2885,7 @@ function Invoke-UpdateMode {
     }
     catch {
       $applyFailure = $_
+      Write-Warning "Candidate deployment failed before rollback: $($applyFailure.Exception.Message)"
       try {
         Restore-UpdateDeployment `
           -Plan $plan `

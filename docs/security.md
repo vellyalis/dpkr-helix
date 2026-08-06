@@ -151,6 +151,13 @@ excluded. The hidden launcher redirects updater output to two fixed local log
 files that are replaced on each request; updater output is never returned to an
 MCP caller.
 
+The runtime Codex probe distinguishes the reviewed deployment from the external
+account's current quota. Only an explicit `failure=rate_limited` result is
+advisory; malformed output, tool failure, wrong package identity, and other
+delegation errors still fail deployment. Candidate worktree and temporary-root
+cleanup use validated paths plus extended-length Windows deletion so deep npm
+trees cannot strand updater state solely because of the legacy path limit.
+
 The post-initialization MCP tool-list-change notification has an empty payload
 and only asks the already OAuth-approved client to reread metadata it could
 already request. It does not add authorization, change tool annotations, invoke

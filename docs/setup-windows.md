@@ -200,8 +200,11 @@ The updater:
 5. stops and replaces dpkr helix from the candidate archive only after
    preflight succeeds, using a short hidden launcher and a separate hidden
    one-shot updater whose two local log files are replaced on every request;
-6. checks the CLI, exact local/public OAuth origin contract, protected-resource
-   metadata, and Codex delegation;
+6. checks the CLI, exact local/public OAuth origin contract, and protected-
+   resource metadata, then probes Codex delegation when the external account is
+   available. An explicit `rate_limited` result is recorded as an advisory
+   environment condition instead of rolling back an otherwise verified binary;
+   other delegation failures remain blocking;
 7. fast-forwards the managed source and updates the managed recovery scripts;
 8. restores the previous package, bootstrap settings, source commit, scripts,
    desired state, and health if deployment fails.
@@ -227,6 +230,12 @@ The equivalent local command is:
 An update does not create a Scheduled Task, daemon, service, queue, dashboard
 button, or automatic upgrade policy. The existing setup/recovery owner remains
 responsible for installation and restart.
+
+Candidate dependency trees can contain paths longer than the legacy Windows
+260-character limit. Cleanup deletes the candidate `node_modules` tree through
+extended-length paths before asking Git to remove the worktree, and uses the
+same long-path-safe deletion for the validated update temporary root. Cleanup
+failure is logged locally but cannot silently change the update result.
 
 ### Maintainer End-To-End Acceptance
 

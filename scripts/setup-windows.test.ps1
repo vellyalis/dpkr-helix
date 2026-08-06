@@ -71,12 +71,14 @@ function Get-SetupFunctionSource {
         "Get-SourceUpdatePlan",
         "New-UpdateTemporaryRoot",
         "Remove-UpdateTemporaryRoot",
+        "Remove-UpdateWorktree",
         "Get-SourceUpdatePlanWithoutFetch",
         "Assert-UpdatePlanStillCurrent",
         "Restore-UpdateDeployment",
         "Get-GlobalNpmRoot",
         "Get-GlobalNpmPrefix",
         "Get-ExtendedLengthPath",
+        "Remove-DirectoryTreeLongPath",
         "Get-Sha256",
         "Get-RuntimePackagePath",
         "Save-RuntimePackageCache",
@@ -87,6 +89,7 @@ function Get-SetupFunctionSource {
         "Get-UriOrigin",
         "Assert-UriUsesOrigin",
         "Test-OAuthMetadata",
+        "Test-CodexDelegationAdvisoryFailure",
         "New-OwnerToken",
         "ConvertTo-TomlBasicString",
         "Get-ProcessRecord",
@@ -198,10 +201,61 @@ try {
   Assert-True `
     -Condition (Test-Path -LiteralPath $updateTemporaryRoot -PathType Container) `
     -Message "Update temporary root was not created."
+  $cleanupLongPathDirectory = $updateTemporaryRoot
+  foreach ($index in 1..4) {
+    $cleanupLongPathDirectory = Join-Path $cleanupLongPathDirectory (
+      ("cleanup-segment-{0}-" -f $index) + ("x" * 56)
+    )
+  }
+  $cleanupLongPathFile = Join-Path $cleanupLongPathDirectory "getRecursionDetectionPlugin.browser.js"
+  [System.IO.Directory]::CreateDirectory(
+    (Get-ExtendedLengthPath -Path $cleanupLongPathDirectory)
+  ) | Out-Null
+  [System.IO.File]::WriteAllText(
+    (Get-ExtendedLengthPath -Path $cleanupLongPathFile),
+    "long update cleanup fixture"
+  )
   Remove-UpdateTemporaryRoot -Path $updateTemporaryRoot
   Assert-True `
     -Condition (-not (Test-Path -LiteralPath $updateTemporaryRoot)) `
-    -Message "Validated update temporary root was not removed."
+    -Message "Validated update temporary root with long descendant paths was not removed."
+
+  $worktreeCleanupRoot = Join-Path $temporaryRoot "worktree-cleanup"
+  $worktreeNodeModules = Join-Path $worktreeCleanupRoot "node_modules"
+  New-Item -ItemType Directory -Path $worktreeNodeModules -Force | Out-Null
+  [System.IO.File]::WriteAllText(
+    (Join-Path $worktreeNodeModules "fixture.txt"),
+    "fixture"
+  )
+  $script:worktreeCleanupObserved = $false
+  & {
+    function Invoke-Checked {
+      param([string] $FilePath, [string[]] $Arguments)
+      $script:worktreeCleanupObserved = -not (
+        [System.IO.Directory]::Exists(
+          (Get-ExtendedLengthPath -Path $worktreeNodeModules)
+        )
+      )
+    }
+    Remove-UpdateWorktree `
+      -Plan ([pscustomobject]@{ Git = "git.exe"; Root = $temporaryRoot }) `
+      -Path $worktreeCleanupRoot
+  }
+  Assert-True `
+    -Condition $script:worktreeCleanupObserved `
+    -Message "Update worktree removal did not delete node_modules before Git cleanup."
+  Remove-DirectoryTreeLongPath -Path $worktreeCleanupRoot
+
+  Assert-True `
+    -Condition (Test-CodexDelegationAdvisoryFailure -Result (
+        "agt_fixture error codex-explorer codex model thinking=max failure=rate_limited"
+      )) `
+    -Message "Explicit Codex usage exhaustion was not classified as advisory."
+  Assert-True `
+    -Condition (-not (Test-CodexDelegationAdvisoryFailure -Result (
+          "agt_fixture error codex-explorer codex model thinking=max failure=tool_failed"
+        ))) `
+    -Message "A candidate delegation defect was incorrectly classified as an external quota outage."
 
   $script:RuntimePackageDir = Join-Path $temporaryRoot "runtime-packages"
   $runtimePackageSource = Join-Path $temporaryRoot "runtime-package.tgz"

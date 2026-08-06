@@ -1,6 +1,6 @@
 {
   "name": "@waishnav/devspace",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "dpkr helix — a secure local coding workspace for ChatGPT and Codex.",
   "private": true,
   "homepage": "https://dpkr.dev",
