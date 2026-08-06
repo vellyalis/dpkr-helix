@@ -781,7 +781,10 @@ function New-InstalledDevSpacePackage {
 }
 
 function Install-BuiltDevSpacePackage {
-  param([Parameter(Mandatory = $true)][string] $PackagePath)
+  param(
+    [Parameter(Mandatory = $true)][string] $PackagePath,
+    [switch] $SkipRuntimeFingerprintVerification
+  )
   $npm = Get-CommandPath -Name "npm.cmd"
   if (-not $npm) {
     $npm = Get-CommandPath -Name "npm"
@@ -817,7 +820,9 @@ function Install-BuiltDevSpacePackage {
   finally {
     Pop-Location
   }
-  Get-InstalledDevSpaceRuntimeFingerprint | Out-Null
+  if (-not $SkipRuntimeFingerprintVerification) {
+    Get-InstalledDevSpaceRuntimeFingerprint | Out-Null
+  }
 }
 
 function Ensure-WingetPackage {
@@ -2521,9 +2526,12 @@ function Test-CodexDelegation {
 
 function Test-CodexDelegationAdvisoryFailure {
   param([Parameter(Mandatory = $true)][string] $Result)
-  return [regex]::IsMatch(
-    $Result,
-    "(?im)\bfailure=rate_limited\b"
+  if ([regex]::IsMatch($Result, "(?im)\bfailure=rate_limited\b")) {
+    return $true
+  }
+  return (
+    $Result.Contains("You've hit your usage limit.") -and
+    $Result.Contains("chatgpt.com/codex/settings/usage")
   )
 }
 
@@ -2727,28 +2735,74 @@ function Restore-UpdateDeployment {
     )
   }
 
-  Install-BuiltDevSpacePackage -PackagePath $RollbackPackage
-  Copy-FileAtomic -SourcePath $SettingsBackup -DestinationPath $script:SettingsPath
-  Copy-FileAtomic -SourcePath $SetupBackup -DestinationPath $script:ManagedScriptPath
-  if ($HadRecovery) {
-    Copy-FileAtomic -SourcePath $RecoveryBackup -DestinationPath $script:ManagedRecoveryPath
-  }
-
-  if ($PreviousDesiredState -eq "running") {
-    $restoredSettings = Read-JsonFile -Path $script:SettingsPath
-    $runtime = Start-DevSpaceRuntime -Settings $restoredSettings -ForceRestart
-    $node = Get-CommandPath -Name "node.exe"
-    Invoke-Checked -FilePath $node -Arguments @((Get-DevSpaceCliPath), "doctor")
-    Test-OAuthMetadata `
-      -Origin "http://127.0.0.1:$($restoredSettings.port)" `
-      -ExpectedPublicOrigin $runtime.PublicBaseUrl
-    Test-OAuthMetadata `
-      -Origin $runtime.PublicBaseUrl `
-      -ExpectedPublicOrigin $runtime.PublicBaseUrl
+  Install-BuiltDevSpacePackage `
+    -PackagePath $RollbackPackage `
+    -SkipRuntimeFingerprintVerification
+  $installedRoot = Get-InstalledDevSpaceRoot
+  $installedSetupPath = Join-Path $installedRoot "scripts\setup-windows.ps1"
+  $setupSource = if (Test-Path -LiteralPath $installedSetupPath -PathType Leaf) {
+    $installedSetupPath
   }
   else {
+    $SetupBackup
+  }
+  Copy-FileAtomic -SourcePath $SettingsBackup -DestinationPath $script:SettingsPath
+  Copy-FileAtomic -SourcePath $setupSource -DestinationPath $script:ManagedScriptPath
+  if ($HadRecovery) {
+    $installedRecoveryPath = Join-Path $installedRoot "scripts\setup-windows-recovery.ps1"
+    $recoverySource = if (
+      Test-Path -LiteralPath $installedRecoveryPath -PathType Leaf
+    ) {
+      $installedRecoveryPath
+    }
+    else {
+      $RecoveryBackup
+    }
+    if (-not $recoverySource) {
+      throw "The restored package and rollback backup both lack the recovery script."
+    }
+    Copy-FileAtomic `
+      -SourcePath $recoverySource `
+      -DestinationPath $script:ManagedRecoveryPath
+  }
+  if ($PreviousDesiredState -ne "running") {
     Set-DesiredRuntimeState -State "stopped" | Out-Null
   }
+}
+
+function Invoke-RestoredManagedStart {
+  $powershell = Get-CommandPath -Name "powershell.exe"
+  if (-not $powershell) {
+    throw "Windows PowerShell is required to start the restored installation."
+  }
+  Invoke-Checked -FilePath $powershell -Arguments @(
+    "-NoLogo",
+    "-NoProfile",
+    "-NonInteractive",
+    "-ExecutionPolicy", "Bypass",
+    "-File", $script:ManagedScriptPath,
+    "-Mode", "Start",
+    "-RecoveryStart",
+    "-SkipVerification",
+    "-SkipBrowserLaunch"
+  )
+}
+
+function Invoke-RestoredRuntimeVerification {
+  $restoredSettings = Read-JsonFile -Path $script:SettingsPath
+  $restoredRuntime = Read-JsonFile -Path $script:RuntimeStatePath
+  if (-not $restoredSettings -or -not $restoredRuntime) {
+    throw "The restored installation did not record a running managed runtime."
+  }
+  $origin = Normalize-HttpsOrigin -Value ([string](
+      Get-PropertyValue -InputObject $restoredRuntime -Name "publicBaseUrl"
+    ))
+  $node = Get-CommandPath -Name "node.exe"
+  Invoke-Checked -FilePath $node -Arguments @((Get-DevSpaceCliPath), "doctor")
+  Test-OAuthMetadata `
+    -Origin "http://127.0.0.1:$([int] $restoredSettings.port)" `
+    -ExpectedPublicOrigin $origin
+  Test-OAuthMetadata -Origin $origin -ExpectedPublicOrigin $origin
 }
 
 function Invoke-UpdateMode {
@@ -2895,6 +2949,13 @@ function Invoke-UpdateMode {
           -SetupBackup $setupBackup `
           -RecoveryBackup $recoveryBackup `
           -HadRecovery $hadRecovery
+        if ($previousDesiredState -eq "running") {
+          Exit-RuntimeOperation -Mutex $runtimeMutex
+          $runtimeMutex = $null
+          Invoke-RestoredManagedStart
+          $runtimeMutex = Enter-RuntimeOperation
+          Invoke-RestoredRuntimeVerification
+        }
         Write-UpdateStatus `
           -State "rolled_back" `
           -RequestId $requestId `

@@ -153,10 +153,21 @@ MCP caller.
 
 The runtime Codex probe distinguishes the reviewed deployment from the external
 account's current quota. Only an explicit `failure=rate_limited` result is
-advisory; malformed output, tool failure, wrong package identity, and other
-delegation errors still fail deployment. Candidate worktree and temporary-root
-cleanup use validated paths plus extended-length Windows deletion so deep npm
-trees cannot strand updater state solely because of the legacy path limit.
+or the exact Codex usage-limit response plus its official usage URL is advisory;
+malformed output, tool failure, wrong package identity, and other delegation
+errors still fail deployment. Candidate worktree and temporary-root cleanup use
+validated paths plus extended-length Windows deletion so deep npm trees cannot
+strand updater state solely because of the legacy path limit.
+
+Rollback does not evaluate an older package with the candidate generation's
+runtime fingerprint schema. It still verifies the package archive, installed
+directory, deployment lock, and locked production install. Lifecycle scripts are
+copied from the verified rollback package itself (with the predeployment copy as
+compatibility fallback), so a stale managed script cannot own a different package
+generation. The updater restores saved settings, releases the candidate runtime
+lock, and lets that restored script start the prior generation under its own
+compatible rules. It then reacquires the lock and requires doctor plus
+local/public OAuth metadata to pass before reporting rollback success.
 
 The post-initialization MCP tool-list-change notification has an empty payload
 and only asks the already OAuth-approved client to reread metadata it could

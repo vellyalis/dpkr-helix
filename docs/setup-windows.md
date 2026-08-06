@@ -207,7 +207,13 @@ The updater:
    other delegation failures remain blocking;
 7. fast-forwards the managed source and updates the managed recovery scripts;
 8. restores the previous package, bootstrap settings, source commit, scripts,
-   desired state, and health if deployment fails.
+   desired state, and health if deployment fails. Package installation verifies
+   the prior generation's lock and layout without imposing the candidate
+   generation's fingerprint schema. Setup and recovery scripts are restored from
+   that verified prior-generation package rather than trusting a potentially
+   stale managed copy; runtime ownership is then handed to the restored setup
+   script, which starts its own compatible generation before the updater performs
+   generic doctor and OAuth checks.
 
 One MCP reconnect is expected after verified deployment begins because the
 server is replacing itself. After reconnecting, ask ChatGPT for the update

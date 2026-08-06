@@ -75,6 +75,7 @@ function Get-SetupFunctionSource {
         "Get-SourceUpdatePlanWithoutFetch",
         "Assert-UpdatePlanStillCurrent",
         "Restore-UpdateDeployment",
+        "Invoke-RestoredManagedStart",
         "Get-GlobalNpmRoot",
         "Get-GlobalNpmPrefix",
         "Get-ExtendedLengthPath",
@@ -251,6 +252,13 @@ try {
         "agt_fixture error codex-explorer codex model thinking=max failure=rate_limited"
       )) `
     -Message "Explicit Codex usage exhaustion was not classified as advisory."
+  Assert-True `
+    -Condition (Test-CodexDelegationAdvisoryFailure -Result (
+        "agt_fixture error codex-explorer codex model thinking=max`n" +
+        "You've hit your usage limit. Visit https://chatgpt.com/codex/settings/usage " +
+        "to purchase more credits."
+      )) `
+    -Message "Codex usage exhaustion without the structured failure marker was not classified as advisory."
   Assert-True `
     -Condition (-not (Test-CodexDelegationAdvisoryFailure -Result (
           "agt_fixture error codex-explorer codex model thinking=max failure=tool_failed"
@@ -478,11 +486,22 @@ try {
   $rollbackSetupBackup = Join-Path $temporaryRoot "rollback-setup.ps1"
   $rollbackRecoveryBackup = Join-Path $temporaryRoot "rollback-recovery.ps1"
   $rollbackSettingsBackup = Join-Path $temporaryRoot "rollback-settings.json"
+  $rollbackInstalledRoot = Join-Path $temporaryRoot "rollback-installed"
+  $rollbackInstalledScripts = Join-Path $rollbackInstalledRoot "scripts"
+  New-Item -ItemType Directory -Path $rollbackInstalledScripts -Force | Out-Null
   $script:ManagedScriptPath = Join-Path $temporaryRoot "managed-restore\setup-windows.ps1"
   $script:ManagedRecoveryPath = Join-Path $temporaryRoot "managed-restore\setup-windows-recovery.ps1"
   $script:SettingsPath = Join-Path $temporaryRoot "restore-settings.json"
-  [System.IO.File]::WriteAllText($rollbackSetupBackup, "previous setup")
-  [System.IO.File]::WriteAllText($rollbackRecoveryBackup, "previous recovery")
+  [System.IO.File]::WriteAllText($rollbackSetupBackup, "stale managed setup backup")
+  [System.IO.File]::WriteAllText($rollbackRecoveryBackup, "stale managed recovery backup")
+  [System.IO.File]::WriteAllText(
+    (Join-Path $rollbackInstalledScripts "setup-windows.ps1"),
+    "package-owned setup"
+  )
+  [System.IO.File]::WriteAllText(
+    (Join-Path $rollbackInstalledScripts "setup-windows-recovery.ps1"),
+    "package-owned recovery"
+  )
   Write-JsonAtomic -Path $rollbackSettingsBackup -Value ([ordered]@{
       desiredState = "stopped"
       runtimePackageSha256 = "a" * 64
@@ -490,13 +509,21 @@ try {
     })
   Write-JsonAtomic -Path $script:SettingsPath -Value ([ordered]@{ desiredState = "running" })
   $script:rollbackPackageSeen = $null
+  $script:rollbackCompatibilityModeSeen = $false
   $script:rollbackStopSeen = $false
   function Stop-DevSpaceRuntime {
     $script:rollbackStopSeen = $true
   }
   function Install-BuiltDevSpacePackage {
-    param([string] $PackagePath)
+    param(
+      [string] $PackagePath,
+      [switch] $SkipRuntimeFingerprintVerification
+    )
     $script:rollbackPackageSeen = $PackagePath
+    $script:rollbackCompatibilityModeSeen = [bool] $SkipRuntimeFingerprintVerification
+  }
+  function Get-InstalledDevSpaceRoot {
+    return $rollbackInstalledRoot
   }
   try {
     Restore-UpdateDeployment `
@@ -510,6 +537,7 @@ try {
   }
   finally {
     Remove-Item function:Install-BuiltDevSpacePackage -ErrorAction SilentlyContinue
+    Remove-Item function:Get-InstalledDevSpaceRoot -ErrorAction SilentlyContinue
     Remove-Item function:Stop-DevSpaceRuntime -ErrorAction SilentlyContinue
     . ([ScriptBlock]::Create((Get-SetupFunctionSource -Names @("Stop-DevSpaceRuntime"))))
   }
@@ -524,14 +552,43 @@ try {
     -Condition ($script:rollbackPackageSeen -eq "previous-package.tgz") `
     -Message "Rollback did not reinstall the previous package."
   Assert-True `
-    -Condition ((Get-Content -LiteralPath $script:ManagedScriptPath -Raw) -eq "previous setup") `
-    -Message "Rollback did not restore the previous managed setup script."
+    -Condition $script:rollbackCompatibilityModeSeen `
+    -Message "Rollback required the candidate generation's runtime fingerprint contract."
   Assert-True `
-    -Condition ((Get-Content -LiteralPath $script:ManagedRecoveryPath -Raw) -eq "previous recovery") `
-    -Message "Rollback did not restore the previous managed recovery script."
+    -Condition ((Get-Content -LiteralPath $script:ManagedScriptPath -Raw) -eq "package-owned setup") `
+    -Message "Rollback did not restore setup from the verified prior-generation package."
+  Assert-True `
+    -Condition ((Get-Content -LiteralPath $script:ManagedRecoveryPath -Raw) -eq "package-owned recovery") `
+    -Message "Rollback did not restore recovery from the verified prior-generation package."
   Assert-True `
     -Condition ((Read-JsonFile -Path $script:SettingsPath).desiredState -eq "stopped") `
     -Message "Rollback changed an intentionally stopped installation to running."
+
+  $script:restoredStartFile = $null
+  $script:restoredStartArguments = @()
+  & {
+    function Get-CommandPath {
+      param([string] $Name)
+      return "powershell.exe"
+    }
+    function Invoke-Checked {
+      param([string] $FilePath, [string[]] $Arguments)
+      $script:restoredStartFile = $FilePath
+      $script:restoredStartArguments = @($Arguments)
+    }
+    Invoke-RestoredManagedStart
+  }
+  Assert-True `
+    -Condition ($script:restoredStartFile -eq "powershell.exe") `
+    -Message "Rollback did not use Windows PowerShell to invoke the restored lifecycle owner."
+  Assert-True `
+    -Condition (
+      $script:restoredStartArguments -contains $script:ManagedScriptPath -and
+      $script:restoredStartArguments -contains "Start" -and
+      $script:restoredStartArguments -contains "-RecoveryStart" -and
+      $script:restoredStartArguments -contains "-SkipVerification"
+    ) `
+    -Message "Rollback did not restart through the restored managed setup script."
 
   $sharedLogPath = Join-Path $temporaryRoot "shared.log"
   $sharedLog = [System.IO.File]::Open(
@@ -781,6 +838,21 @@ try {
   Assert-True `
     -Condition $sourceText.Contains('windows-bootstrap.previous.json') `
     -Message "Managed update rollback does not preserve bootstrap settings."
+  Assert-True `
+    -Condition (
+      $sourceText.Contains('[switch] $SkipRuntimeFingerprintVerification') -and
+      $sourceText.Contains('if (-not $SkipRuntimeFingerprintVerification)') -and
+      $sourceText.Contains('-SkipRuntimeFingerprintVerification')
+    ) `
+    -Message "Rollback cannot install a prior package generation without applying the candidate fingerprint contract."
+  Assert-True `
+    -Condition (
+      $sourceText.Contains('Invoke-RestoredManagedStart') -and
+      $sourceText.Contains('Exit-RuntimeOperation -Mutex $runtimeMutex') -and
+      $sourceText.Contains('$runtimeMutex = Enter-RuntimeOperation') -and
+      $sourceText.Contains('Invoke-RestoredRuntimeVerification')
+    ) `
+    -Message "Rollback does not hand runtime ownership back to the restored setup generation."
   Assert-True `
     -Condition (
       $sourceText.Contains('$arguments += "-SkipVerification"') -and
