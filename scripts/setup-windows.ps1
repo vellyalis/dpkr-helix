@@ -1848,12 +1848,61 @@ function Get-TrackedProcessIdentity {
   }
 }
 
+function Invoke-TaskkillProcessTree {
+  param(
+    [Parameter(Mandatory = $true)][string] $TaskkillPath,
+    [Parameter(Mandatory = $true)][int] $ProcessId
+  )
+  $previousErrorPreference = $ErrorActionPreference
+  $output = @()
+  $exitCode = -1
+  try {
+    # Windows PowerShell 5.1 turns native stderr into ErrorRecord values. Under
+    # the script-wide Stop preference, taskkill can therefore abort before we
+    # inspect whether the owned root process actually exited. Capture this one
+    # native command under Continue and decide success from the tracked process
+    # generation below instead of from descendant-race diagnostics.
+    $ErrorActionPreference = "Continue"
+    $output = @(& $TaskkillPath /PID $ProcessId /T /F 2>&1)
+    $exitCode = [int] $LASTEXITCODE
+  }
+  finally {
+    $ErrorActionPreference = $previousErrorPreference
+  }
+  return [pscustomobject]@{
+    ExitCode = $exitCode
+    Output = $output
+  }
+}
+
+function Test-TrackedProcessGenerationExists {
+  param(
+    [Parameter(Mandatory = $true)][int] $ProcessId,
+    [Parameter(Mandatory = $true)][long] $ExpectedStartTimeFileTimeUtc
+  )
+  $process = Get-Process -Id $ProcessId -ErrorAction SilentlyContinue
+  if (-not $process) {
+    return $false
+  }
+  try {
+    return (
+      $process.StartTime.ToUniversalTime().ToFileTimeUtc() -eq
+        $ExpectedStartTimeFileTimeUtc
+    )
+  }
+  catch {
+    # If Windows cannot read creation time, fail closed and preserve state.
+    return $true
+  }
+}
+
 function Stop-TrackedProcess {
   param(
     [int] $ProcessId,
     [Parameter(Mandatory = $true)][string] $ExpectedCommandFragment,
     [Parameter(Mandatory = $true)][string] $ExpectedExecutablePath,
-    [Parameter(Mandatory = $true)][long] $ExpectedStartTimeFileTimeUtc
+    [Parameter(Mandatory = $true)][long] $ExpectedStartTimeFileTimeUtc,
+    [ValidateRange(0, 60000)][int] $StopTimeoutMilliseconds = 10000
   )
   $identity = Get-TrackedProcessIdentity `
     -ProcessId $ProcessId `
@@ -1876,17 +1925,32 @@ function Stop-TrackedProcess {
   if (-not $taskkill) {
     throw "Windows process-tree termination is unavailable."
   }
-  & $taskkill /PID $ProcessId /T /F 2>&1 | Out-Null
-  $stopDeadline = [DateTime]::UtcNow.AddSeconds(10)
+  $termination = Invoke-TaskkillProcessTree `
+    -TaskkillPath $taskkill `
+    -ProcessId $ProcessId
+  $stopDeadline = [DateTime]::UtcNow.AddMilliseconds($StopTimeoutMilliseconds)
   while (
     [DateTime]::UtcNow -lt $stopDeadline -and
-    (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)
+    (Test-TrackedProcessGenerationExists `
+      -ProcessId $ProcessId `
+      -ExpectedStartTimeFileTimeUtc $ExpectedStartTimeFileTimeUtc)
   ) {
     Start-Sleep -Milliseconds 100
   }
-  $stopped = -not [bool](Get-Process -Id $ProcessId -ErrorAction SilentlyContinue)
+  $stopped = -not (Test-TrackedProcessGenerationExists `
+    -ProcessId $ProcessId `
+    -ExpectedStartTimeFileTimeUtc $ExpectedStartTimeFileTimeUtc)
+  if ($stopped -and [int] $termination.ExitCode -ne 0) {
+    Write-Warning (
+      "taskkill returned exit code $($termination.ExitCode) after the tracked PID $ProcessId " +
+      "generation exited; accepting the descendant termination race."
+    )
+  }
   if (-not $stopped) {
-    Write-Warning "PID $ProcessId still exists after the stop timeout; runtime state will be preserved."
+    Write-Warning (
+      "Tracked PID $ProcessId still exists after the stop timeout " +
+      "(taskkill exit code $($termination.ExitCode)); runtime state will be preserved."
+    )
   }
   return $stopped
 }

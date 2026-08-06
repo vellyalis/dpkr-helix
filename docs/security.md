@@ -117,6 +117,13 @@ deployment lock, not configuration, credentials, logs, browser state, or
 workspace data. The last recovery result contains only a bounded state, reason
 code, message, and UTC timestamp.
 
+Native process-tree diagnostics are not treated as proof of shutdown by
+themselves. A descendant can exit while Windows is processing `taskkill /T`,
+producing a nonzero exit even after the owned root stopped. The installer
+accepts that race only when the recorded root PID/creation-time generation is
+gone. If the same generation remains, shutdown fails closed and the runtime
+record is preserved.
+
 Removal is explicit and fails closed if a same-named task or helper file is not
 recognized as managed by dpkr helix.
 

@@ -159,6 +159,13 @@ restarting them. It refuses to stop a reused PID unless its executable,
 creation time, and command line all match the recorded process identity, and it
 keeps the runtime record when identity cannot be proven.
 
+Windows `taskkill /T` can return a nonzero result when a descendant exits during
+tree termination even though the tracked root generation was stopped. Managed
+Stop captures that native diagnostic without weakening the script-wide failure
+policy, then decides success from the tracked root PID plus creation time. A
+descendant-only race is accepted after the root generation disappears; a root
+generation that remains alive still fails Stop and preserves runtime state.
+
 Before reuse, Start also verifies the retained package hash, deployed runtime
 fingerprint, recorded runtime generation, saved/configured public origin, local
 health, authorization-server metadata, and protected-resource metadata. A fully

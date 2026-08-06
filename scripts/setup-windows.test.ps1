@@ -95,6 +95,8 @@ function Get-SetupFunctionSource {
         "ConvertTo-TomlBasicString",
         "Get-ProcessRecord",
         "Get-TrackedProcessIdentity",
+        "Invoke-TaskkillProcessTree",
+        "Test-TrackedProcessGenerationExists",
         "Stop-TrackedProcess",
         "Stop-DevSpaceRuntime",
         "Start-QuickTunnel"
@@ -908,8 +910,12 @@ try {
     -Condition ($sourceText.Contains('New-InstalledDevSpaceRollbackPackage -Destination $backupPath')) `
     -Message "Update rollback does not capture the exact installed runtime."
   Assert-True `
-    -Condition ($sourceText.Contains('& $taskkill /PID $ProcessId /T /F')) `
-    -Message "Managed Stop does not terminate owned descendant processes."
+    -Condition (
+      $sourceText.Contains('Invoke-TaskkillProcessTree') -and
+      $sourceText.Contains('& $TaskkillPath /PID $ProcessId /T /F') -and
+      $sourceText.Contains('Test-TrackedProcessGenerationExists')
+    ) `
+    -Message "Managed Stop does not terminate and verify the owned process generation."
   Assert-True `
     -Condition ($sourceText.Contains('if (-not $runtime.Reused)')) `
     -Message "Start failure can stop a pre-existing healthy runtime."
@@ -971,6 +977,110 @@ try {
   Assert-True `
     -Condition ($invalidOutput.Contains("-PublicBaseUrl is required")) `
     -Message "External mode returned an unclear missing-URL error."
+
+  $taskkillFailurePath = Join-Path $temporaryRoot "taskkill-native-failure.cmd"
+  [System.IO.File]::WriteAllText(
+    $taskkillFailurePath,
+    "@echo off`r`n>&2 echo ERROR: injected descendant race`r`nexit /b 128`r`n",
+    [System.Text.Encoding]::ASCII
+  )
+  $nativeTermination = Invoke-TaskkillProcessTree `
+    -TaskkillPath $taskkillFailurePath `
+    -ProcessId 4242
+  Assert-True `
+    -Condition ([int] $nativeTermination.ExitCode -eq 128) `
+    -Message "Native taskkill stderr escaped the bounded capture path."
+
+  $taskkillRacePath = Join-Path $temporaryRoot "taskkill-descendant-race.cmd"
+  [System.IO.File]::WriteAllText(
+    $taskkillRacePath,
+    (
+      "@echo off`r`n" +
+      '"%SystemRoot%\System32\taskkill.exe" /PID %2 /F >nul 2>&1' + "`r`n" +
+      ">&2 echo ERROR: injected child process already exited`r`n" +
+      "exit /b 128`r`n"
+    ),
+    [System.Text.Encoding]::ASCII
+  )
+  $raceProcess = Start-Process `
+    -FilePath "powershell.exe" `
+    -ArgumentList @("-NoProfile", "-Command", "Start-Sleep -Seconds 60") `
+    -WindowStyle Hidden `
+    -PassThru
+  $originalGetCommandPath = (Get-Item function:Get-CommandPath).ScriptBlock
+  $script:taskkillTestPath = $taskkillRacePath
+  try {
+    Set-Item function:Get-CommandPath -Value {
+      param([string] $Name)
+      if ($Name -eq "taskkill.exe") {
+        return $script:taskkillTestPath
+      }
+      throw "Unexpected command lookup in taskkill race test: $Name"
+    }
+    $raceRecord = Get-CimInstance Win32_Process -Filter "ProcessId = $($raceProcess.Id)"
+    $raceStopped = Stop-TrackedProcess `
+      -ProcessId $raceProcess.Id `
+      -ExpectedCommandFragment "Start-Sleep" `
+      -ExpectedExecutablePath ([string] $raceRecord.ExecutablePath) `
+      -ExpectedStartTimeFileTimeUtc $raceProcess.StartTime.ToUniversalTime().ToFileTimeUtc() `
+      -StopTimeoutMilliseconds 2000
+    Assert-True `
+      -Condition $raceStopped `
+      -Message "A nonzero taskkill descendant race rejected an exited tracked root generation."
+    Assert-True `
+      -Condition (-not [bool](Get-Process -Id $raceProcess.Id -ErrorAction SilentlyContinue)) `
+      -Message "Taskkill race fixture did not stop the tracked root process."
+  }
+  finally {
+    Set-Item function:Get-CommandPath -Value $originalGetCommandPath
+    Remove-Variable taskkillTestPath -Scope Script -ErrorAction SilentlyContinue
+    if (Get-Process -Id $raceProcess.Id -ErrorAction SilentlyContinue) {
+      Stop-Process -Id $raceProcess.Id -Force
+    }
+  }
+
+  $taskkillNoStopPath = Join-Path $temporaryRoot "taskkill-root-remains.cmd"
+  [System.IO.File]::WriteAllText(
+    $taskkillNoStopPath,
+    "@echo off`r`n>&2 echo ERROR: injected root remains`r`nexit /b 128`r`n",
+    [System.Text.Encoding]::ASCII
+  )
+  $remainingProcess = Start-Process `
+    -FilePath "powershell.exe" `
+    -ArgumentList @("-NoProfile", "-Command", "Start-Sleep -Seconds 60") `
+    -WindowStyle Hidden `
+    -PassThru
+  $originalGetCommandPath = (Get-Item function:Get-CommandPath).ScriptBlock
+  $script:taskkillTestPath = $taskkillNoStopPath
+  try {
+    Set-Item function:Get-CommandPath -Value {
+      param([string] $Name)
+      if ($Name -eq "taskkill.exe") {
+        return $script:taskkillTestPath
+      }
+      throw "Unexpected command lookup in taskkill root-remains test: $Name"
+    }
+    $remainingRecord = Get-CimInstance Win32_Process -Filter "ProcessId = $($remainingProcess.Id)"
+    $remainingStopped = Stop-TrackedProcess `
+      -ProcessId $remainingProcess.Id `
+      -ExpectedCommandFragment "Start-Sleep" `
+      -ExpectedExecutablePath ([string] $remainingRecord.ExecutablePath) `
+      -ExpectedStartTimeFileTimeUtc $remainingProcess.StartTime.ToUniversalTime().ToFileTimeUtc() `
+      -StopTimeoutMilliseconds 0
+    Assert-True `
+      -Condition (-not $remainingStopped) `
+      -Message "A nonzero taskkill result was accepted while the tracked root generation remained alive."
+    Assert-True `
+      -Condition ([bool](Get-Process -Id $remainingProcess.Id -ErrorAction SilentlyContinue)) `
+      -Message "The root-remains fixture unexpectedly stopped the tracked process."
+  }
+  finally {
+    Set-Item function:Get-CommandPath -Value $originalGetCommandPath
+    Remove-Variable taskkillTestPath -Scope Script -ErrorAction SilentlyContinue
+    if (Get-Process -Id $remainingProcess.Id -ErrorAction SilentlyContinue) {
+      Stop-Process -Id $remainingProcess.Id -Force
+    }
+  }
 
   $ownedProcess = Start-Process `
     -FilePath "powershell.exe" `
