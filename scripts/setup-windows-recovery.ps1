@@ -583,11 +583,41 @@ function Test-ScheduledTaskAccessDenied {
   if ($ErrorRecord.Exception -is [System.UnauthorizedAccessException]) {
     return $true
   }
+  $fullyQualifiedErrorId = [string](
+    Get-PropertyValue -InputObject $ErrorRecord -Name "FullyQualifiedErrorId"
+  )
+  if ($fullyQualifiedErrorId -match "(?i)\bHRESULT\s+0x80070005\b") {
+    return $true
+  }
   $nativeErrorCode = Get-PropertyValue `
     -InputObject $ErrorRecord.Exception `
     -Name "NativeErrorCode"
   if ($nativeErrorCode -and [int] $nativeErrorCode -eq 5) {
     return $true
+  }
+  $errorData = Get-PropertyValue `
+    -InputObject $ErrorRecord.Exception `
+    -Name "ErrorData"
+  if ($errorData) {
+    $messageId = [string](
+      Get-PropertyValue -InputObject $errorData -Name "MessageID"
+    )
+    if ($messageId -match "(?i)^HRESULT\s+0x80070005$") {
+      return $true
+    }
+    $windowsErrorCode = Get-PropertyValue `
+      -InputObject $errorData `
+      -Name "error_Code"
+    if ($null -ne $windowsErrorCode) {
+      try {
+        if ([uint64] $windowsErrorCode -eq [uint64] 2147942405) {
+          return $true
+        }
+      }
+      catch {
+        # Ignore malformed provider metadata and continue to the bounded fallback check.
+      }
+    }
   }
   return ([string] $ErrorRecord) -match "(?i)0x80070005|access.+denied"
 }

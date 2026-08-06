@@ -358,6 +358,50 @@ try {
     -Condition (-not (Test-ManagedTask -Task $spoofedTask)) `
     -Message "A matching Action without the ownership marker was accepted as managed."
 
+  $localizedAccessDenied = [pscustomobject]@{
+    FullyQualifiedErrorId = "HRESULT 0x80070005,Register-ScheduledTask"
+    Exception = [pscustomobject]@{
+      NativeErrorCode = 1
+      ErrorData = [pscustomobject]@{
+        MessageID = "HRESULT 0x80070005"
+        error_Code = [uint64] 2147942405
+      }
+    }
+  }
+  Assert-True `
+    -Condition (Test-ScheduledTaskAccessDenied -ErrorRecord $localizedAccessDenied) `
+    -Message "Localized Task Scheduler HRESULT 0x80070005 was not recognized."
+
+  $errorDataOnlyAccessDenied = [pscustomobject]@{
+    FullyQualifiedErrorId = "Register-ScheduledTask"
+    Exception = [pscustomobject]@{
+      NativeErrorCode = 1
+      ErrorData = [pscustomobject]@{
+        MessageID = "HRESULT 0x80070005"
+        error_Code = [uint64] 2147942405
+      }
+    }
+  }
+  Assert-True `
+    -Condition (Test-ScheduledTaskAccessDenied -ErrorRecord $errorDataOnlyAccessDenied) `
+    -Message "Task Scheduler ErrorData access-denied code was not recognized."
+
+  $differentSchedulerFailure = [pscustomobject]@{
+    FullyQualifiedErrorId = "HRESULT 0x80070020,Register-ScheduledTask"
+    Exception = [pscustomobject]@{
+      NativeErrorCode = 32
+      ErrorData = [pscustomobject]@{
+        MessageID = "HRESULT 0x80070020"
+        error_Code = [uint64] 2147942432
+      }
+    }
+  }
+  Assert-True `
+    -Condition (-not (
+        Test-ScheduledTaskAccessDenied -ErrorRecord $differentSchedulerFailure
+      )) `
+    -Message "An unrelated Task Scheduler failure was classified as access denied."
+
   Write-Utf8NoBom `
     -Path $script:HiddenLauncherPath `
     -Content ((Get-HiddenLauncherContent).Trim() + "`r`n")

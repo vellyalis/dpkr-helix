@@ -356,8 +356,10 @@ the Owner password, Cloudflare token, browser state, or workspace contents.
 
 Install first requests the richer ScheduledTasks registration with both logon
 and five-minute triggers. Some standard-user Windows configurations reject that
-cmdlet with `0x80070005` even though the same user is allowed to own a task. Only
-for that exact access-denied condition, installation falls back to
+cmdlet with `0x80070005` even though the same user is allowed to own a task. The
+classifier reads the locale-independent PowerShell error ID and CIM `ErrorData`
+rather than depending on the translated message text. Only for that exact
+access-denied condition, installation falls back to
 `schtasks.exe` with the current-user five-minute schedule and `LIMITED` run
 level. The fallback action, user SID, root task name, managed launcher marker,
 and no-console command are verified before the task is accepted or removed;

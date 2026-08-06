@@ -103,7 +103,8 @@ external tunnel remains a separate owner.
 
 Recovery task installation does not require or request administrator elevation.
 The preferred ScheduledTasks registration owns two triggers. When Windows
-returns the exact access-denied condition for that cmdlet, a narrow
+returns the exact `HRESULT 0x80070005` condition for that cmdlet, identified
+through locale-independent error ID/CIM metadata, a narrow
 current-user `schtasks.exe` fallback creates only the five-minute `LIMITED`
 schedule. Ownership is not inferred from the task name alone: removal still
 requires the expected action, normalized user SID, limited interactive
