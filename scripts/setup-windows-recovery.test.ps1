@@ -69,7 +69,14 @@ function Get-RecoveryFunctionSource {
         "Get-HiddenLauncherContent",
         "Assert-ManagedFile",
         "Restore-ManagedFile",
+        "Get-TaskUserSid",
+        "Test-ScheduledTaskAccessDenied",
+        "Get-RecoveryTaskFullName",
+        "Invoke-SchtasksChecked",
+        "Register-RecoveryTaskWithSchtasks",
+        "Remove-RecoveryTaskWithSchtasks",
         "Test-ManagedTask",
+        "Remove-ManagedRecoveryTask",
         "Install-Recovery",
         "Remove-Recovery"
       ))
@@ -91,6 +98,7 @@ $script:TaskPath = "\"
 $script:TaskDescription = "$($script:ManagedMarker): Health-gated no-console recovery for the current user's dpkr helix installation."
 $script:TaskUserId = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 $script:WscriptPath = Join-Path $env:SystemRoot "System32\wscript.exe"
+$script:SchtasksPath = Join-Path $env:SystemRoot "System32\schtasks.exe"
 $script:SourceRecoveryPath = [System.IO.Path]::GetFullPath($recoveryPath)
 $script:RuntimeMutexName = "Local\dpkr-helix-recovery-test-" + [Guid]::NewGuid().ToString("N")
 
@@ -350,9 +358,34 @@ try {
     -Condition (-not (Test-ManagedTask -Task $spoofedTask)) `
     -Message "A matching Action without the ownership marker was accepted as managed."
 
+  Write-Utf8NoBom `
+    -Path $script:HiddenLauncherPath `
+    -Content ((Get-HiddenLauncherContent).Trim() + "`r`n")
+  $fallbackManagedTask = [pscustomobject]@{
+    TaskPath = $script:TaskPath
+    Description = ""
+    Actions = @([pscustomobject]@{
+        Execute = $script:WscriptPath
+        Arguments = '//B //NoLogo ' + $script:HiddenLauncherPath
+      })
+    Principal = [pscustomobject]@{
+      UserId = ($script:TaskUserId -split "\\")[-1]
+      LogonType = "Interactive"
+      RunLevel = "Limited"
+    }
+    Triggers = @([pscustomobject]@{ Schedule = "MINUTE"; Modifier = 5 })
+  }
+  Assert-True `
+    -Condition (Test-ManagedTask -Task $fallbackManagedTask) `
+    -Message "The marker-backed schtasks fallback was not recognized as managed."
+  Remove-Item -LiteralPath $script:HiddenLauncherPath -Force
+
   $script:registeredTask = $null
   $script:registeredTaskName = $null
   $script:unregisteredTaskName = $null
+  $script:schTasksInvocations = @()
+  $script:denyRegistration = $false
+  $script:denyUnregistration = $false
   function Get-ScheduledTask {
     param(
       [string] $TaskName,
@@ -419,6 +452,9 @@ try {
     if ($script:failRegistration) {
       throw "injected task registration failure"
     }
+    if ($script:denyRegistration) {
+      throw (New-Object System.UnauthorizedAccessException("Access is denied."))
+    }
     $script:registeredTaskName = $TaskName
     $script:registeredTask = [pscustomobject]@{
       TaskPath = $TaskPath
@@ -432,9 +468,39 @@ try {
   }
   function Unregister-ScheduledTask {
     param([string] $TaskName, [string] $TaskPath, [switch] $Confirm)
+    if ($script:denyUnregistration) {
+      throw (New-Object System.UnauthorizedAccessException("Access is denied."))
+    }
     $script:unregisteredTaskName = $TaskName
     $script:unregisteredTaskPath = $TaskPath
     $script:registeredTask = $null
+  }
+  function Invoke-SchtasksChecked {
+    param([string[]] $Arguments)
+    $script:schTasksInvocations += ,@($Arguments)
+    if ($Arguments[0] -eq "/Create") {
+      $script:registeredTaskName = $script:TaskName
+      $script:registeredTask = [pscustomobject]@{
+        TaskPath = $script:TaskPath
+        Description = ""
+        Actions = @([pscustomobject]@{
+            Execute = $script:WscriptPath
+            Arguments = '//B //NoLogo ' + $script:HiddenLauncherPath
+          })
+        Triggers = @([pscustomobject]@{ Schedule = "MINUTE"; Modifier = 5 })
+        Principal = [pscustomobject]@{
+          UserId = ($script:TaskUserId -split "\\")[-1]
+          LogonType = "Interactive"
+          RunLevel = "Limited"
+        }
+      }
+      return @("created")
+    }
+    if ($Arguments[0] -eq "/Delete") {
+      $script:registeredTask = $null
+      return @("deleted")
+    }
+    throw "Unexpected schtasks invocation."
   }
 
   $script:failRegistration = $true
@@ -495,6 +561,49 @@ try {
     -Condition (-not (Test-Path -LiteralPath $script:RecoveryStatusPath)) `
     -Message "Recovery rollback left the managed status file."
 
+  $script:denyRegistration = $true
+  $script:schTasksInvocations = @()
+  Install-Recovery
+  $script:denyRegistration = $false
+  Assert-True `
+    -Condition (Test-ManagedTask -Task $script:registeredTask) `
+    -Message "Access-denied registration did not install the exact managed fallback task."
+  $createInvocation = @($script:schTasksInvocations[0])
+  Assert-True `
+    -Condition (
+      $createInvocation -contains "/Create" -and
+      $createInvocation -contains "/SC" -and
+      $createInvocation -contains "MINUTE" -and
+      $createInvocation -contains "/MO" -and
+      $createInvocation -contains "5" -and
+      $createInvocation -contains "/RL" -and
+      $createInvocation -contains "LIMITED"
+    ) `
+    -Message "Access-denied fallback did not request the accepted five-minute limited schedule."
+  Assert-True `
+    -Condition ((Get-RecoveryTaskFullName) -eq "\dpkr helix Recovery") `
+    -Message "Fallback task name escaped the accepted root task path."
+
+  $script:denyUnregistration = $true
+  Remove-Recovery
+  $script:denyUnregistration = $false
+  Assert-True `
+    -Condition (-not $script:registeredTask) `
+    -Message "Access-denied removal did not delete the exact managed fallback task."
+  $deleteInvocation = @($script:schTasksInvocations[-1])
+  Assert-True `
+    -Condition (
+      $deleteInvocation -contains "/Delete" -and
+      $deleteInvocation -contains "\dpkr helix Recovery"
+    ) `
+    -Message "Access-denied removal did not target the exact managed fallback task."
+  Assert-True `
+    -Condition (-not (Test-Path -LiteralPath $script:ManagedRecoveryPath)) `
+    -Message "Fallback removal left the managed recovery script."
+  Assert-True `
+    -Condition (-not (Test-Path -LiteralPath $script:HiddenLauncherPath)) `
+    -Message "Fallback removal left the hidden launcher."
+
   Assert-True `
     -Condition ($sourceText.Contains('New-ScheduledTaskAction `')) `
     -Message "Recovery script does not define a Scheduled Task action."
@@ -507,6 +616,14 @@ try {
   Assert-True `
     -Condition ($sourceText.Contains("New-ScheduledTaskTrigger -AtLogOn")) `
     -Message "Recovery task does not define the accepted logon trigger."
+  Assert-True `
+    -Condition (
+      $sourceText.Contains('Register-RecoveryTaskWithSchtasks') -and
+      $sourceText.Contains('"/SC", "MINUTE"') -and
+      $sourceText.Contains('"/MO", "5"') -and
+      $sourceText.Contains('"/RL", "LIMITED"')
+    ) `
+    -Message "Recovery script does not define the accepted current-user schtasks fallback."
   Assert-True `
     -Condition (
       $sourceText.Contains('windows-recovery.json') -and

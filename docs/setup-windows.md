@@ -354,6 +354,15 @@ bootstrap settings, so an intentional stop stays stopped while a failed
 recovery start remains eligible for the next scheduled attempt. It never reads
 the Owner password, Cloudflare token, browser state, or workspace contents.
 
+Install first requests the richer ScheduledTasks registration with both logon
+and five-minute triggers. Some standard-user Windows configurations reject that
+cmdlet with `0x80070005` even though the same user is allowed to own a task. Only
+for that exact access-denied condition, installation falls back to
+`schtasks.exe` with the current-user five-minute schedule and `LIMITED` run
+level. The fallback action, user SID, root task name, managed launcher marker,
+and no-console command are verified before the task is accepted or removed;
+other registration failures remain blocking and no elevation is requested.
+
 A local failure is confirmed by a second short probe before reconciliation.
 Every eligible check then enters the existing managed Start path so that a
 health-only response cannot hide missing deployed files, a stale process

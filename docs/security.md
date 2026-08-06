@@ -101,6 +101,14 @@ the runtime record, so scheduled recovery does not restart the service. A
 public-only outage also does not restart an attested healthy local process; the
 external tunnel remains a separate owner.
 
+Recovery task installation does not require or request administrator elevation.
+The preferred ScheduledTasks registration owns two triggers. When Windows
+returns the exact access-denied condition for that cmdlet, a narrow
+current-user `schtasks.exe` fallback creates only the five-minute `LIMITED`
+schedule. Ownership is not inferred from the task name alone: removal still
+requires the expected action, normalized user SID, limited interactive
+principal, and a launcher file carrying the managed marker.
+
 Recovery verifies the saved package SHA-256, deployed application fingerprint,
 recorded process identity, configured stable origin, and local/public OAuth
 metadata. The retained package contains reviewed application files and a

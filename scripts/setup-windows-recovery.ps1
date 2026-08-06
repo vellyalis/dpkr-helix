@@ -38,6 +38,7 @@ $script:TaskPath = "\"
 $script:TaskDescription = "$($script:ManagedMarker): Health-gated no-console recovery for the current user's dpkr helix installation."
 $script:TaskUserId = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 $script:WscriptPath = Join-Path $env:SystemRoot "System32\wscript.exe"
+$script:SchtasksPath = Join-Path $env:SystemRoot "System32\schtasks.exe"
 $script:SourceRecoveryPath = [System.IO.Path]::GetFullPath($PSCommandPath)
 $script:RuntimeMutexName = "Local\dpkr-helix-windows-runtime"
 
@@ -561,6 +562,79 @@ function Restore-ManagedFile {
   }
 }
 
+function Get-TaskUserSid {
+  param([Parameter(Mandatory = $true)][string] $Value)
+  if ($Value -match "^S-1-") {
+    return $Value.ToUpperInvariant()
+  }
+  try {
+    $account = New-Object System.Security.Principal.NTAccount($Value)
+    return $account.Translate(
+      [System.Security.Principal.SecurityIdentifier]
+    ).Value.ToUpperInvariant()
+  }
+  catch {
+    return $Value.ToUpperInvariant()
+  }
+}
+
+function Test-ScheduledTaskAccessDenied {
+  param([Parameter(Mandatory = $true)] $ErrorRecord)
+  if ($ErrorRecord.Exception -is [System.UnauthorizedAccessException]) {
+    return $true
+  }
+  $nativeErrorCode = Get-PropertyValue `
+    -InputObject $ErrorRecord.Exception `
+    -Name "NativeErrorCode"
+  if ($nativeErrorCode -and [int] $nativeErrorCode -eq 5) {
+    return $true
+  }
+  return ([string] $ErrorRecord) -match "(?i)0x80070005|access.+denied"
+}
+
+function Get-RecoveryTaskFullName {
+  return $script:TaskPath.TrimEnd("\") + "\" + $script:TaskName
+}
+
+function Invoke-SchtasksChecked {
+  param([Parameter(Mandatory = $true)][string[]] $Arguments)
+  if (-not (Test-Path -LiteralPath $script:SchtasksPath -PathType Leaf)) {
+    throw "schtasks.exe is unavailable."
+  }
+  $output = @(& $script:SchtasksPath @Arguments 2>&1)
+  $exitCode = $LASTEXITCODE
+  if ($exitCode -ne 0) {
+    throw "Task Scheduler command failed with exit code $exitCode."
+  }
+  return $output
+}
+
+function Register-RecoveryTaskWithSchtasks {
+  $taskCommand = (
+    '"' + $script:WscriptPath + '" //B //NoLogo "' +
+    $script:HiddenLauncherPath + '"'
+  )
+  Invoke-SchtasksChecked -Arguments @(
+    "/Create",
+    "/TN", (Get-RecoveryTaskFullName),
+    "/TR", $taskCommand,
+    "/SC", "MINUTE",
+    "/MO", "5",
+    "/RL", "LIMITED",
+    "/F",
+    "/HRESULT"
+  ) | Out-Null
+}
+
+function Remove-RecoveryTaskWithSchtasks {
+  Invoke-SchtasksChecked -Arguments @(
+    "/Delete",
+    "/TN", (Get-RecoveryTaskFullName),
+    "/F",
+    "/HRESULT"
+  ) | Out-Null
+}
+
 function Test-ManagedTask {
   param([Parameter(Mandatory = $true)] $Task)
   $actions = @(Get-PropertyValue -InputObject $Task -Name "Actions")
@@ -570,20 +644,48 @@ function Test-ManagedTask {
   }
   $action = $actions[0]
   $expectedArguments = '//B //NoLogo "' + $script:HiddenLauncherPath + '"'
+  $actualArguments = [string]$action.Arguments
+  $argumentsMatch = [string]::Equals(
+    $actualArguments,
+    $expectedArguments,
+    [System.StringComparison]::Ordinal
+  )
+  if (-not $argumentsMatch -and $script:HiddenLauncherPath -notmatch "\s") {
+    $argumentsMatch = [string]::Equals(
+      $actualArguments,
+      ('//B //NoLogo ' + $script:HiddenLauncherPath),
+      [System.StringComparison]::Ordinal
+    )
+  }
+  $description = [string](Get-PropertyValue -InputObject $Task -Name "Description")
+  $descriptionMatches = [string]::Equals(
+    $description,
+    $script:TaskDescription,
+    [System.StringComparison]::Ordinal
+  )
+  if (-not $descriptionMatches -and [string]::IsNullOrWhiteSpace($description)) {
+    try {
+      $descriptionMatches = (
+        (Test-Path -LiteralPath $script:HiddenLauncherPath -PathType Leaf) -and
+        (Read-Utf8Text -Path $script:HiddenLauncherPath).Contains($script:ManagedMarker)
+      )
+    }
+    catch {
+      $descriptionMatches = $false
+    }
+  }
+  $actualUserId = [string](Get-PropertyValue -InputObject $principal -Name "UserId")
+  $userMatches = [string]::Equals(
+    (Get-TaskUserSid -Value $actualUserId),
+    (Get-TaskUserSid -Value $script:TaskUserId),
+    [System.StringComparison]::OrdinalIgnoreCase
+  )
   return (
     [string]::Equals(
       [string](Get-PropertyValue -InputObject $Task -Name "TaskPath"),
       $script:TaskPath,
       [System.StringComparison]::Ordinal
-    ) -and [string]::Equals(
-      [string](Get-PropertyValue -InputObject $Task -Name "Description"),
-      $script:TaskDescription,
-      [System.StringComparison]::Ordinal
-    ) -and [string]::Equals(
-      [string](Get-PropertyValue -InputObject $principal -Name "UserId"),
-      $script:TaskUserId,
-      [System.StringComparison]::OrdinalIgnoreCase
-    ) -and [string]::Equals(
+    ) -and $descriptionMatches -and $userMatches -and [string]::Equals(
       [string](Get-PropertyValue -InputObject $principal -Name "LogonType"),
       "Interactive",
       [System.StringComparison]::OrdinalIgnoreCase
@@ -595,12 +697,34 @@ function Test-ManagedTask {
       [string]$action.Execute,
       $script:WscriptPath,
       [System.StringComparison]::OrdinalIgnoreCase
-    ) -and [string]::Equals(
-      [string]$action.Arguments,
-      $expectedArguments,
-      [System.StringComparison]::Ordinal
-    )
+    ) -and $argumentsMatch
   )
+}
+
+function Remove-ManagedRecoveryTask {
+  $existingTask = Get-ScheduledTask `
+    -TaskName $script:TaskName `
+    -TaskPath $script:TaskPath `
+    -ErrorAction SilentlyContinue
+  if (-not $existingTask) {
+    return
+  }
+  if (-not (Test-ManagedTask -Task $existingTask)) {
+    throw "Refusing to remove an unmanaged Scheduled Task named '$($script:TaskName)'."
+  }
+  try {
+    Unregister-ScheduledTask `
+      -TaskName $script:TaskName `
+      -TaskPath $script:TaskPath `
+      -Confirm:$false
+  }
+  catch {
+    if (-not (Test-ScheduledTaskAccessDenied -ErrorRecord $_)) {
+      throw
+    }
+    Write-Warning "ScheduledTasks removal was denied; using the current-user schtasks fallback."
+    Remove-RecoveryTaskWithSchtasks
+  }
 }
 
 function Install-Recovery {
@@ -663,15 +787,24 @@ function Install-Recovery {
       -StartWhenAvailable `
       -MultipleInstances IgnoreNew `
       -ExecutionTimeLimit (New-TimeSpan -Minutes 2)
-    Register-ScheduledTask `
-      -TaskName $script:TaskName `
-      -TaskPath $script:TaskPath `
-      -Action $action `
-      -Trigger @($repeatTrigger, $logonTrigger) `
-      -Principal $principal `
-      -Settings $settings `
-      -Description $script:TaskDescription `
-      -Force | Out-Null
+    try {
+      Register-ScheduledTask `
+        -TaskName $script:TaskName `
+        -TaskPath $script:TaskPath `
+        -Action $action `
+        -Trigger @($repeatTrigger, $logonTrigger) `
+        -Principal $principal `
+        -Settings $settings `
+        -Description $script:TaskDescription `
+        -Force | Out-Null
+    }
+    catch {
+      if (-not (Test-ScheduledTaskAccessDenied -ErrorRecord $_)) {
+        throw
+      }
+      Write-Warning "ScheduledTasks registration was denied; using the current-user schtasks fallback."
+      Register-RecoveryTaskWithSchtasks
+    }
 
     $installed = Get-ScheduledTask `
       -TaskName $script:TaskName `
@@ -683,15 +816,11 @@ function Install-Recovery {
   }
   catch {
     if ($createdTask) {
-      $installed = Get-ScheduledTask `
-        -TaskName $script:TaskName `
-        -TaskPath $script:TaskPath `
-        -ErrorAction SilentlyContinue
-      if ($installed -and (Test-ManagedTask -Task $installed)) {
-        Unregister-ScheduledTask `
-          -TaskName $script:TaskName `
-          -TaskPath $script:TaskPath `
-          -Confirm:$false
+      try {
+        Remove-ManagedRecoveryTask
+      }
+      catch {
+        Write-Warning "Failed recovery registration cleanup could not remove the managed task: $($_.Exception.Message)"
       }
     }
     Restore-ManagedFile `
@@ -708,19 +837,7 @@ function Install-Recovery {
 }
 
 function Remove-Recovery {
-  $existingTask = Get-ScheduledTask `
-    -TaskName $script:TaskName `
-    -TaskPath $script:TaskPath `
-    -ErrorAction SilentlyContinue
-  if ($existingTask) {
-    if (-not (Test-ManagedTask -Task $existingTask)) {
-      throw "Refusing to remove an unmanaged Scheduled Task named '$($script:TaskName)'."
-    }
-    Unregister-ScheduledTask `
-      -TaskName $script:TaskName `
-      -TaskPath $script:TaskPath `
-      -Confirm:$false
-  }
+  Remove-ManagedRecoveryTask
   foreach ($path in @($script:HiddenLauncherPath, $script:ManagedRecoveryPath)) {
     if (Test-Path -LiteralPath $path -PathType Leaf) {
       Assert-ManagedFile -Path $path
@@ -755,7 +872,7 @@ function Show-Plan {
     Eligibility = $eligibility
     TaskName = $script:TaskName
     Action = "$script:WscriptPath //B //NoLogo `"$script:HiddenLauncherPath`""
-    Triggers = "current-user logon and every five minutes"
+    Triggers = "current-user logon and every five minutes; access-denied fallback uses the current-user five-minute schedule"
     Writes = "$script:ManagedRecoveryPath; $script:HiddenLauncherPath; $script:RecoveryStatusPath; current-user Scheduled Task"
     RestartRule = "reconcile runtime identity, package fingerprint, config origin, and local OAuth metadata; restart only when attestation fails"
     PublicOutageRule = "never restart a healthy local process for a public-only outage"
