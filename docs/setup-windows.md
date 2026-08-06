@@ -111,6 +111,11 @@ verified deployment lock. Normal source dependency maintenance therefore cannot
 lock or partially remove files used by the running service, and compatible range
 updates cannot silently change the deployed tree after verification.
 
+The package installs two command shims. `devspace` remains the low-level server
+and operations CLI. `helix` is the user-facing launcher for registered projects,
+the official Codex CLI, persistent handoffs, and the existing managed lifecycle.
+The launcher does not introduce another model client or API credential.
+
 Global npm installs pass the resolved prefix explicitly instead of relying only
 on `npm_config_prefix`. On Windows, npm can otherwise report a successful global
 install without creating the advertised package directory when the prefix

@@ -195,9 +195,20 @@ try {
     Assert-True -Condition (Test-Path -LiteralPath $path) -Message "Expected file is missing: $path"
   }
   $installedPackage = Join-Path $env:npm_config_prefix "node_modules\@waishnav\devspace"
+  $helixShim = Join-Path $env:npm_config_prefix "helix.cmd"
   Assert-True `
     -Condition (-not ((Get-Item -LiteralPath $installedPackage).Attributes -band [IO.FileAttributes]::ReparsePoint)) `
     -Message "Installed DevSpace remains linked to the mutable source checkout."
+  Assert-True `
+    -Condition (Test-Path -LiteralPath $helixShim -PathType Leaf) `
+    -Message "Global installation did not create the helix command shim."
+  Assert-True `
+    -Condition (Test-Path -LiteralPath (Join-Path $installedPackage "dist\helix-cli.js") -PathType Leaf) `
+    -Message "Installed package is missing the Helix launcher entrypoint."
+  $helixHelp = (& $helixShim help | Out-String)
+  Assert-True `
+    -Condition ($LASTEXITCODE -eq 0 -and $helixHelp.Contains("official Codex launcher")) `
+    -Message "Installed helix command did not expose the launcher help surface."
   $sourceLockPath = Join-Path $isolatedSourceRoot "package-lock.json"
   $installedSqlitePath = Join-Path $installedPackage "node_modules\better-sqlite3\package.json"
   Assert-True `

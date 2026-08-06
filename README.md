@@ -46,6 +46,7 @@ publication; clone this repository when you want dpkr helix itself.
 - persistent handoffs so work can resume across sessions on one installation
 - support for project instructions in `AGENTS.md` and `CLAUDE.md`
 - explicit ChatGPT-initiated updates with local verification and rollback on the portable Windows installation
+- a thin `helix` launcher that opens the official Codex CLI in registered projects, resumes Codex sessions, or carries a ChatGPT-side handoff into a new Codex session
 
 ## Roadmap
 
@@ -153,6 +154,24 @@ password printed by `devspace init` and stored locally in
 5. Ask the host to open a project inside an approved root.
 6. Open the dpkr helix dashboard to watch tools, output, diffs, and verification.
 
+The same registered projects are available from PowerShell through the official
+Codex CLI:
+
+```powershell
+# Open a new official Codex session in a registered project.
+helix studyforge
+
+# Carry the latest dpkr helix handoff from ChatGPT into a new Codex session.
+helix continue studyforge
+
+# Resume the most recent Codex session for that project.
+helix resume studyforge
+```
+
+`helix` is a launcher, not another model client. It reuses the installed
+official Codex executable, ChatGPT sign-in, normal Codex approval flow, and
+normal plan limits. It does not use a separate OpenAI API key or API billing.
+
 The dashboard separates current work from action items, review, and retained
 history. Its live feed follows active MCP and local-agent operations without
 creating a second execution engine.
@@ -208,6 +227,7 @@ intend to use.
 ## Documentation
 
 - [Portable Windows setup](./docs/setup-windows.md)
+- [Helix + official Codex launcher](./docs/helix-cli.md)
 - [Setup guide](./docs/setup.md)
 - [ChatGPT coding workflow](./docs/chatgpt-coding-workflow.md)
 - [Configuration reference](./docs/configuration.md)
