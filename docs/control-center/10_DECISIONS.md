@@ -2144,8 +2144,7 @@ a non-Windows parallel process owner.
 
 **Date:** 2026-08-08
 
-**Status:** Accepted; functional source and transition installation complete,
-installed end-to-end timing pending
+**Status:** Accepted; public, managed-deployed, and installed timing acceptance complete
 
 **Context:** After ADR-053 reduced candidate verification, the installed-lane
 deployment still took 282.348 seconds. The replacement runtime became healthy
@@ -2216,6 +2215,17 @@ build, zero-vulnerability production audit, Windows setup/recovery,
 public-release and diff gates pass. Functional checkpoint `cbdfad8` is public
 and installed; transition request `27333c6e-d378-4060-869e-2c4e34f01423`
 completed in 371.668 seconds but began under the preceding updater.
+The first complete installed-lane request
+`9fd8dcff-2912-4435-90bd-51e7b6531df3` deployed checkpoint `64be57a` in
+253.690 seconds, reached the healthy replacement runtime in 215.174 seconds,
+and closed remaining provenance and health checks in 38.516 seconds. Compared
+with the preceding fully installed lane's 282.348-second total and
+249.782-second runtime-start point, total time improved by 28.658 seconds and
+runtime availability by 34.608 seconds. The retained updater output contains
+one 385-package development install and one 353-package prepared production
+install, with no fast-path fallback warning. Source, origin, installed commit,
+physical fingerprint, Doctor, SQLite, local/public health, and local/public
+OAuth metadata agree.
 
 **Failure and recovery:** Candidate preparation fails before downtime. Fast-path
 ineligibility falls back to the existing installer. A replacement failure first

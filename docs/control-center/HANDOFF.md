@@ -108,8 +108,8 @@ Last synchronized: 2026-08-08
   an observed 69.341-second / 19.2-percent reduction from the transition run.
   Source, origin, installed commit, fingerprint, Doctor, local/public health,
   and local/public OAuth metadata agreed for the measured `a70a192` run.
-- Prepared runtime replacement is `IN VALIDATION` at installed checkpoint
-  `cbdfad8`. Global npm installation alone was measured and rejected because it
+- Prepared runtime replacement is `SHIPPED / LIVE VERIFIED` from functional
+  checkpoint `cbdfad8`. Global npm installation alone was measured and rejected because it
   omitted the hidden deployment lock, resolved 41 reviewed package versions
   differently, and added four paths. The accepted source extracts the verified
   recovery tarball, runs one lock-restored production install and all reviewed
@@ -123,8 +123,14 @@ Last synchronized: 2026-08-08
   `66fc4bf14554d5220233324016e66988793390e225924d96cbfb2542240cb067`, and passed
   Doctor/SQLite plus `helix --help`. Functional transition request
   `27333c6e-d378-4060-869e-2c4e34f01423` completed in 371.668 seconds but began
-  under the previous updater; the next state-only deployment is the first valid
-  installed timing of the new replacement lane.
+  under the previous updater. Installed-lane request
+  `9fd8dcff-2912-4435-90bd-51e7b6531df3` deployed measured checkpoint `64be57a`
+  in 253.690 seconds, reached the healthy runtime in 215.174 seconds, and closed
+  remaining checks in 38.516 seconds. This is 28.658 seconds faster end to end
+  and 34.608 seconds faster to runtime than the preceding fully installed lane.
+  Its update log shows one prepared 353-package production install and no
+  fallback warning; source, runtime commit, fingerprint, Doctor, SQLite, health
+  and OAuth metadata agree.
 - Two unmerged post-release upstream branches using host-installed Codex and the
   experimental `codex app-server` were classified as promising research, not a
   safe runtime replacement. A future isolated comparison must preserve

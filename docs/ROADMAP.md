@@ -30,7 +30,7 @@ measured baseline shows that it would not improve a real outcome.
 | Operations standby presentation | Shipped | Connected MCP session roots are separated from active `NOW` work without changing canonical state or lifecycle |
 | Practical daily-use controls | Shipped | Provider quota cooldowns, reversible workspace-session archive, and one Current/Resume plus failure-diagnosis surface are public, managed-deployed, and installed-verified |
 | Managed update verification throughput | Shipped | Every existing update gate remains mandatory while independent read-only checks use bounded parallel execution; installed end-to-end timing is live-verified |
-| Prepared runtime replacement | In validation | The exact lock-restored runtime is built and fingerprinted before downtime, then its fixed package root replaces the previous generation without rerunning global dependency resolution |
+| Prepared runtime replacement | Shipped | The exact lock-restored runtime is built and fingerprinted before downtime, then its fixed package root replaces the previous generation without rerunning global dependency resolution |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -232,7 +232,7 @@ took 34.121 seconds. This observed end-to-end run is 69.341 seconds, or 19.2
 percent, below the transition run; the stronger same-candidate preflight
 evidence remains the 292.9-to-123.106-second comparison above.
 
-## In validation: prepared runtime replacement
+## Shipped: prepared runtime replacement
 
 After the verification fast lane shipped, the largest remaining cost was the
 physical package replacement. The previous installer asked npm to install the
@@ -262,9 +262,16 @@ fingerprints both equaled
 `devspace doctor` confirmed the SQLite native dependency and `helix --help`
 exited successfully. Functional checkpoint `cbdfad8` is public and installed.
 Its 371.668-second deployment is a transition observation only because the
-request began under the preceding installed updater. A following documentation
-checkpoint will provide the first valid end-to-end timing for the prepared
-replacement lane.
+request began under the preceding installed updater. The following installed
+lane deployed checkpoint `64be57a` in 253.690 seconds, reached the healthy
+replacement runtime in 215.174 seconds, and completed provenance/health closure
+in 38.516 seconds. Against the preceding fully installed update lane's
+282.348-second total and 249.782-second runtime-start point, this removes 28.658
+seconds end to end and 34.608 seconds before runtime availability. The update log
+shows one 385-package development install for candidate verification and one
+353-package production install for the prepared runtime, with no fallback
+installer warning. Source, installed commit, physical fingerprint, Doctor,
+SQLite, local/public health and local/public OAuth metadata agree.
 
 ## Decision rules
 

@@ -17,9 +17,8 @@ Last synchronized: 2026-08-08
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-OPS-05 is live-verified and complete.
-- Current release line: `PRACTICAL CONTROLS / UPDATE FAST LANE SHIPPED /
-  PREPARED RUNTIME IN VALIDATION`; the installed functional checkpoint is
-  `cbdfad8`. The selective
+- Current release line: `PRACTICAL CONTROLS / UPDATE FAST LANE / PREPARED
+  RUNTIME SHIPPED`; the measured installed checkpoint is `64be57a`. The selective
   upstream and worker-reliability candidate is public from `16e236c`. It adapts
   upstream DevSpace `v1.0.6`
   conversation-aware checkout reuse, restart-safe review checkpoints, compact
@@ -104,7 +103,7 @@ Last synchronized: 2026-08-08
   same-candidate reduction from about 292.9 to 123.106 seconds. HEAD,
   `origin/main`, installed source commit, fingerprint, Doctor, local/public
   health, and local/public OAuth metadata agree.
-- Prepared runtime replacement is `IN VALIDATION` from functional checkpoint
+- Prepared runtime replacement is `SHIPPED / LIVE VERIFIED` from functional checkpoint
   `cbdfad8`. Benchmarking proved that global npm installation alone does not
   honor the deployment shrinkwrap: it omitted the hidden lock, resolved 41
   package versions differently, and added four package paths. The accepted lane
@@ -121,7 +120,14 @@ Last synchronized: 2026-08-08
   typecheck, build, zero-vulnerability audit, setup/recovery, public-release,
   and diff gates pass. Transition request
   `27333c6e-d378-4060-869e-2c4e34f01423` installed `cbdfad8` in 371.668 seconds,
-  but began under the prior updater and is not the final performance measure.
+  but began under the prior updater. The first complete installed-lane request
+  `9fd8dcff-2912-4435-90bd-51e7b6531df3` deployed checkpoint `64be57a` in
+  253.690 seconds, reached the healthy runtime after 215.174 seconds, and closed
+  remaining provenance/health in 38.516 seconds. Relative to the preceding
+  fully installed update lane, total time fell by 28.658 seconds and runtime
+  availability improved by 34.608 seconds. The installed log contains one
+  prepared 353-package production install and no fallback warning; source,
+  installed commit, fingerprint, Doctor, SQLite, health and OAuth agree.
 - Post-`v1.0.6` upstream host-installed Codex and experimental `app-server`
   branches were audited but not imported. They remain isolated research because
   they do not yet preserve Helix's schema-constrained completed/needs-input
