@@ -14,12 +14,14 @@ export type RunGroup =
   | "Now"
   | "Action"
   | "Review"
+  | "Standby"
   | "Archive";
 
 export const RUN_QUEUE_ORDER: RunGroup[] = [
   "Now",
   "Action",
   "Review",
+  "Standby",
   "Archive",
 ];
 
@@ -32,6 +34,7 @@ export interface RunSummaryCounts {
   now: number;
   action: number;
   review: number;
+  standby: number;
   archive: number;
 }
 
@@ -173,6 +176,7 @@ export function runPresentation(
 }
 
 export function runGroup(run: StoredOperationRun): RunGroup {
+  if (isMcpStandbyRun(run)) return "Standby";
   if (run.state === "queued" || run.state === "running") return "Now";
   if (
     run.state === "blocked"
@@ -190,6 +194,15 @@ export function runGroup(run: StoredOperationRun): RunGroup {
     return "Review";
   }
   return "Archive";
+}
+
+export function isMcpStandbyRun(run: StoredOperationRun): boolean {
+  return run.kind === "mcp_tool"
+    && run.source === "mcp"
+    && run.state === "running"
+    && run.sourceRunId?.startsWith("mcp-session:") === true
+    && run.phase?.trim() === "waiting"
+    && run.currentAction?.trim() === "Waiting for the MCP client";
 }
 
 export function sortRunsForRail(runs: StoredOperationRun[]): StoredOperationRun[] {
@@ -274,9 +287,10 @@ export function summarizeRuns(runs: StoredOperationRun[]): RunSummaryCounts {
     if (group === "Now") summary.now += 1;
     if (group === "Action") summary.action += 1;
     if (group === "Review") summary.review += 1;
+    if (group === "Standby") summary.standby += 1;
     if (group === "Archive") summary.archive += 1;
     return summary;
-  }, { now: 0, action: 0, review: 0, archive: 0 });
+  }, { now: 0, action: 0, review: 0, standby: 0, archive: 0 });
 }
 
 export function nextActionForRun(run: StoredOperationRun): string {

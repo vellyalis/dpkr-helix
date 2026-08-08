@@ -320,6 +320,7 @@ Summary:
 - `NOW`,
 - `ACTION`,
 - `REVIEW`,
+- `STANDBY`,
 - `ARCHIVE`.
 
 These are derived action queues. Exact run state and assurance remain visible
@@ -348,14 +349,19 @@ Selecting a run opens `#/runs/<runId>` without losing list filters.
 
 Default groups:
 
-1. `NOW` — queued or running
+1. `NOW` — queued or actively running
 2. `ACTION` — blocked, stopping, or failed
 3. `REVIEW` — result available, verification pending, or verifying
-4. `ARCHIVE` — stopped, verified, and other completed
+4. `STANDBY` — a live MCP session root whose canonical phase is `waiting` and
+   whose current action is `Waiting for the MCP client`
+5. `ARCHIVE` — stopped, verified, and other completed
 
 A flat sortable table is acceptable when grouping would obscure comparison,
 but `NOW` and `ACTION` must remain visually prioritized. Queue membership must
-be mutually exclusive and derived from the canonical run state.
+be mutually exclusive and derived from canonical run fields. `STANDBY` changes
+presentation only: the underlying session remains `running`, and ordinary
+running work, local-agent input waits, and non-session MCP operations must not
+be classified as standby.
 
 ### Run row fields
 

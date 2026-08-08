@@ -1752,8 +1752,7 @@ the additive comparison creates an unjustified redeployment loop.
 
 **Date:** 2026-08-08
 
-**Status:** Accepted; source and live-database-copy proof complete, managed
-deployment pending
+**Status:** Accepted; managed deployment and live reuse proof complete
 
 **Context:** After the provenance-correct runtime was installed, the first live
 same-conversation `open_project` call failed with `no such table:
@@ -1800,15 +1799,77 @@ database, containing 1,052 workspace rows and the historical version-9 ledger,
 was upgraded by the current source: version 9 remained
 `local-agent-fallbacks`, version 10 was recorded as
 `workspace-conversation-bindings`, and the missing table was created without
-touching the live database.
+touching the live database. Managed update `dfd3e26` then applied version 10 to
+the live ledger, preserved all 1,052 prior workspace rows, created one hashed
+conversation binding, and reused the same compact workspace on the second
+`open_project` call.
 
 **Failure and recovery:** All additions run inside the existing immediate
 migration transaction and use `create table if not exists` or
 `addColumnIfMissing`. A failed version-10 application records no version-10 row.
-Re-running is idempotent. The live database is not modified until the verified
-runtime starts through the normal managed deployment path.
+Re-running is idempotent. Rolling back the runtime leaves the additive version-10
+table readable and unused rather than rewriting or deleting applied history.
 
 **Reconsider when:** A future migration system introduces immutable globally
 unique migration identities with an explicit import map for all historical
 installations, or another pre-public migration identity is found to collide with
 the clean-root sequence.
+
+## ADR-049: Separate connected MCP standby sessions from active work
+
+**Date:** 2026-08-08
+
+**Status:** Accepted; source and live-state classification proof complete
+
+**Context:** After conversation reuse and migration version 10 were deployed,
+the Runs dashboard still presented nearly every retained MCP connection as
+`NOW`. A live top-level trace contained 66 active roots: 63 were canonical
+`running` MCP session roots in phase `waiting` with current action `Waiting for
+the MCP client`, two required user action, and only one was actively executing.
+The state was truthful, but the action queue presentation made connected idle
+sessions visually equivalent to work in progress.
+
+**Decision:** Add a fifth derived presentation queue, `STANDBY`, without changing
+run state, assurance, retention, or lifecycle. A run enters `STANDBY` only when
+all of these canonical fields agree:
+
+- `kind` is `mcp_tool` and `source` is `mcp`;
+- `state` remains `running`;
+- `sourceRunId` identifies an `mcp-session:` root;
+- `phase` is `waiting`; and
+- `currentAction` is exactly `Waiting for the MCP client` after trimming.
+
+The fixed presentation order becomes `NOW`, `ACTION`, `REVIEW`, `STANDBY`,
+`ARCHIVE`. Exact state and assurance labels remain authoritative. Ordinary
+running work, a local agent waiting for user input, non-session MCP work, and an
+MCP session whose phase changes to execution remain outside `STANDBY`.
+
+**Alternatives rejected:** Completing waiting sessions after an idle timeout,
+which would misstate a still-connected owner; moving them to `ARCHIVE`, which
+would imply terminality; hiding them entirely, which would remove useful
+connection evidence; or changing the canonical state machine solely for visual
+density. The presentation-only queue closes the observed scanability gap with
+no lifecycle risk.
+
+**Complexity receipt:** One pure predicate, one additional value in the existing
+queue union and summary, existing React metadata, ordinary CSS tokens, focused
+boundary tests, and synchronized screen copy. No store, migration, timer,
+service, daemon, transport change, retention rule, setting, dependency, or new
+execution owner was added.
+
+**Evidence:** Focused dashboard tests prove the positive MCP-session shape and
+reject an ordinary waiting MCP run and a local-agent lookalike. TypeScript and
+the production UI build pass. Replaying the same live 66-root dataset through
+the accepted source classification yields `NOW=1`, `ACTION=2`, `STANDBY=63`,
+with no canonical row mutation.
+
+**Failure and recovery:** Reverting the derived queue returns those sessions to
+`NOW`; persisted runs and live transports are untouched. If a future host uses a
+different canonical waiting action, the run remains conservatively in `NOW`
+until the projection contract is explicitly updated rather than being guessed
+into standby.
+
+**Reconsider when:** Connected session roots routinely perform useful work while
+retaining the exact standby field combination, the five-column summary harms
+the accepted viewports, or the host provides a first-class connection-idle
+state that can replace the derived predicate without weakening truth.

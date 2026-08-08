@@ -5,10 +5,9 @@ Last synchronized: 2026-08-08
 ## Current position
 
 - Selective upstream `v1.0.6` ingestion plus independent Helix reliability
-  hardening is published at `16e236c`; updater-truth commit `a791771` is
-  installed and live-verified, while the migration-collision repair is `SOURCE
-  VERIFIED / PUBLICATION + LIVE ACCEPTANCE PENDING`. Same-conversation checkout
-  reuse now
+  hardening is published from `16e236c`; updater truth and migration repair are
+  installed through `dfd3e26`, and same-conversation checkout reuse is
+  live-verified. Reuse now
   applies to both `open_workspace` and `open_project`, survives restart, keeps
   worktrees fresh, suppresses repeated static bootstrap, and persists only a
   prefixed SHA-256 key of the opaque host conversation scope. Review checkpoints
@@ -33,7 +32,7 @@ Last synchronized: 2026-08-08
   `git diff --check` pass. Production audit verifies reviewed Pi dependency
   repairs, hidden Codex Windows spawn behavior, and zero reported vulnerabilities.
   The physical installed package, settings, runtime record, doctor, health,
-  OAuth metadata, and canonical update status agree on `a791771`.
+  OAuth metadata, and canonical update status agree on `dfd3e26`.
 - The first managed update request falsely returned `UP_TO_DATE` because source
   `HEAD` already matched `origin/main`, even though the physical installed
   package lacked the new runtime. The follow-up stores a clean source commit
@@ -49,7 +48,20 @@ Last synchronized: 2026-08-08
   moves conversation bindings to version 10, and normalizes both the managed-v9
   and short-lived-public-v9 histories. Focused fixtures, managed restart, and an
   online backup of the exact live database with 1,052 workspace rows all apply
-  version 10 without data loss. The live database itself is not yet modified.
+  version 10 without data loss. Managed deployment then preserved those rows,
+  created one prefixed SHA-256 conversation binding, and reused the same compact
+  workspace on the second open while suppressing repeated static bootstrap.
+- A live read-only `codex-explorer` launch acknowledged and reached the provider
+  in 6.8 seconds, closing the former ten-second cold-start failure. Provider
+  execution itself stopped at the external Codex usage limit; the retained
+  error is a usage-limit result, not an acknowledgement timeout, and Git stayed
+  clean.
+- The next accepted Operations/UI unit adds a presentation-only `STANDBY` queue.
+  A live trace classified 63 of 66 top-level active roots as connected MCP
+  session waits, leaving one true `NOW` run and two `ACTION` runs. The predicate
+  requires the exact `mcp-session:` / `running` / `waiting` / `Waiting for the
+  MCP client` shape; it does not mutate state, assurance, retention, or the
+  transport lifecycle.
 - Two unmerged post-release upstream branches using host-installed Codex and the
   experimental `codex app-server` were classified as promising research, not a
   safe runtime replacement. A future isolated comparison must preserve

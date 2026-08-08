@@ -83,12 +83,13 @@ const EMPTY_FILTERS: RunFilters = {
 const RUN_QUEUE_META: Record<RunGroup, {
   code: string;
   label: string;
-  tone: "now" | "action" | "review" | "archive";
+  tone: "now" | "action" | "review" | "standby" | "archive";
 }> = {
   Now: { code: "01", label: "NOW", tone: "now" },
   Action: { code: "02", label: "ACTION", tone: "action" },
   Review: { code: "03", label: "REVIEW", tone: "review" },
-  Archive: { code: "04", label: "ARCHIVE", tone: "archive" },
+  Standby: { code: "04", label: "STANDBY", tone: "standby" },
+  Archive: { code: "05", label: "ARCHIVE", tone: "archive" },
 };
 
 const TERMINAL_COLORS: Record<TerminalAnsiColor, string> = {
@@ -780,6 +781,7 @@ function RunSummary(props: {
     [RUN_QUEUE_META.Now, props.summary.now],
     [RUN_QUEUE_META.Action, props.summary.action],
     [RUN_QUEUE_META.Review, props.summary.review],
+    [RUN_QUEUE_META.Standby, props.summary.standby],
     [RUN_QUEUE_META.Archive, props.summary.archive],
   ] as const;
   return (

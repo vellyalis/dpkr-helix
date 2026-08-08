@@ -26,7 +26,8 @@ measured baseline shows that it would not improve a real outcome.
 | Measured Codex-quality parity | Shipped | Signed-in Web-plus-helix passes the frozen suite 8/8 versus retained local Codex 5/8 without weakening permissions, evidence truth, or existing work |
 | GPT-5.6 Sol effort comparison | Stopped | Owner stopped the incomplete 24/96 matrix because it no longer changes a current product, release, or setting decision |
 | Daily operation quality and continuity | Shipped | Fresh-session operation, reconnect continuity, direct tools, handoffs, and bounded nested-instruction discovery are live-verified |
-| Selective upstream continuity and card clarity | In validation | The base and updater provenance are live; migration v10 preserves both historical version-9 identities, while final managed deployment and reuse acceptance remain |
+| Selective upstream continuity and card clarity | Shipped | Same-conversation reuse, restart-safe review state, truthful deployment provenance, migration v10 compatibility, clearer cards, and bounded worker cold starts are live-verified |
+| Operations standby presentation | In validation | Connected MCP session roots are separated from active `NOW` work without changing canonical state or lifecycle |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -84,7 +85,7 @@ advertised nested instruction paths to the nine real tracked paths with zero
 `.tmp` entries. No new context service, Gitignore parser, pagination protocol,
 or automation owner was added.
 
-## In validation: selective upstream continuity and card clarity
+## Shipped: selective upstream continuity and card clarity
 
 The base source candidate is public at `16e236c` and audits upstream DevSpace
 through `v1.0.6` by observable contract instead of attempting to merge unrelated
@@ -108,13 +109,6 @@ active detached workers and avoiding more cold-start work. It does not add a
 retry loop, daemon, user setting, second worker entrypoint, PID registry, or
 provider-specific exception.
 
-The source and local proof are not yet the shipped outcome. Completion requires
-publication of the follow-up deployment-truth repair and one bootstrap reinstall,
-then the normal managed self-update path and live-host
-acceptance for normal and reused project opens, a worktree, representative
-diffs, restart continuity, and one delegated worker launch. Until those gates
-pass, the installed product remains the previous verified release.
-
 The first update request after the base publication exposed why that bootstrap
 gate matters: source `HEAD` already equaled `origin/main`, so the previous
 updater returned `UP_TO_DATE` even though the physical installed package was
@@ -128,9 +122,31 @@ collision: managed installations had already assigned version 9 to
 `local-agent-fallbacks`, while the public source had assigned version 9 to the
 new conversation table. The accepted source repair restores the immutable
 historical version-9 meaning and creates conversation bindings at version 10.
-It also normalizes the short-lived public version-9 shape. Final completion now
-requires publishing and deploying that migration, then repeating the live reuse
-and delegated-worker acceptance against the migrated production database.
+It also normalizes the short-lived public version-9 shape. Managed deployment
+preserved all 1,052 prior workspace rows, created a prefixed SHA-256 binding,
+and reused the same compact workspace on the second same-conversation project
+open while suppressing repeated static bootstrap.
+
+The deployed worker path also acknowledged a cold read-only launch and reached
+the Codex provider in 6.8 seconds, below the new bounded thirty-second grace.
+The provider then rejected execution only because the external usage allowance
+was exhausted; the retained failure was not a worker acknowledgement timeout,
+and the repository remained clean.
+
+## In validation: Operations standby presentation
+
+Post-deployment observation found that the Runs `NOW` queue was dominated by
+connected but idle MCP session roots. Of 66 top-level active roots, 63 were
+canonical `running` sessions in phase `waiting` with current action `Waiting for
+the MCP client`; only one was actively executing and two required action.
+
+The accepted source change adds a fifth derived queue, `STANDBY`, for only that
+exact MCP-session shape. It keeps the underlying state `running`, preserves the
+transport and retention owners, and leaves ordinary running work, local-agent
+input waits, and non-session MCP operations in their existing queues. Replaying
+the same live rows through the pure classifier yields `NOW=1`, `ACTION=2`, and
+`STANDBY=63`. Completion requires the normal managed deployment plus an installed
+dashboard classification check; no lifecycle or database change is involved.
 
 ## Decision rules
 

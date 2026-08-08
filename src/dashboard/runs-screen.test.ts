@@ -11,6 +11,7 @@ import {
   formatRunDuration,
   groupActivityEvents,
   highlightTerminalSegments,
+  isMcpStandbyRun,
   nextActionForRun,
   RUN_QUEUE_ORDER,
   runGroup,
@@ -48,6 +49,13 @@ const runs = [
     source: "codex",
     updatedAt: "2026-07-30T00:04:00Z",
   }),
+  run("standby", {
+    state: "running",
+    sourceRunId: "mcp-session:standby",
+    phase: "waiting",
+    currentAction: "Waiting for the MCP client",
+    updatedAt: "2026-07-30T00:05:00Z",
+  }),
 ];
 
 assert.deepEqual(sortRunsForRail(runs).map(({ id }) => id), [
@@ -55,11 +63,26 @@ assert.deepEqual(sortRunsForRail(runs).map(({ id }) => id), [
   "blocked",
   "failed",
   "pending",
+  "standby",
   "completed",
 ]);
-assert.deepEqual(RUN_QUEUE_ORDER, ["Now", "Action", "Review", "Archive"]);
+assert.deepEqual(RUN_QUEUE_ORDER, ["Now", "Action", "Review", "Standby", "Archive"]);
 assert.equal(runGroup(runs[2]!), "Review");
 assert.equal(runGroup(runs[1]!), "Action");
+assert.equal(runGroup(runs[5]!), "Standby");
+assert.equal(isMcpStandbyRun(runs[5]!), true);
+assert.equal(isMcpStandbyRun(run("ordinary-wait", {
+  state: "running",
+  phase: "waiting",
+  currentAction: "Waiting for the MCP client",
+})), false);
+assert.equal(isMcpStandbyRun(run("agent-wait", {
+  kind: "local_agent",
+  state: "running",
+  sourceRunId: "mcp-session:not-an-mcp-root",
+  phase: "waiting",
+  currentAction: "Waiting for the MCP client",
+})), false);
 assert.equal(runGroup(run("stopped-result", {
   state: "stopped",
   assuranceStage: "result_available",
@@ -80,6 +103,7 @@ assert.deepEqual(summarizeRuns(runs), {
   now: 1,
   action: 2,
   review: 1,
+  standby: 1,
   archive: 1,
 });
 assert.equal(nextActionForRun(runs[1]!), "Inspect failure and retained evidence");
