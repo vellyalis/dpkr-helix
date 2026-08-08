@@ -2244,7 +2244,7 @@ shows that package-root replacement no longer contributes material latency.
 
 **Date:** 2026-08-08
 
-**Status:** Accepted; functional source and first installed-lane timing complete, confirmation pending
+**Status:** Accepted; public, managed-deployed, and repeated installed-lane timing complete
 
 **Context:** After candidate verification and prepared-runtime replacement, the
 remaining post-runtime closure varied from roughly 38 to 54 seconds. Read-only
@@ -2311,8 +2311,14 @@ closed 19.231 seconds after runtime start and completed its `thinking=low` agent
 in 13.769 seconds. Compared with the transition run, closure improved by 22.025
 seconds / 53.4 percent and the provider turn by 21.083 seconds / 60.5 percent.
 Source, origin, installed commit, physical fingerprint, Doctor, SQLite,
-local/public health and local/public OAuth metadata agree. One confirmatory
-installed-lane run remains before final acceptance.
+local/public health and local/public OAuth metadata agree. Confirmatory request
+`61d774e6-56ef-46f2-8f45-71e3a054fadd` deployed checkpoint `e26b6dd`, closed
+26.727 seconds after runtime start and completed its low-effort turn in 18.946
+seconds. Across the two installed runs, closure improved by 14.529 to 22.025
+seconds / 35.2 to 53.4 percent and provider time by 15.906 to 21.083 seconds /
+45.6 to 60.5 percent versus the old max-effort transition. Deterministic gates,
+strict failure handling, quota advisory and Doctor/OAuth-before-worker ordering
+remain unchanged.
 
 **Failure and recovery:** Launch failure, missing run ID, malformed output,
 timeout and every non-quota agent error still fail deployment and trigger the

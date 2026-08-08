@@ -8,7 +8,7 @@ Last synchronized: 2026-08-08
   hardening is published from `16e236c`; updater truth, migration repair,
   Operations standby, practical controls, update verification fast lane,
   prepared-runtime replacement, and the bounded Codex canary functional
-  checkpoint are installed through `80b853d`, and
+  checkpoint are installed through measured state `e26b6dd`, and
   same-conversation checkout reuse is live-verified.
   Reuse now
   applies to both `open_workspace` and `open_project`, survives restart, keeps
@@ -132,7 +132,7 @@ Last synchronized: 2026-08-08
   Its update log shows one prepared 353-package production install and no
   fallback warning; source, runtime commit, fingerprint, Doctor, SQLite, health
   and OAuth metadata agree.
-- Installed Codex canary closure is `IN VALIDATION`. Recent managed records
+- Installed Codex canary closure is `SHIPPED / LIVE VERIFIED`. Recent managed records
   attributed 28.236 to 49.056 seconds to the external `codex-explorer` turn.
   The former package-read prompt remained 52.096 seconds even at low effort.
   Functional checkpoint `00ae449` now preserves the installed CLI, profile,
@@ -152,8 +152,13 @@ Last synchronized: 2026-08-08
   seconds after runtime start and completed the low-effort agent in 13.769
   seconds. That is 22.025 seconds / 53.4 percent less closure and 21.083 seconds
   / 60.5 percent less agent time than the transition. Provenance, fingerprint,
-  Doctor, SQLite, health and OAuth all pass. One confirmatory installed-lane run
-  remains before final acceptance.
+  Doctor, SQLite, health and OAuth all pass. Confirmatory request
+  `61d774e6-56ef-46f2-8f45-71e3a054fadd` deployed `e26b6dd`, closed 26.727
+  seconds after runtime start and completed its low-effort agent in 18.946
+  seconds. Across both installed runs, closure improved by 14.529 to 22.025
+  seconds / 35.2 to 53.4 percent and agent time by 15.906 to 21.083 seconds /
+  45.6 to 60.5 percent. The deterministic gates, strict failure behavior,
+  quota advisory and Doctor/OAuth-before-worker ordering are unchanged.
 - Two unmerged post-release upstream branches using host-installed Codex and the
   experimental `codex app-server` were classified as promising research, not a
   safe runtime replacement. A future isolated comparison must preserve

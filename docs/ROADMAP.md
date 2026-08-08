@@ -31,7 +31,7 @@ measured baseline shows that it would not improve a real outcome.
 | Practical daily-use controls | Shipped | Provider quota cooldowns, reversible workspace-session archive, and one Current/Resume plus failure-diagnosis surface are public, managed-deployed, and installed-verified |
 | Managed update verification throughput | Shipped | Every existing update gate remains mandatory while independent read-only checks use bounded parallel execution; installed end-to-end timing is live-verified |
 | Prepared runtime replacement | Shipped | The exact lock-restored runtime is built and fingerprinted before downtime, then its fixed package root replaces the previous generation without rerunning global dependency resolution |
-| Installed Codex canary closure | In validation | The same installed CLI, profile, worker, configured model, Codex adapter and external account are checked with a bounded exact-token canary instead of asking the model to interpret package metadata; installed timing is being measured |
+| Installed Codex canary closure | Shipped | The same installed CLI, profile, worker, configured model, Codex adapter and external account are checked with a bounded exact-token canary instead of asking the model to interpret package metadata; two installed runs confirm materially lower closure |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -274,7 +274,7 @@ shows one 385-package development install for candidate verification and one
 installer warning. Source, installed commit, physical fingerprint, Doctor,
 SQLite, local/public health and local/public OAuth metadata agree.
 
-## In validation: bounded installed Codex canary
+## Shipped: bounded installed Codex canary
 
 The remaining post-runtime closure was dominated by the external Codex turn,
 not by Doctor or OAuth metadata. Recent managed updates spent 28.236 to 49.056
@@ -309,8 +309,14 @@ of the 41.256 post-runtime seconds. The first valid new-canary request
 in 13.769 seconds, reducing closure by 22.025 seconds, or 53.4 percent, and the
 provider turn by 21.083 seconds, or 60.5 percent, versus the transition run.
 Source, installed commit, fingerprint, Doctor, SQLite, local/public health and
-local/public OAuth agree. One confirmatory installed-lane run remains before the
-workstream is marked shipped.
+local/public OAuth agree. Confirmatory request
+`61d774e6-56ef-46f2-8f45-71e3a054fadd` deployed checkpoint `e26b6dd`, closed
+26.727 seconds after runtime start and completed its low-effort turn in 18.946
+seconds. Both installed runs therefore improved materially over the transition:
+closure fell by 14.529 to 22.025 seconds, or 35.2 to 53.4 percent, and provider
+time fell by 15.906 to 21.083 seconds, or 45.6 to 60.5 percent. The deterministic
+gates, strict failure behavior, quota advisory and endpoint ordering remain
+unchanged, so the workstream is shipped.
 
 ## Decision rules
 

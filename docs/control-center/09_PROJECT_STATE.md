@@ -18,8 +18,8 @@ Last synchronized: 2026-08-08
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-OPS-05 is live-verified and complete.
 - Current release line: `PRACTICAL CONTROLS / UPDATE FAST LANE / PREPARED
-  RUNTIME SHIPPED / CODEX CANARY IN VALIDATION`; the installed functional
-  checkpoint is `80b853d`. The selective
+  RUNTIME / BOUNDED CODEX CANARY SHIPPED`; the measured installed checkpoint is
+  `e26b6dd`. The selective
   upstream and worker-reliability candidate is public from `16e236c`. It adapts
   upstream DevSpace `v1.0.6`
   conversation-aware checkout reuse, restart-safe review checkpoints, compact
@@ -129,7 +129,7 @@ Last synchronized: 2026-08-08
   availability improved by 34.608 seconds. The installed log contains one
   prepared 353-package production install and no fallback warning; source,
   installed commit, fingerprint, Doctor, SQLite, health and OAuth agree.
-- Installed Codex canary closure is `IN VALIDATION` from functional checkpoint
+- Installed Codex canary closure is `SHIPPED / LIVE VERIFIED` from functional checkpoint
   `00ae449` plus test-stability follow-up `80b853d`. Live update records showed
   that the external provider turn consumed 28.236 to 49.056 seconds after agent
   creation, while runtime start to creation was about five seconds. The old
@@ -149,8 +149,14 @@ Last synchronized: 2026-08-08
   seconds after runtime start and completed its low-effort external turn in
   13.769 seconds. Closure improved by 22.025 seconds / 53.4 percent and the turn
   by 21.083 seconds / 60.5 percent versus the transition run. Source, installed
-  commit, fingerprint, Doctor, SQLite, local/public health and OAuth agree; one
-  confirmatory installed-lane run remains before shipment.
+  commit, fingerprint, Doctor, SQLite, local/public health and OAuth agree.
+  Confirmatory request `61d774e6-56ef-46f2-8f45-71e3a054fadd` deployed
+  `e26b6dd`, closed 26.727 seconds after runtime start and completed its
+  low-effort turn in 18.946 seconds. Across the two installed runs, closure
+  improved by 14.529 to 22.025 seconds / 35.2 to 53.4 percent and provider time
+  by 15.906 to 21.083 seconds / 45.6 to 60.5 percent versus the old max-effort
+  transition. The deterministic gates, strict failure semantics and endpoint
+  ordering remain unchanged.
 - Post-`v1.0.6` upstream host-installed Codex and experimental `app-server`
   branches were audited but not imported. They remain isolated research because
   they do not yet preserve Helix's schema-constrained completed/needs-input
