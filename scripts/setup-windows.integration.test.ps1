@@ -532,6 +532,21 @@ try {
 }
 catch {
   $primaryError = $_
+  foreach ($diagnosticPath in @(
+      (Join-Path $temporaryRoot ".devspace\logs\devspace.err.log"),
+      (Join-Path $temporaryRoot ".devspace\logs\devspace.out.log")
+    )) {
+    if (-not (Test-Path -LiteralPath $diagnosticPath -PathType Leaf)) {
+      continue
+    }
+    $diagnosticText = Read-Utf8Text -Path $diagnosticPath
+    if ($diagnosticText) {
+      Write-Warning (
+        "Integration runtime diagnostic from $diagnosticPath`n" +
+        $diagnosticText.Substring([Math]::Max(0, $diagnosticText.Length - 8192))
+      )
+    }
+  }
 }
 finally {
   if ($copiedSetup -and (Test-Path -LiteralPath $copiedSetup)) {

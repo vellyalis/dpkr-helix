@@ -5,8 +5,9 @@ Last synchronized: 2026-08-08
 ## Current position
 
 - Selective upstream `v1.0.6` ingestion plus independent Helix reliability
-  hardening is `SOURCE VERIFIED / PUBLICATION + LIVE ACCEPTANCE PENDING` in the
-  dirty `main` checkout at `e257511`. Same-conversation checkout reuse now
+  hardening is published at `16e236c`; the follow-up updater-truth repair is
+  `SOURCE VERIFIED / PUBLICATION + LIVE ACCEPTANCE PENDING`. Same-conversation
+  checkout reuse now
   applies to both `open_workspace` and `open_project`, survives restart, keeps
   worktrees fresh, suppresses repeated static bootstrap, and persists only a
   prefixed SHA-256 key of the opaque host conversation scope. Review checkpoints
@@ -30,8 +31,16 @@ Last synchronized: 2026-08-08
   build, `npm run audit:production`, isolated-index public-release scan, and
   `git diff --check` pass. Production audit verifies reviewed Pi dependency
   repairs, hidden Codex Windows spawn behavior, and zero reported vulnerabilities.
-  No commit, push, self-update, service restart, or live-host acceptance has
-  occurred; the installed package remains the prior verified release.
+  The base candidate was committed and pushed normally; the installed package
+  remains the prior verified release pending the follow-up bootstrap.
+- The first managed update request falsely returned `UP_TO_DATE` because source
+  `HEAD` already matched `origin/main`, even though the physical installed
+  package lacked the new runtime. The follow-up stores a clean source commit
+  beside the existing package hash and installed fingerprint and requires all
+  three to agree before a no-op. Focused PowerShell contracts and the complete
+  near-fresh physical Windows integration pass, including running reinstall and
+  package-based repair. Older installations without commit provenance will
+  redeploy once instead of being misreported as current.
 - Two unmerged post-release upstream branches using host-installed Codex and the
   experimental `codex app-server` were classified as promising research, not a
   safe runtime replacement. A future isolated comparison must preserve

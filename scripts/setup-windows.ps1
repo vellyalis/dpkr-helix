@@ -483,6 +483,46 @@ function Invoke-CapturedChecked {
   return $output.Trim()
 }
 
+function Get-CleanSourceCommit {
+  param([Parameter(Mandatory = $true)][string] $Root)
+  $git = Get-CommandPath -Name "git.exe"
+  if (-not $git) {
+    $git = Get-CommandPath -Name "git"
+  }
+  if (-not $git) {
+    return $null
+  }
+  try {
+    $resolvedRoot = [System.IO.Path]::GetFullPath($Root)
+    $topLevel = Invoke-CapturedChecked -FilePath $git -Arguments @(
+      "-C", $resolvedRoot, "rev-parse", "--show-toplevel"
+    )
+    if (-not [string]::Equals(
+        [System.IO.Path]::GetFullPath($topLevel),
+        $resolvedRoot,
+        [System.StringComparison]::OrdinalIgnoreCase
+      )) {
+      return $null
+    }
+    $dirty = Invoke-CapturedChecked -FilePath $git -Arguments @(
+      "-C", $resolvedRoot, "status", "--porcelain", "--untracked-files=normal"
+    )
+    if ($dirty) {
+      return $null
+    }
+    $commit = Invoke-CapturedChecked -FilePath $git -Arguments @(
+      "-C", $resolvedRoot, "rev-parse", "HEAD^{commit}"
+    )
+    if ($commit -match "^[0-9a-fA-F]{40}$") {
+      return $commit.ToLowerInvariant()
+    }
+  }
+  catch {
+    return $null
+  }
+  return $null
+}
+
 function Get-SourceUpdatePlan {
   param([Parameter(Mandatory = $true)][string] $Root)
   $git = Get-CommandPath -Name "git.exe"
@@ -1233,7 +1273,8 @@ function Get-ValidatedRuntimePackage {
 function Set-RuntimeRecoveryState {
   param(
     [Parameter(Mandatory = $true)][string] $PackageHash,
-    [Parameter(Mandatory = $true)][string] $RuntimeFingerprint
+    [Parameter(Mandatory = $true)][string] $RuntimeFingerprint,
+    [string] $SourceCommit
   )
   if ($PackageHash -notmatch "^[0-9a-f]{64}$") {
     throw "Runtime package hash is invalid."
@@ -1241,12 +1282,21 @@ function Set-RuntimeRecoveryState {
   if ($RuntimeFingerprint -notmatch "^[0-9a-f]{64}$") {
     throw "Runtime fingerprint is invalid."
   }
+  if ($SourceCommit -and $SourceCommit -notmatch "^[0-9a-fA-F]{40}$") {
+    throw "Runtime source commit is invalid."
+  }
   $settings = Read-JsonFile -Path $script:SettingsPath
   if (-not $settings) {
     throw "Portable setup settings are missing."
   }
   $settings | Add-Member -NotePropertyName "runtimePackageSha256" -NotePropertyValue $PackageHash -Force
   $settings | Add-Member -NotePropertyName "runtimeFingerprint" -NotePropertyValue $RuntimeFingerprint -Force
+  if ($SourceCommit) {
+    $settings | Add-Member `
+      -NotePropertyName "runtimeSourceCommit" `
+      -NotePropertyValue $SourceCommit.ToLowerInvariant() `
+      -Force
+  }
   Write-JsonAtomic -Path $script:SettingsPath -Value $settings
   return $settings
 }
@@ -2363,6 +2413,9 @@ function Start-DevSpaceRuntime {
       devspaceCommandFragment = $devspaceCli
       devspaceStartTimeFileTimeUtc = $devspaceProcess.StartTime.ToUniversalTime().ToFileTimeUtc()
       devspaceRuntimeFingerprint = $runtimeFingerprint
+      devspaceSourceCommit = Get-PropertyValue `
+        -InputObject $Settings `
+        -Name "runtimeSourceCommit"
       runtimePackageSha256 = [string](
         Get-PropertyValue -InputObject $Settings -Name "runtimePackageSha256"
       )
@@ -2752,6 +2805,49 @@ function Get-SourceUpdatePlanWithoutFetch {
   }
 }
 
+function Test-InstalledRuntimeMatchesTarget {
+  param(
+    [Parameter(Mandatory = $true)] $Settings,
+    [Parameter(Mandatory = $true)][string] $TargetCommit
+  )
+  if ($TargetCommit -notmatch "^[0-9a-fA-F]{40}$") {
+    return $false
+  }
+  $recordedCommit = [string](
+    Get-PropertyValue -InputObject $Settings -Name "runtimeSourceCommit"
+  )
+  if (
+    $recordedCommit -notmatch "^[0-9a-fA-F]{40}$" -or
+    -not [string]::Equals(
+      $recordedCommit,
+      $TargetCommit,
+      [System.StringComparison]::OrdinalIgnoreCase
+    )
+  ) {
+    return $false
+  }
+  $expectedFingerprint = [string](
+    Get-PropertyValue -InputObject $Settings -Name "runtimeFingerprint"
+  )
+  if ($expectedFingerprint -notmatch "^[0-9a-f]{64}$") {
+    return $false
+  }
+  try {
+    $installed = Get-InstalledDevSpaceRuntimeStatus
+  }
+  catch {
+    return $false
+  }
+  return [bool](
+    $installed.Complete -and
+    [string]::Equals(
+      [string] $installed.Fingerprint,
+      $expectedFingerprint,
+      [System.StringComparison]::OrdinalIgnoreCase
+    )
+  )
+}
+
 function Invoke-UpdateRuntimeVerification {
   param(
     [Parameter(Mandatory = $true)] $Settings,
@@ -2905,7 +3001,13 @@ function Invoke-UpdateMode {
       -FromCommit ([string] $plan.FromCommit) `
       -TargetCommit ([string] $plan.TargetCommit) `
       -StartedAt $startedAt
-    if ($plan.FromCommit -eq $plan.TargetCommit) {
+    $installedRuntimeIsCurrent = Test-InstalledRuntimeMatchesTarget `
+      -Settings $settings `
+      -TargetCommit ([string] $plan.TargetCommit)
+    if (
+      $plan.FromCommit -eq $plan.TargetCommit -and
+      $installedRuntimeIsCurrent
+    ) {
       Write-UpdateStatus `
         -State "up_to_date" `
         -RequestId $requestId `
@@ -2973,7 +3075,8 @@ function Invoke-UpdateMode {
       $candidateFingerprint = Get-InstalledDevSpaceRuntimeFingerprint
       $settings = Set-RuntimeRecoveryState `
         -PackageHash ([string] $candidateRecoveryPackage.Hash) `
-        -RuntimeFingerprint $candidateFingerprint
+        -RuntimeFingerprint $candidateFingerprint `
+        -SourceCommit ([string] $plan.TargetCommit)
 
       if ($previousDesiredState -eq "running") {
         $runtime = Start-DevSpaceRuntime -Settings $settings -ForceRestart
@@ -3220,6 +3323,10 @@ $settings = [ordered]@{
   codexModel = $CodexModel
   codexCliVersion = $CodexCliVersion
   playwrightMcpVersion = $PlaywrightMcpVersion
+}
+$runtimeSourceCommit = Get-CleanSourceCommit -Root $resolvedSourceRoot
+if ($runtimeSourceCommit) {
+  $settings["runtimeSourceCommit"] = $runtimeSourceCommit
 }
 
 Set-DesiredRuntimeState -State "stopped" | Out-Null

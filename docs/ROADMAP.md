@@ -26,7 +26,7 @@ measured baseline shows that it would not improve a real outcome.
 | Measured Codex-quality parity | Shipped | Signed-in Web-plus-helix passes the frozen suite 8/8 versus retained local Codex 5/8 without weakening permissions, evidence truth, or existing work |
 | GPT-5.6 Sol effort comparison | Stopped | Owner stopped the incomplete 24/96 matrix because it no longer changes a current product, release, or setting decision |
 | Daily operation quality and continuity | Shipped | Fresh-session operation, reconnect continuity, direct tools, handoffs, and bounded nested-instruction discovery are live-verified |
-| Selective upstream continuity and card clarity | In validation | Conversation-aware checkout reuse, restart-safe review checkpoints, compact workspace IDs, clearer MCP App cards, and worker cold-start tolerance pass local source gates; managed deployment and live-host acceptance remain |
+| Selective upstream continuity and card clarity | In validation | The base source is public; conversation-aware reuse, review recovery, clearer cards, worker reliability, and installed-runtime provenance pass local and physical setup gates, while managed deployment and live-host acceptance remain |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -86,8 +86,9 @@ or automation owner was added.
 
 ## In validation: selective upstream continuity and card clarity
 
-The current source candidate audits upstream DevSpace through `v1.0.6` by
-observable contract instead of attempting to merge unrelated histories. It
+The base source candidate is public at `16e236c` and audits upstream DevSpace
+through `v1.0.6` by observable contract instead of attempting to merge unrelated
+histories. It
 adapts conversation-aware checkout reuse and review-checkpoint recovery to
 Helix's Project, Handoff, repository-context, policy, and Operations owners. It
 also adopts only the correctness-bearing card improvements: explicit
@@ -108,10 +109,19 @@ retry loop, daemon, user setting, second worker entrypoint, PID registry, or
 provider-specific exception.
 
 The source and local proof are not yet the shipped outcome. Completion requires
-the normal reviewed publication and managed self-update path, then live-host
+publication of the follow-up deployment-truth repair and one bootstrap reinstall,
+then the normal managed self-update path and live-host
 acceptance for normal and reused project opens, a worktree, representative
 diffs, restart continuity, and one delegated worker launch. Until those gates
 pass, the installed product remains the previous verified release.
+
+The first update request after the base publication exposed why that bootstrap
+gate matters: source `HEAD` already equaled `origin/main`, so the previous
+updater returned `UP_TO_DATE` even though the physical installed package was
+older. The follow-up records the clean deployment commit alongside the existing
+package hash and installed-tree fingerprint. A no-op is now valid only when
+source, commit provenance, and physical fingerprint all agree. Older settings
+without provenance redeploy once rather than manufacturing an installed state.
 
 ## Decision rules
 

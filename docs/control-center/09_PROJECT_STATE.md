@@ -17,9 +17,10 @@ Last synchronized: 2026-08-08
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-OPS-05 is live-verified and complete.
-- Current source candidate: `SOURCE VERIFIED / PUBLICATION + LIVE ACCEPTANCE
-  PENDING`. The dirty `main` checkout at `e257511` selectively adapts upstream
-  DevSpace `v1.0.6` conversation-aware checkout reuse, restart-safe review
+- Current source candidate: `PUBLISHED BASE / FOLLOW-UP SOURCE VERIFIED / LIVE
+  ACCEPTANCE PENDING`. The selective upstream and worker-reliability candidate
+  is public at `16e236c`. It adapts upstream DevSpace `v1.0.6`
+  conversation-aware checkout reuse, restart-safe review
   checkpoints, compact workspace IDs, and correctness-bearing MCP App card
   improvements without replacing Helix Project, Handoff, repository-context,
   policy, Operations, recovery, or Codex-launcher owners. It additionally hashes
@@ -29,8 +30,16 @@ Last synchronized: 2026-08-08
   one hour without activity, at startup and every five minutes. Worker children
   skip reconciliation before their ready acknowledgement.
   Full tests, policy tests, typecheck, production build, dependency audit, public
-  content scan, and diff checks pass. No commit, push, managed deployment,
-  service restart, or live ChatGPT mutation has occurred.
+  content scan, and diff checks pass.
+- The first managed update request after publication exposed a separate truth
+  defect: source `HEAD` and `origin/main` matched, so the old updater reported
+  `UP_TO_DATE`, while direct inspection proved the physical installed package
+  was still the previous generation. The follow-up source records the clean
+  deployment commit with the existing package hash and installed fingerprint;
+  all three must now match before a no-op result is valid. Focused setup tests
+  and the near-fresh physical Windows integration pass. The installed runtime
+  remains unchanged until this follow-up is published and bootstrapped through
+  one direct managed reinstall.
 - Post-`v1.0.6` upstream host-installed Codex and experimental `app-server`
   branches were audited but not imported. They remain isolated research because
   they do not yet preserve Helix's schema-constrained completed/needs-input

@@ -66,6 +66,7 @@ function Get-SetupFunctionSource {
         "Get-CommandPath",
         "Invoke-Checked",
         "Invoke-CapturedChecked",
+        "Get-CleanSourceCommit",
         "Throw-UpdateFailure",
         "Get-UpdateFailureCode",
         "Get-SourceUpdatePlan",
@@ -74,6 +75,7 @@ function Get-SetupFunctionSource {
         "Remove-UpdateWorktree",
         "Get-SourceUpdatePlanWithoutFetch",
         "Assert-UpdatePlanStillCurrent",
+        "Test-InstalledRuntimeMatchesTarget",
         "Restore-UpdateDeployment",
         "Invoke-RestoredManagedStart",
         "Get-GlobalNpmRoot",
@@ -137,6 +139,32 @@ try {
   Assert-True `
     -Condition ((Read-JsonFile -Path $script:SettingsPath).desiredState -eq "running") `
     -Message "Desired running state was not persisted."
+  $deploymentState = Set-RuntimeRecoveryState `
+    -PackageHash ("a" * 64) `
+    -RuntimeFingerprint ("b" * 64) `
+    -SourceCommit ("c" * 40)
+  Assert-True `
+    -Condition ([string] $deploymentState.runtimeSourceCommit -eq ("c" * 40)) `
+    -Message "Runtime source commit was not persisted with deployment state."
+  $preservedDeploymentState = Set-RuntimeRecoveryState `
+    -PackageHash ("d" * 64) `
+    -RuntimeFingerprint ("e" * 64)
+  Assert-True `
+    -Condition ([string] $preservedDeploymentState.runtimeSourceCommit -eq ("c" * 40)) `
+    -Message "A recovery-state refresh discarded the recorded runtime source commit."
+  $invalidSourceCommitRejected = $false
+  try {
+    Set-RuntimeRecoveryState `
+      -PackageHash ("f" * 64) `
+      -RuntimeFingerprint ("0" * 64) `
+      -SourceCommit "not-a-commit" | Out-Null
+  }
+  catch {
+    $invalidSourceCommitRejected = $_.Exception.Message.Contains("source commit")
+  }
+  Assert-True `
+    -Condition $invalidSourceCommitRejected `
+    -Message "An invalid runtime source commit was accepted."
 
   $script:RuntimeMutexName = "Local\dpkr-helix-setup-test-" + [Guid]::NewGuid().ToString("N")
   $runtimeMutex = Enter-RuntimeOperation -TimeoutMilliseconds 0
@@ -421,6 +449,60 @@ try {
   Assert-True `
     -Condition ($samePlan.FromCommit -eq $samePlan.TargetCommit) `
     -Message "An up-to-date managed main checkout was not recognized."
+  Assert-True `
+    -Condition ((Get-CleanSourceCommit -Root $gitManaged) -eq $samePlan.FromCommit) `
+    -Message "A clean source checkout did not expose its exact commit."
+  $matchingInstalledRuntime = & {
+    function Get-InstalledDevSpaceRuntimeStatus {
+      return [pscustomobject]@{
+        Complete = $true
+        Fingerprint = "a" * 64
+        Failure = $null
+      }
+    }
+    Test-InstalledRuntimeMatchesTarget `
+      -Settings ([pscustomobject]@{
+          runtimeSourceCommit = [string] $samePlan.TargetCommit
+          runtimeFingerprint = "a" * 64
+        }) `
+      -TargetCommit ([string] $samePlan.TargetCommit)
+  }
+  Assert-True `
+    -Condition $matchingInstalledRuntime `
+    -Message "A matching installed runtime was not recognized as current."
+  $missingInstalledCommitIsCurrent = & {
+    function Get-InstalledDevSpaceRuntimeStatus {
+      return [pscustomobject]@{
+        Complete = $true
+        Fingerprint = "a" * 64
+        Failure = $null
+      }
+    }
+    Test-InstalledRuntimeMatchesTarget `
+      -Settings ([pscustomobject]@{ runtimeFingerprint = "a" * 64 }) `
+      -TargetCommit ([string] $samePlan.TargetCommit)
+  }
+  Assert-True `
+    -Condition (-not $missingInstalledCommitIsCurrent) `
+    -Message "An installation without commit provenance was incorrectly treated as current."
+  $mismatchedInstalledRuntimeIsCurrent = & {
+    function Get-InstalledDevSpaceRuntimeStatus {
+      return [pscustomobject]@{
+        Complete = $true
+        Fingerprint = "b" * 64
+        Failure = $null
+      }
+    }
+    Test-InstalledRuntimeMatchesTarget `
+      -Settings ([pscustomobject]@{
+          runtimeSourceCommit = [string] $samePlan.TargetCommit
+          runtimeFingerprint = "a" * 64
+        }) `
+      -TargetCommit ([string] $samePlan.TargetCommit)
+  }
+  Assert-True `
+    -Condition (-not $mismatchedInstalledRuntimeIsCurrent) `
+    -Message "A mismatched installed runtime fingerprint was treated as current."
 
   [System.IO.File]::WriteAllText((Join-Path $gitSeed "version.txt"), "two")
   Invoke-Checked -FilePath "git.exe" -Arguments @("-C", $gitSeed, "add", "version.txt")
@@ -459,6 +541,9 @@ try {
     $dirtyCode = Get-UpdateFailureCode -ErrorRecord $_
   }
   Assert-True -Condition ($dirtyCode -eq "DIRTY_WORKTREE") -Message "A dirty update source was not rejected."
+  Assert-True `
+    -Condition (-not (Get-CleanSourceCommit -Root $gitManaged)) `
+    -Message "A dirty source checkout was assigned a deployment commit."
   Remove-Item -LiteralPath (Join-Path $gitManaged "untracked.txt") -Force
 
   $script:CanonicalOriginUrl = "https://example.com/untrusted.git"

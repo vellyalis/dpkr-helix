@@ -1685,3 +1685,65 @@ shorter bound across repeated runs, a worker still exceeds thirty seconds, a
 configuration failure cannot be distinguished from slow startup, or a
 host-installed Codex experiment closes all of the separate runtime acceptance
 obligations.
+
+## ADR-047: Require installed-runtime provenance before reporting UP_TO_DATE
+
+**Date:** 2026-08-08
+
+**Status:** Accepted; source and physical integration proof complete, live
+managed deployment pending
+
+**Context:** After `origin/main` advanced to the verified continuity and worker
+reliability candidate, ChatGPT requested the canonical managed update. The
+controller returned `UP_TO_DATE` because the managed source checkout already
+matched `origin/main`. Direct inspection of the physical global package then
+proved that the installed `dist` tree was still the previous generation. The
+update decision had equated source convergence with deployment convergence.
+
+**Decision:** Record the exact clean source commit alongside the existing
+verified runtime package hash and installed-tree fingerprint. `UP_TO_DATE` is
+valid only when all three agree: managed source `origin/main`, recorded runtime
+source commit, and the current physical installed fingerprint. A missing commit
+record is treated as unknown provenance and causes one normal verified
+redeployment, which bootstraps older installations into the stronger contract.
+The runtime process record carries the same source commit for diagnostics.
+
+Keep the existing candidate build, temporary worktree, package cache,
+fingerprint verification, rollback, desired-state, and health owners. Do not
+infer the installed commit from package version, source HEAD, file timestamps,
+or a few marker strings. A source archive without Git metadata remains
+installable but does not manufacture a commit identity; its first managed
+update establishes provenance.
+
+**Alternatives rejected:** Treating source HEAD as installed truth; bumping the
+npm package version and assuming version uniqueness; hashing only one changed
+file; forcing every update request to reinstall; or adding a second deployment
+database. Each either preserves the false-positive path, creates unnecessary
+downtime, or duplicates the existing portable settings owner.
+
+**Complexity receipt:** One optional `runtimeSourceCommit` field in the existing
+portable settings, one matching diagnostic field in the existing runtime
+record, one clean-Git commit reader, and one preflight predicate over the
+existing runtime fingerprint. No schema migration, dependency, daemon, queue,
+service, updater process, permission, or model-facing tool field was added.
+
+**Evidence:** The live false-positive was reproduced: source and `origin/main`
+matched while installed runtime markers were absent. Focused PowerShell tests
+prove clean/dirty source handling, commit validation and preservation, matching
+commit plus fingerprint acceptance, and rejection of missing provenance or a
+fingerprint mismatch. The near-fresh Windows integration passes physical
+install, running reinstall, exact-package recovery, process restart, and Stop.
+Its first attempt encountered a transient port-claim failure; failure-only
+bounded log projection was added so future fixture failures retain their causal
+stderr before cleanup, and the complete repeated integration passed.
+
+**Failure and recovery:** Older settings without `runtimeSourceCommit` remain
+readable and fail safe toward redeployment rather than a false no-op. Deployment
+failure continues through the existing package, settings, script, source, and
+health rollback. Reverting this decision ignores the additive field and restores
+the previous update predicate.
+
+**Reconsider when:** The installed artifact gains a signed native provenance
+manifest that supersedes the settings record, package identity becomes
+cryptographically tied to a source commit, or repeated measurements show that
+the additive comparison creates an unjustified redeployment loop.
