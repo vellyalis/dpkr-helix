@@ -483,6 +483,165 @@ function Invoke-CapturedChecked {
   return $output.Trim()
 }
 
+function Invoke-CheckedParallel {
+  param(
+    [Parameter(Mandatory = $true)][object[]] $Commands,
+    [Parameter(Mandatory = $true)][string] $WorkingDirectory
+  )
+  if (@($Commands).Count -eq 0) {
+    return
+  }
+  $resolvedWorkingDirectory = [System.IO.Path]::GetFullPath($WorkingDirectory)
+  if (-not (Test-Path -LiteralPath $resolvedWorkingDirectory -PathType Container)) {
+    throw "Parallel command working directory is missing: $WorkingDirectory"
+  }
+  $commandShell = Get-CommandPath -Name "cmd.exe"
+  if (-not $commandShell) {
+    throw "Windows command shell is required for parallel candidate verification."
+  }
+  $logRoot = Join-Path ([System.IO.Path]::GetTempPath()) (
+    "dpkr-helix-preflight-" + [Guid]::NewGuid().ToString("N")
+  )
+  New-Item -ItemType Directory -Path $logRoot | Out-Null
+  $running = @()
+  $stopwatch = [Diagnostics.Stopwatch]::StartNew()
+  try {
+    foreach ($command in $Commands) {
+      $name = [string] $command.Name
+      $commandLine = [string] $command.CommandLine
+      if ($name -notmatch "^[a-z0-9-]+$") {
+        throw "Parallel command name is invalid: $name"
+      }
+      if ([string]::IsNullOrWhiteSpace($commandLine)) {
+        throw "Parallel command line is missing: $name"
+      }
+      $runner = Join-Path $logRoot ($name + ".cmd")
+      $exitCodePath = Join-Path $logRoot ($name + ".exit-code.txt")
+      $stdout = Join-Path $logRoot ($name + ".stdout.log")
+      $stderr = Join-Path $logRoot ($name + ".stderr.log")
+      Write-Utf8NoBom -Path $runner -Content (
+        "@echo off`r`n" +
+        "call " + $commandLine + "`r`n" +
+        "set `"dpkrExit=%errorlevel%`"`r`n" +
+        "> `"%~dp0" + $name + ".exit-code.txt`" echo %dpkrExit%`r`n" +
+        "exit /b %dpkrExit%`r`n"
+      )
+      $commandArguments = '/d /s /c call "' + $runner.Replace('"', '""') + '"'
+      $process = Start-Process `
+        -FilePath $commandShell `
+        -ArgumentList $commandArguments `
+        -WorkingDirectory $resolvedWorkingDirectory `
+        -RedirectStandardOutput $stdout `
+        -RedirectStandardError $stderr `
+        -NoNewWindow `
+        -PassThru
+      $running += [pscustomobject]@{
+        Name = $name
+        CommandLine = $commandLine
+        Process = $process
+        Runner = $runner
+        CommandArguments = $commandArguments
+        ExitCodePath = $exitCodePath
+        Stdout = $stdout
+        Stderr = $stderr
+      }
+    }
+
+    $failures = @()
+    foreach ($entry in $running) {
+      $entry.Process.WaitForExit()
+      $entry.Process.Refresh()
+      $processExitCode = [int] $entry.Process.ExitCode
+      $recordedExitCode = 0
+      $recordedExitCodeValid = $false
+      if (Test-Path -LiteralPath $entry.ExitCodePath -PathType Leaf) {
+        $recordedText = (Get-Content -LiteralPath $entry.ExitCodePath -Raw).Trim()
+        $recordedExitCodeValid = [int]::TryParse($recordedText, [ref] $recordedExitCode)
+        if ($recordedExitCodeValid -and ($recordedExitCode -lt 0 -or $recordedExitCode -gt 255)) {
+          $recordedExitCodeValid = $false
+        }
+      }
+      $exitCode = if ($recordedExitCodeValid) {
+        if ($recordedExitCode -eq 0 -and $processExitCode -ne 0) {
+          $processExitCode
+        }
+        else {
+          $recordedExitCode
+        }
+      }
+      elseif ($processExitCode -ne 0) {
+        $processExitCode
+      }
+      else {
+        255
+      }
+      Write-Host "Candidate check $($entry.Name): exit $exitCode"
+      if ($exitCode -ne 0) {
+        $failures += [pscustomobject]@{
+          Name = $entry.Name
+          ExitCode = $exitCode
+          ProcessExitCode = $processExitCode
+          RecordedExitCodeValid = $recordedExitCodeValid
+          Runner = $entry.Runner
+          CommandArguments = $entry.CommandArguments
+          Stdout = $entry.Stdout
+          Stderr = $entry.Stderr
+        }
+      }
+    }
+    $stopwatch.Stop()
+    Write-Host (
+      "Candidate parallel checks completed in " +
+      [Math]::Round($stopwatch.Elapsed.TotalSeconds, 1) +
+      " seconds."
+    )
+    if ($failures.Count -gt 0) {
+      foreach ($failure in $failures) {
+        Write-Warning "Candidate check failed: $($failure.Name) (exit $($failure.ExitCode))"
+        if (-not $failure.RecordedExitCodeValid) {
+          Write-Warning (
+            "Candidate check result file was missing or invalid; " +
+            "command-shell exit was $($failure.ProcessExitCode)."
+          )
+          Write-Host "Command shell arguments: $($failure.CommandArguments)"
+          if (Test-Path -LiteralPath $failure.Runner -PathType Leaf) {
+            Get-Content -LiteralPath $failure.Runner | Out-Host
+          }
+        }
+        if (Test-Path -LiteralPath $failure.Stdout -PathType Leaf) {
+          Write-Host "Last 200 stdout lines:"
+          Get-Content -LiteralPath $failure.Stdout -Tail 200 | Out-Host
+        }
+        if (Test-Path -LiteralPath $failure.Stderr -PathType Leaf) {
+          Write-Host "Last 200 stderr lines:"
+          Get-Content -LiteralPath $failure.Stderr -Tail 200 | Out-Host
+        }
+      }
+      $summary = @(
+        $failures | ForEach-Object { "$($_.Name) ($($_.ExitCode))" }
+      ) -join ", "
+      throw "Parallel candidate verification failed: $summary"
+    }
+  }
+  finally {
+    foreach ($entry in $running) {
+      try {
+        if (-not $entry.Process.HasExited) {
+          $entry.Process.Kill()
+          $entry.Process.WaitForExit()
+        }
+      }
+      catch {
+        Write-Warning "Parallel candidate process cleanup failed: $($entry.Name)"
+      }
+      $entry.Process.Dispose()
+    }
+    if (Test-Path -LiteralPath $logRoot -PathType Container) {
+      Remove-DirectoryTreeLongPath -Path $logRoot
+    }
+  }
+}
+
 function Get-CleanSourceCommit {
   param([Parameter(Mandatory = $true)][string] $Root)
   $git = Get-CommandPath -Name "git.exe"
@@ -677,27 +836,42 @@ function Invoke-UpdatePreflight {
   Push-Location $Root
   try {
     Invoke-Checked -FilePath $npm -Arguments @("ci", "--include=dev", "--no-audit")
-    Invoke-Checked -FilePath $npm -Arguments @("run", "audit:production")
-    Invoke-Checked -FilePath $npm -Arguments @("run", "typecheck")
-    Invoke-Checked -FilePath $npm -Arguments @("test")
-    Invoke-Checked -FilePath $npm -Arguments @("run", "build")
-    Invoke-Checked -FilePath $npm -Arguments @("run", "check:public")
     $powershell = Get-CommandPath -Name "powershell.exe"
     if (-not $powershell) {
       throw "Windows PowerShell is required for portable recovery verification."
     }
-    foreach ($testScript in @(
-        "scripts\setup-windows.test.ps1",
-        "scripts\setup-windows-recovery.test.ps1"
-      )) {
-      Invoke-Checked -FilePath $powershell -Arguments @(
-        "-NoLogo",
-        "-NoProfile",
-        "-NonInteractive",
-        "-ExecutionPolicy", "Bypass",
-        "-File", (Join-Path $Root $testScript)
-      )
-    }
+    $npmCommand = '"' + $npm.Replace('"', '""') + '"'
+    $powershellCommand = '"' + $powershell.Replace('"', '""') + '"'
+    Invoke-CheckedParallel -WorkingDirectory $Root -Commands @(
+      [pscustomobject]@{
+        Name = "tests"
+        CommandLine = $npmCommand + " test"
+      },
+      [pscustomobject]@{
+        Name = "typecheck"
+        CommandLine = $npmCommand + " run typecheck"
+      },
+      [pscustomobject]@{
+        Name = "production-audit"
+        CommandLine = $npmCommand + " run audit:production"
+      },
+      [pscustomobject]@{
+        Name = "windows-setup"
+        CommandLine = (
+          $powershellCommand + " -NoLogo -NoProfile -NonInteractive " +
+          "-ExecutionPolicy Bypass -File scripts\setup-windows.test.ps1"
+        )
+      },
+      [pscustomobject]@{
+        Name = "windows-recovery"
+        CommandLine = (
+          $powershellCommand + " -NoLogo -NoProfile -NonInteractive " +
+          "-ExecutionPolicy Bypass -File scripts\setup-windows-recovery.test.ps1"
+        )
+      }
+    )
+    Invoke-Checked -FilePath $npm -Arguments @("run", "build")
+    Invoke-Checked -FilePath $npm -Arguments @("run", "check:public")
   }
   catch {
     Throw-UpdateFailure -Code "PREFLIGHT_FAILED" -Message (

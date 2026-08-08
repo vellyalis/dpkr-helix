@@ -5,6 +5,8 @@ Set-StrictMode -Version 2.0
 
 $setupPath = Join-Path $PSScriptRoot "setup-windows.ps1"
 $sourceText = Get-Content -LiteralPath $setupPath -Raw
+$packageJsonPath = Join-Path (Split-Path -Parent $PSScriptRoot) "package.json"
+$packageJson = Get-Content -LiteralPath $packageJsonPath -Raw | ConvertFrom-Json
 $tokens = $null
 $parseErrors = $null
 $ast = [System.Management.Automation.Language.Parser]::ParseFile(
@@ -66,6 +68,7 @@ function Get-SetupFunctionSource {
         "Get-CommandPath",
         "Invoke-Checked",
         "Invoke-CapturedChecked",
+        "Invoke-CheckedParallel",
         "Get-CleanSourceCommit",
         "Throw-UpdateFailure",
         "Get-UpdateFailureCode",
@@ -111,6 +114,40 @@ $temporaryRoot = Join-Path ([System.IO.Path]::GetTempPath()) (
 New-Item -ItemType Directory -Path $temporaryRoot | Out-Null
 
 try {
+  $parallelWorkingDirectory = Join-Path $temporaryRoot "parallel-check"
+  New-Item -ItemType Directory -Path $parallelWorkingDirectory | Out-Null
+  Invoke-CheckedParallel -WorkingDirectory $parallelWorkingDirectory -Commands @(
+    [pscustomobject]@{ Name = "first"; CommandLine = "where.exe cmd.exe" },
+    [pscustomobject]@{ Name = "second"; CommandLine = "where.exe powershell.exe" }
+  )
+  $parallelFailure = $null
+  try {
+    Invoke-CheckedParallel -WorkingDirectory $parallelWorkingDirectory -Commands @(
+      [pscustomobject]@{
+        Name = "expected-failure"
+        CommandLine = "where.exe definitely-missing-dpkr-helix-command"
+      }
+    )
+  }
+  catch {
+    $parallelFailure = $_.Exception.Message
+  }
+  Assert-True `
+    -Condition ($parallelFailure -and $parallelFailure.Contains("expected-failure (1)")) `
+    -Message "Parallel candidate verification did not preserve a failing command's identity and exit code."
+  $missingResultFailure = $null
+  try {
+    Invoke-CheckedParallel -WorkingDirectory $parallelWorkingDirectory -Commands @(
+      [pscustomobject]@{ Name = "missing-result"; CommandLine = "exit /b 0" }
+    )
+  }
+  catch {
+    $missingResultFailure = $_.Exception.Message
+  }
+  Assert-True `
+    -Condition ($missingResultFailure -and $missingResultFailure.Contains("missing-result (255)")) `
+    -Message "Parallel candidate verification did not fail closed when its result sidecar was absent."
+
   $unicodeText = [string]([char] 0x6625) + [char] 0x306E + [char] 0x7A93
   $jsonPath = Join-Path $temporaryRoot "round-trip.json"
   $expectedJson = [ordered]@{
@@ -922,6 +959,50 @@ try {
       $sourceText.Contains('scripts\setup-windows-recovery.test.ps1')
     ) `
     -Message "Managed update preflight omits Windows recovery regression suites."
+  $hasPretest = $packageJson.scripts.PSObject.Properties.Name -contains "pretest"
+  Assert-True `
+    -Condition (-not $hasPretest) `
+    -Message "Package tests still duplicate files through a separate pretest hook."
+  Assert-True `
+    -Condition (
+      [string] $packageJson.scripts.test -eq
+      'tsx --test --test-concurrency=4 "src/**/*.test.ts"'
+    ) `
+    -Message "Package tests do not run the complete test-file set through the bounded parallel runner."
+  $preflightSource = Get-SetupFunctionSource -Names @("Invoke-UpdatePreflight")
+  $preflightCiIndex = $preflightSource.IndexOf('"ci", "--include=dev", "--no-audit"')
+  $parallelChecksIndex = $preflightSource.IndexOf("Invoke-CheckedParallel")
+  $preflightBuildIndex = $preflightSource.IndexOf('"run", "build"')
+  $preflightPublicIndex = $preflightSource.IndexOf('"run", "check:public"')
+  Assert-True `
+    -Condition (
+      $preflightCiIndex -ge 0 -and
+      $parallelChecksIndex -gt $preflightCiIndex -and
+      $preflightBuildIndex -gt $parallelChecksIndex -and
+      $preflightPublicIndex -gt $preflightBuildIndex
+    ) `
+    -Message "Managed update preflight does not isolate dependency install, parallel read-only checks, build, and public scan in the accepted order."
+  foreach ($parallelCheck in @(
+      'Name = "tests"',
+      'Name = "typecheck"',
+      'Name = "production-audit"',
+      'Name = "windows-setup"',
+      'Name = "windows-recovery"'
+    )) {
+    Assert-True `
+      -Condition $preflightSource.Contains($parallelCheck) `
+      -Message "Managed update parallel verification is missing: $parallelCheck"
+  }
+  $parallelFunctionSource = Get-SetupFunctionSource -Names @("Invoke-CheckedParallel")
+  Assert-True `
+    -Condition (
+      $parallelFunctionSource.Contains("Start-Process") -and
+      $parallelFunctionSource.Contains("RedirectStandardOutput") -and
+      $parallelFunctionSource.Contains("RedirectStandardError") -and
+      $parallelFunctionSource.Contains(".Refresh()") -and
+      $parallelFunctionSource.Contains("Remove-DirectoryTreeLongPath")
+    ) `
+    -Message "Parallel candidate verification lacks bounded process output, exit-code refresh, or long-path cleanup."
   Assert-True `
     -Condition $sourceText.Contains('windows-bootstrap.previous.json') `
     -Message "Managed update rollback does not preserve bootstrap settings."
