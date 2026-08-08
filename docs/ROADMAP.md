@@ -29,6 +29,7 @@ measured baseline shows that it would not improve a real outcome.
 | Selective upstream continuity and card clarity | Shipped | Same-conversation reuse, restart-safe review state, truthful deployment provenance, migration v10 compatibility, clearer cards, and bounded worker cold starts are live-verified |
 | Operations standby presentation | Shipped | Connected MCP session roots are separated from active `NOW` work without changing canonical state or lifecycle |
 | Practical daily-use controls | Shipped | Provider quota cooldowns, reversible workspace-session archive, and one Current/Resume plus failure-diagnosis surface are public, managed-deployed, and installed-verified |
+| Managed update verification throughput | In validation | Every existing update gate remains mandatory while independent read-only checks use bounded parallel execution; installed end-to-end timing is being measured |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -180,7 +181,8 @@ verification owners into one bounded Current/Resume view. It identifies the
 next recorded action and the latest sanitized failure, including quota reset
 time and a concrete recovery action, before a new chat opens the project.
 
-Functional checkpoint `5b95de7` is public and managed-deployed. The physical
+Functional checkpoint `5b95de7` and final acceptance checkpoint `0070576` are
+public and managed-deployed. The physical
 installed package exposes `get_project_resume` as a read-only, non-destructive
 MCP tool; the live registered project returns current clean `main`, Handoff,
 workspace, active-run, failure, and next-action state. The installed lifecycle
@@ -193,6 +195,37 @@ Installed source provenance and physical fingerprint agree, `devspace doctor`
 passes, and local/public health plus OAuth metadata return 200. Production
 archive remains an explicit, confirmed local-dashboard action; acceptance did
 not archive or delete any session, repository file, or worktree.
+
+## In validation: managed update verification throughput
+
+The managed updater still performs a clean `npm ci`, all 68 TypeScript tests,
+TypeScript checking, the reviewed production dependency audit, both Windows
+setup/recovery suites, the production build, public-release scan, package and
+installed-tree fingerprints, rollback preparation, and replacement health
+checks. No gate is skipped because speed cannot compensate for dependency,
+native-module, recovery, public-boundary, or deployment-truth failure.
+
+The former preflight executed those independent read-only checks serially. A
+measured run attributed about 83.3 seconds to clean dependency installation and
+166.1 seconds to the serial 68-file test chain; all measured preflight
+components summed to about 292.9 seconds. The accepted source keeps dependency
+installation first, runs the complete test set with bounded concurrency four,
+runs tests, typecheck, production audit, and both Windows contract suites in one
+fixed concurrent group, then performs build and public scan in order. Each
+child has isolated logs and a fail-closed exit-code sidecar because Windows
+`cmd.exe` can otherwise report zero through a wrapper after a called command
+fails.
+
+The exact production `Invoke-UpdatePreflight` completed in 123.106 seconds on
+the owner host, about 169.8 seconds below the measured serial components, with
+68/68 tests and every other gate passing. A persistent dependency cache was
+rejected: copying its 35,906 files and roughly 1.05 GB still took 49.8 seconds
+and would add integrity, promotion, cleanup, and Windows long-path lifecycle for
+only a much smaller theoretical gain. Functional checkpoint `be3fd0d` is public
+and installed. Its transition deployment took 361.09 seconds because that
+request began under the previous installed outer updater; a following
+documentation-only deployment is the first valid end-to-end measurement of the
+new installed lane.
 
 ## Decision rules
 

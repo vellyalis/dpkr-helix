@@ -2059,3 +2059,76 @@ produces explicit empty states and never blocks normal `open_project`.
 resume primitive that covers the same local owners, or evidence shows one of the
 projection precedence rules routinely selects a less useful next action than
 the canonical Handoff.
+
+## ADR-053: Parallelize only independent update gates and keep clean dependency verification
+
+**Date:** 2026-08-08
+
+**Status:** Accepted; functional source and installation complete, installed end-to-end timing pending
+
+**Context:** Managed self-update preserved strong candidate and replacement
+verification, but recent deployments took roughly six minutes. Direct
+measurement separated the cost instead of assuming that build or installation
+was dominant: clean `npm ci` took 83.315 seconds, the former serial 68-file test
+chain took 166.100 seconds, typecheck 11.019 seconds, production audit 3.173
+seconds, build 17.413 seconds, public scan 1.408 seconds, and the two Windows
+contract suites 6.955 and 3.706 seconds. The measured preflight components
+therefore summed to about 292.9 seconds.
+
+**Decision:** Keep clean `npm ci --include=dev --no-audit` as the first
+candidate action so dependency lock, install scripts, native modules, and
+postinstall repairs are re-established from source. Replace the manually
+enumerated serial test command and duplicate `pretest` hook with the existing
+tsx/Node test runner over `src/**/*.test.ts` at fixed concurrency four. This
+discovers the same 68 tracked test files and makes newly added test files
+mandatory without editing a second manifest.
+
+After dependency installation, execute exactly five independent read-only
+checks concurrently: the complete test set, typecheck, production dependency
+audit, Windows setup contract, and Windows recovery contract. Run production
+build and public-release scan only after that group succeeds. Preserve exact
+resolved executable paths, isolated stdout/stderr, bounded failure tails,
+process cleanup, and existing long-path temporary cleanup. Each command writes
+an explicit exit-code sidecar; a missing, malformed, or out-of-range result
+fails closed as 255 because a reproduced `cmd.exe` wrapper path returned zero
+after a called command failed.
+
+**Alternatives rejected:** Removing or sampling tests; skipping clean dependency
+installation when lockfiles appear unchanged; increasing concurrency without
+host evidence; running build concurrently with tests that create fixtures;
+performing public scan before build; or adding a persistent dependency cache.
+The measured `node_modules` tree contained 35,906 files and approximately 1.05
+GB. Copying it still took 49.8 seconds and exposed the existing Windows
+long-path cleanup burden, while npm offline mode saved only about three seconds.
+That smaller gain does not justify a second mutable dependency owner,
+fingerprint manifest, promotion protocol, retention rule, or repair path.
+
+**Complexity receipt:** One package-script simplification, one private helper in
+the existing Windows updater, one fixed five-command call site, and focused
+PowerShell contracts. No dependency, cache, database, schema migration,
+configuration setting, daemon, scheduler, service, public tool, permission, or
+second update controller was added.
+
+**Evidence:** The same 68 files passed repeatedly through the parallel test
+owner. Focused contracts prove successful concurrent commands, preservation of
+a real nonzero exit, fail-closed behavior when the sidecar is absent, the exact
+test command, all five mandatory checks, and dependency-install → concurrent
+checks → build → public-scan ordering. Complete regression and policy suites,
+typecheck, production build, zero-vulnerability production audit, both Windows
+contract suites, public-release scan, and diff checks pass. The exact production
+`Invoke-UpdatePreflight` completed in 123.106 seconds, about 169.8 seconds below
+the measured serial components, with no skipped gate. Functional checkpoint
+`be3fd0d` is public and installed; its transition deployment took 361.09
+seconds because it began under the previous installed outer updater.
+
+**Failure and recovery:** Any child failure, missing result, dependency failure,
+build failure, or public-scan failure still aborts before replacement. Existing
+deployment rollback and health gates are unchanged. Reverting the helper and
+package script restores serial verification without changing persisted state or
+the installed package contract.
+
+**Reconsider when:** The owner host shows repeatable fixed-resource test
+collisions at concurrency four, clean dependency installation becomes the only
+material cost and a substantially stronger immutable package cache can prove
+its complete integrity/lifecycle contract, or another supported platform needs
+a non-Windows parallel process owner.

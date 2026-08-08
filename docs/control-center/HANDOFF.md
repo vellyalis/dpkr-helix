@@ -6,7 +6,8 @@ Last synchronized: 2026-08-08
 
 - Selective upstream `v1.0.6` ingestion plus independent Helix reliability
   hardening is published from `16e236c`; updater truth, migration repair,
-  Operations standby, and final state are installed through `7ee08d8`, and
+  Operations standby, practical controls, and the update fast-lane functional
+  checkpoint are installed through `be3fd0d`, and
   same-conversation checkout reuse is live-verified.
   Reuse now
   applies to both `open_workspace` and `open_project`, survives restart, keeps
@@ -67,7 +68,7 @@ Last synchronized: 2026-08-08
   label; after restart retired old connections, installed classification reports
   `NOW=1`, `ACTION=2`, and `STANDBY=8`.
 - Practical daily-use controls are shipped from functional checkpoint
-  `5b95de7`. Existing agent history
+  `5b95de7` and final acceptance checkpoint `0070576`. Existing agent history
   derives structured quota/rate/provider/auth/config/policy/temporary failure
   states and reset times; an active quota/rate cooldown blocks a duplicate worker
   before side effects and explicitly offers retry-later or a user-selected other
@@ -87,6 +88,21 @@ Last synchronized: 2026-08-08
   remains. Source/fingerprint provenance, Doctor, local/public health, and OAuth
   metadata pass. No production history, repository file, or worktree was
   archived or deleted.
+- Managed update fast-lane work is `IN VALIDATION` at installed checkpoint
+  `be3fd0d`. Baseline measurements attributed 83.315 seconds to clean `npm ci`,
+  166.100 seconds to the former serial test chain, and roughly 292.9 seconds to
+  all measured preflight components. The accepted lane keeps clean dependency
+  installation first, executes the exact complete 68-file test set at bounded
+  concurrency four, runs tests/typecheck/production-audit/setup/recovery as one
+  fixed independent group, and keeps build plus public scan ordered afterward.
+  Each child writes isolated logs and an exit-code sidecar; missing or invalid
+  results fail closed as 255, closing a reproduced `cmd.exe` false-zero path.
+  Exact `Invoke-UpdatePreflight` completed in 123.106 seconds with every gate
+  passing. No cache, dependency, setting, schema, service, or public API was
+  added. A 1.05 GB dependency-cache design was rejected. The first deployment
+  request `7f3e8595-8ce9-4151-b84a-96d8eb19c933` succeeded in 361.09 seconds but
+  began under the old installed outer updater; the next small state deployment
+  is the first valid end-to-end timing of the newly installed lane.
 - Two unmerged post-release upstream branches using host-installed Codex and the
   experimental `codex app-server` were classified as promising research, not a
   safe runtime replacement. A future isolated comparison must preserve

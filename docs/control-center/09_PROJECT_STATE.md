@@ -17,8 +17,8 @@ Last synchronized: 2026-08-08
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-OPS-05 is live-verified and complete.
-- Current release line: `CONTINUITY / UPDATE TRUTH / MIGRATION / STANDBY LIVE
-  VERIFIED`; final public and installed state is `7ee08d8`. The selective
+- Current release line: `PRACTICAL CONTROLS SHIPPED / UPDATE FAST LANE IN
+  VALIDATION`; current public and installed functional state is `be3fd0d`. The selective
   upstream and worker-reliability candidate is public from `16e236c`. It adapts
   upstream DevSpace `v1.0.6`
   conversation-aware checkout reuse, restart-safe review checkpoints, compact
@@ -61,7 +61,7 @@ Last synchronized: 2026-08-08
   transport lifecycle remain unchanged. Doctor, local/public health, OAuth
   metadata, and fresh installed-provenance `UP_TO_DATE` all pass.
 - Practical daily-use controls are `SHIPPED / LIVE VERIFIED` from functional
-  checkpoint `5b95de7`. Provider failures are classified through the
+  checkpoint `5b95de7` and final acceptance checkpoint `0070576`. Provider failures are classified through the
   existing agent record and historical `failure_code` field; usage/rate limits
   expose a reset time and a temporary provider cooldown before prompt, record,
   or worker side effects, without silently changing provider. System now
@@ -80,6 +80,23 @@ Last synchronized: 2026-08-08
   source/fingerprint provenance agrees; Doctor, local/public health, and
   local/public OAuth metadata pass. Production workspace history has not been
   archived and no file or worktree was deleted.
+- Managed update verification throughput is `IN VALIDATION` from functional
+  checkpoint `be3fd0d`. The updater still requires clean `npm ci`, all 68 test
+  files, typecheck, production audit, both Windows setup/recovery suites,
+  production build, public-release scan, provenance/fingerprint checks,
+  rollback, and replacement health. The test owner now discovers all tracked
+  `src/**/*.test.ts` files and runs them with fixed concurrency four; the updater
+  runs only the five independent read-only checks concurrently, after dependency
+  installation and before ordered build/public scanning. Per-command result
+  sidecars fail closed when `cmd.exe` hides a child failure or omits a result.
+  The exact source preflight measured 123.106 seconds versus about 292.9 seconds
+  for the measured serial components, a reduction of about 169.8 seconds with
+  no skipped gate. A 35,906-file / approximately 1.05 GB dependency cache was
+  rejected as unjustified mutable state. Transition deployment request
+  `7f3e8595-8ce9-4151-b84a-96d8eb19c933` completed in 361.09 seconds and installed
+  the new lane; it is not the final timing because it began under the previous
+  outer updater. The next documentation-only deployment is the first valid
+  installed end-to-end measurement.
 - Post-`v1.0.6` upstream host-installed Codex and experimental `app-server`
   branches were audited but not imported. They remain isolated research because
   they do not yet preserve Helix's schema-constrained completed/needs-input
