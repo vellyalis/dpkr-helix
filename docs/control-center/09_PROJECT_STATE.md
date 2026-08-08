@@ -17,8 +17,8 @@ Last synchronized: 2026-08-08
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-OPS-05 is live-verified and complete.
-- Current release line: `PRACTICAL CONTROLS SHIPPED / UPDATE FAST LANE IN
-  VALIDATION`; current public and installed functional state is `be3fd0d`. The selective
+- Current release line: `PRACTICAL CONTROLS / UPDATE FAST LANE SHIPPED`; the
+  measured installed validation checkpoint is `a70a192`. The selective
   upstream and worker-reliability candidate is public from `16e236c`. It adapts
   upstream DevSpace `v1.0.6`
   conversation-aware checkout reuse, restart-safe review checkpoints, compact
@@ -80,7 +80,7 @@ Last synchronized: 2026-08-08
   source/fingerprint provenance agrees; Doctor, local/public health, and
   local/public OAuth metadata pass. Production workspace history has not been
   archived and no file or worktree was deleted.
-- Managed update verification throughput is `IN VALIDATION` from functional
+- Managed update verification throughput is `SHIPPED / LIVE VERIFIED` from functional
   checkpoint `be3fd0d`. The updater still requires clean `npm ci`, all 68 test
   files, typecheck, production audit, both Windows setup/recovery suites,
   production build, public-release scan, provenance/fingerprint checks,
@@ -94,9 +94,15 @@ Last synchronized: 2026-08-08
   no skipped gate. A 35,906-file / approximately 1.05 GB dependency cache was
   rejected as unjustified mutable state. Transition deployment request
   `7f3e8595-8ce9-4151-b84a-96d8eb19c933` completed in 361.09 seconds and installed
-  the new lane; it is not the final timing because it began under the previous
-  outer updater. The next documentation-only deployment is the first valid
-  installed end-to-end measurement.
+  the new lane, but began under the previous outer updater. The first complete
+  installed-lane request `d66a8670-e6f2-4700-997b-938e831c9e9c` deployed
+  checkpoint `a70a192` in 291.749 seconds, reached the healthy replacement
+  runtime after 257.628 seconds, and closed final provenance/health in 34.121
+  seconds. That observed end-to-end result is 69.341 seconds, or 19.2 percent,
+  below the transition run. Source preflight evidence remains the stronger
+  same-candidate reduction from about 292.9 to 123.106 seconds. HEAD,
+  `origin/main`, installed source commit, fingerprint, Doctor, local/public
+  health, and local/public OAuth metadata agree.
 - Post-`v1.0.6` upstream host-installed Codex and experimental `app-server`
   branches were audited but not imported. They remain isolated research because
   they do not yet preserve Helix's schema-constrained completed/needs-input

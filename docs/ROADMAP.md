@@ -29,7 +29,7 @@ measured baseline shows that it would not improve a real outcome.
 | Selective upstream continuity and card clarity | Shipped | Same-conversation reuse, restart-safe review state, truthful deployment provenance, migration v10 compatibility, clearer cards, and bounded worker cold starts are live-verified |
 | Operations standby presentation | Shipped | Connected MCP session roots are separated from active `NOW` work without changing canonical state or lifecycle |
 | Practical daily-use controls | Shipped | Provider quota cooldowns, reversible workspace-session archive, and one Current/Resume plus failure-diagnosis surface are public, managed-deployed, and installed-verified |
-| Managed update verification throughput | In validation | Every existing update gate remains mandatory while independent read-only checks use bounded parallel execution; installed end-to-end timing is being measured |
+| Managed update verification throughput | Shipped | Every existing update gate remains mandatory while independent read-only checks use bounded parallel execution; installed end-to-end timing is live-verified |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -196,7 +196,7 @@ passes, and local/public health plus OAuth metadata return 200. Production
 archive remains an explicit, confirmed local-dashboard action; acceptance did
 not archive or delete any session, repository file, or worktree.
 
-## In validation: managed update verification throughput
+## Shipped: managed update verification throughput
 
 The managed updater still performs a clean `npm ci`, all 68 TypeScript tests,
 TypeScript checking, the reviewed production dependency audit, both Windows
@@ -223,9 +223,13 @@ rejected: copying its 35,906 files and roughly 1.05 GB still took 49.8 seconds
 and would add integrity, promotion, cleanup, and Windows long-path lifecycle for
 only a much smaller theoretical gain. Functional checkpoint `be3fd0d` is public
 and installed. Its transition deployment took 361.09 seconds because that
-request began under the previous installed outer updater; a following
-documentation-only deployment is the first valid end-to-end measurement of the
-new installed lane.
+request began under the previous installed outer updater. The following
+documentation-only checkpoint `a70a192` was processed entirely by the new
+installed lane and completed in 291.749 seconds. The replacement runtime was
+healthy after 257.628 seconds and the remaining provenance and health closure
+took 34.121 seconds. This observed end-to-end run is 69.341 seconds, or 19.2
+percent, below the transition run; the stronger same-candidate preflight
+evidence remains the 292.9-to-123.106-second comparison above.
 
 ## Decision rules
 

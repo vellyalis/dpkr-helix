@@ -2064,7 +2064,7 @@ the canonical Handoff.
 
 **Date:** 2026-08-08
 
-**Status:** Accepted; functional source and installation complete, installed end-to-end timing pending
+**Status:** Accepted; public, managed-deployed, and installed timing acceptance complete
 
 **Context:** Managed self-update preserved strong candidate and replacement
 verification, but recent deployments took roughly six minutes. Direct
@@ -2119,7 +2119,14 @@ contract suites, public-release scan, and diff checks pass. The exact production
 `Invoke-UpdatePreflight` completed in 123.106 seconds, about 169.8 seconds below
 the measured serial components, with no skipped gate. Functional checkpoint
 `be3fd0d` is public and installed; its transition deployment took 361.09
-seconds because it began under the previous installed outer updater.
+seconds because it began under the previous installed outer updater. The first
+complete installed-lane request `d66a8670-e6f2-4700-997b-938e831c9e9c`
+deployed state checkpoint `a70a192` in 291.749 seconds, reached the healthy
+replacement runtime in 257.628 seconds, and closed remaining provenance and
+health checks in 34.121 seconds. The observed total is 69.341 seconds, or 19.2
+percent, below the transition request. Source, origin, installed commit,
+physical fingerprint, Doctor, local/public health, and local/public OAuth
+metadata agree.
 
 **Failure and recovery:** Any child failure, missing result, dependency failure,
 build failure, or public-scan failure still aborts before replacement. Existing

@@ -88,7 +88,7 @@ Last synchronized: 2026-08-08
   remains. Source/fingerprint provenance, Doctor, local/public health, and OAuth
   metadata pass. No production history, repository file, or worktree was
   archived or deleted.
-- Managed update fast-lane work is `IN VALIDATION` at installed checkpoint
+- Managed update fast-lane work is `SHIPPED / LIVE VERIFIED` from functional checkpoint
   `be3fd0d`. Baseline measurements attributed 83.315 seconds to clean `npm ci`,
   166.100 seconds to the former serial test chain, and roughly 292.9 seconds to
   all measured preflight components. The accepted lane keeps clean dependency
@@ -101,8 +101,13 @@ Last synchronized: 2026-08-08
   passing. No cache, dependency, setting, schema, service, or public API was
   added. A 1.05 GB dependency-cache design was rejected. The first deployment
   request `7f3e8595-8ce9-4151-b84a-96d8eb19c933` succeeded in 361.09 seconds but
-  began under the old installed outer updater; the next small state deployment
-  is the first valid end-to-end timing of the newly installed lane.
+  began under the old installed outer updater. The next state-only request
+  `d66a8670-e6f2-4700-997b-938e831c9e9c` ran entirely through the installed new
+  lane and completed in 291.749 seconds. Its replacement runtime was healthy
+  after 257.628 seconds and final provenance/health closure took 34.121 seconds,
+  an observed 69.341-second / 19.2-percent reduction from the transition run.
+  Source, origin, installed commit, fingerprint, Doctor, local/public health,
+  and local/public OAuth metadata agreed for the measured `a70a192` run.
 - Two unmerged post-release upstream branches using host-installed Codex and the
   experimental `codex app-server` were classified as promising research, not a
   safe runtime replacement. A future isolated comparison must preserve
