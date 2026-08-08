@@ -1882,7 +1882,7 @@ state that can replace the derived predicate without weakening truth.
 
 **Date:** 2026-08-08
 
-**Status:** Accepted; source and focused proof complete, managed deployment pending
+**Status:** Accepted; public, managed-deployed, and installed acceptance complete
 
 **Context:** The local-agent availability owner checked whether an SDK package or
 provider executable existed. A live Codex worker therefore appeared available,
@@ -1923,8 +1923,13 @@ or dependency was added.
 shape, compound duration and local-clock reset parsing, finite fallback reset,
 authentication classification, later-success cancellation, availability
 summary, store compatibility, worker/provider/launch failures, MCP output, and
-dashboard projection. TypeScript and the UI build pass. Full regression,
-publication and installed acceptance remain required before shipped status.
+dashboard projection, including the rule that only the newest provider record
+can own cooldown state. Complete regression, policy, TypeScript, production
+build, dependency audit, public-release, and diff gates pass. Installed modules
+classify the retained quota row as `usage_limit` with its reset time; because the
+reset has expired, physically available providers report available rather than
+remaining in stale cooldown. Physical provenance, Doctor, health, and OAuth
+checks pass.
 
 **Failure and recovery:** Removing the cooldown projection restores package-only
 availability. Existing `failure_code` values remain compatible and optional. A
@@ -1939,7 +1944,7 @@ blocks legitimate recovered access longer than repeated failed launches cost.
 
 **Date:** 2026-08-08
 
-**Status:** Accepted; source and focused proof complete, production archive not run
+**Status:** Accepted; public and installed diagnostics complete, production archive not run
 
 **Context:** Post-reuse observation found 1,072 persisted workspace sessions
 across 242 roots. All rows reported `active`; 149 were created in 24 hours and
@@ -1978,9 +1983,11 @@ filesystem deletion owner, worktree command, or remote MCP mutation was added.
 conversation-bound, active-operation, active-agent, managed-worktree and recent
 sessions remain active. It proves an archived row reactivates on touch. Admin
 tests prove the route is absent publicly, requires auth/CSRF, rejects options,
-reports no file/worktree deletion, and preserves a bound row. TypeScript and the
-UI build pass. The owner's live database has not been archived; publication and
-installed preview remain required.
+reports no file/worktree deletion, and preserves a bound row. Complete source
+gates pass. The installed lifecycle owner reads 1,076 sessions across the live
+state, including 21 conversation bindings, zero archived rows, and 129
+conservative candidates under the fixed seven-day contract. The owner's live
+database has not been archived; no repository file or worktree was deleted.
 
 **Failure and recovery:** Reusing an archived ID reactivates it. Rolling back the
 runtime leaves `archived` rows readable; the current restore path can still load
@@ -1996,7 +2003,7 @@ the current conservative retention contract.
 
 **Date:** 2026-08-08
 
-**Status:** Accepted; source and focused proof complete, managed deployment pending
+**Status:** Accepted; public, managed-deployed, and installed acceptance complete
 
 **Context:** After a chat switch or failed attempt, the owner had to correlate
 Project Registry, Git, Handoff, workspace rows, Operations, agent status and
@@ -2034,8 +2041,14 @@ active/archived totals, latest verification, quota diagnosis, explicit no-silent
 fallback recovery, and secret redaction. MCP client tests prove catalog/schema,
 read-only annotations, selector ambiguity, pre-open state and post-open compact
 workspace identity. Admin tests prove the public route is absent and the local
-response retains no secret-like provider output. TypeScript and UI builds pass;
-full gates, publication and installed host acceptance remain.
+response retains no secret-like provider output. Complete source gates pass.
+The physical installed MCP catalog exposes `get_project_resume` with
+`readOnlyHint=true` and `destructiveHint=false`. Calling the installed tool for
+the registered project returns current clean `main`, Handoff, workspace totals,
+active runs, latest failure diagnosis, a next action, and an `open_project`
+reuse instruction. Installed dashboard assets contain the matching
+Current/Resume, quota cooldown, and archive controls. Physical provenance,
+Doctor, health, and OAuth checks pass.
 
 **Failure and recovery:** Removing the projection leaves every canonical owner
 unchanged. An unavailable source reports the bounded repository/project state

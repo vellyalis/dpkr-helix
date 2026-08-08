@@ -60,8 +60,8 @@ Last synchronized: 2026-08-08
   order and compiled UI label, while run state, assurance, retention, and
   transport lifecycle remain unchanged. Doctor, local/public health, OAuth
   metadata, and fresh installed-provenance `UP_TO_DATE` all pass.
-- The next practical daily-use candidate is `SOURCE VERIFIED / PUBLICATION +
-  LIVE ACCEPTANCE PENDING`. Provider failures are classified through the
+- Practical daily-use controls are `SHIPPED / LIVE VERIFIED` from functional
+  checkpoint `5b95de7`. Provider failures are classified through the
   existing agent record and historical `failure_code` field; usage/rate limits
   expose a reset time and a temporary provider cooldown before prompt, record,
   or worker side effects, without silently changing provider. System now
@@ -70,10 +70,16 @@ Last synchronized: 2026-08-08
   worktrees, deletes no files, and reactivates on reuse. A read-only
   `get_project_resume` tool and Project inspector join current Git, Handoff,
   workspace, run, agent, verification, latest sanitized failure, and next action
-  through existing owners. Focused tests, TypeScript, UI build, redaction, CSRF,
-  race rechecks, and public-boundary checks pass; full gates, publication,
-  managed deployment, and live acceptance remain. Production workspace history
-  has not been archived.
+  through existing owners. Complete regression and policy suites, TypeScript,
+  production build, production dependency audit, public-release scan,
+  redaction, CSRF, race rechecks, and public-boundary checks pass. The installed
+  MCP catalog exposes the read-only/non-destructive resume tool, and the live
+  project returns clean `main`, current Handoff, workspace, active-run, failure,
+  and next-action state. Installed lifecycle diagnostics report 1,076 sessions,
+  21 bindings, zero archived rows, and 129 conservative candidates. Physical
+  source/fingerprint provenance agrees; Doctor, local/public health, and
+  local/public OAuth metadata pass. Production workspace history has not been
+  archived and no file or worktree was deleted.
 - Post-`v1.0.6` upstream host-installed Codex and experimental `app-server`
   branches were audited but not imported. They remain isolated research because
   they do not yet preserve Helix's schema-constrained completed/needs-input

@@ -66,7 +66,8 @@ Last synchronized: 2026-08-08
   The installed runtime exposes the five-queue order and compiled `STANDBY`
   label; after restart retired old connections, installed classification reports
   `NOW=1`, `ACTION=2`, and `STANDBY=8`.
-- A practical daily-use candidate is now source-verified. Existing agent history
+- Practical daily-use controls are shipped from functional checkpoint
+  `5b95de7`. Existing agent history
   derives structured quota/rate/provider/auth/config/policy/temporary failure
   states and reset times; an active quota/rate cooldown blocks a duplicate worker
   before side effects and explicitly offers retry-later or a user-selected other
@@ -76,10 +77,16 @@ Last synchronized: 2026-08-08
   worktree, binding, active operation and active agent, deletes no files, and
   reactivates on reuse. The read-only `get_project_resume` tool and Project
   inspector provide Git, Handoff, workspace, active work, latest verification,
-  latest sanitized failure, and next action in one bounded view. Focused source,
-  policy-boundary, redaction, TypeScript and UI-build checks pass. Full gates,
-  publication, deployment and live acceptance remain; no production history was
-  archived.
+  latest sanitized failure, and next action in one bounded view. Complete
+  regression/policy/typecheck/build/audit/public gates pass. The installed MCP
+  catalog exposes `get_project_resume` with read-only and non-destructive
+  annotations; the live project returns clean `main` plus current resume state.
+  Installed lifecycle projection reports 1,076 sessions, 21 bindings, zero
+  archived rows, and 129 conservative candidates. The historical quota row is
+  classified as `usage_limit`, but its reset is expired and no stale cooldown
+  remains. Source/fingerprint provenance, Doctor, local/public health, and OAuth
+  metadata pass. No production history, repository file, or worktree was
+  archived or deleted.
 - Two unmerged post-release upstream branches using host-installed Codex and the
   experimental `codex app-server` were classified as promising research, not a
   safe runtime replacement. A future isolated comparison must preserve
