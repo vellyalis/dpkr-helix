@@ -2970,13 +2970,26 @@ function Test-CodexDelegation {
   }
   $node = Get-CommandPath -Name "node.exe"
   $devspaceCli = Get-DevSpaceCliPath
-  $package = Read-Utf8Text -Path (Join-Path $Root "package.json") | ConvertFrom-Json
-  $expected = "$($package.name) $($package.version)"
+  $expected = "DPKR_HELIX_PROBE_OK"
+  $launchArguments = @(
+    $devspaceCli,
+    "agents", "run", "codex-explorer",
+    "--model", $Model
+  )
+  if ([string]::Equals(
+      $Model,
+      "gpt-5.6-sol",
+      [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    $launchArguments += @("--thinking", "low")
+  }
+  $launchArguments += (
+    "Reply with exactly DPKR_HELIX_PROBE_OK and nothing else. " +
+    "Do not read or modify files."
+  )
   Push-Location $Root
   try {
-    $launchOutput = & $node $devspaceCli agents run codex-explorer --model $Model `
-      "Read package.json and report only the package name and version. Do not modify files." 2>&1 |
-      Out-String
+    $launchOutput = & $node @launchArguments 2>&1 | Out-String
     if ($LASTEXITCODE -ne 0) {
       throw "Codex subagent launch failed: $launchOutput"
     }
@@ -2986,12 +2999,11 @@ function Test-CodexDelegation {
     }
     $runId = $runMatch.Value
     $result = ""
-    for ($attempt = 0; $attempt -lt 30; $attempt += 1) {
+    for ($attempt = 0; $attempt -lt 4; $attempt += 1) {
       $result = & $node $devspaceCli agents show $runId 2>&1 | Out-String
       if ($LASTEXITCODE -eq 0 -and
           $result.Contains(" idle ") -and
-          $result.Contains([string] $package.name) -and
-          $result.Contains([string] $package.version)) {
+          [regex]::IsMatch($result, "(?m)^DPKR_HELIX_PROBE_OK\r?$")) {
         Write-Host "Codex delegation: pass ($runId -> $expected)"
         return
       }
@@ -3005,7 +3017,6 @@ function Test-CodexDelegation {
         }
         throw "Codex subagent failed: $result"
       }
-      Start-Sleep -Seconds 2
     }
     throw "Codex subagent did not finish within 60 seconds: $runId"
   }

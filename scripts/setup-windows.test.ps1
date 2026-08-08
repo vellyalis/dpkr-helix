@@ -385,6 +385,10 @@ try {
           "agt_fixture error codex-explorer codex model thinking=max failure=tool_failed"
         ))) `
     -Message "A candidate delegation defect was incorrectly classified as an external quota outage."
+  $codexProbeSource = Get-SetupFunctionSource -Names @("Test-CodexDelegation")
+  Assert-True `
+    -Condition ($codexProbeSource -match '(?s)"agents", "run", "codex-explorer".*"--model", \$Model.*"gpt-5\.6-sol".*"--thinking", "low".*DPKR_HELIX_PROBE_OK.*\$attempt -lt 4' -and $codexProbeSource -notmatch 'Read package\.json|Start-Sleep -Seconds 2') `
+    -Message "Installed Codex verification is not the bounded low-effort exact-token canary."
 
   $script:RuntimePackageDir = Join-Path $temporaryRoot "runtime-packages"
   $runtimePackageSource = Join-Path $temporaryRoot "runtime-package.tgz"
