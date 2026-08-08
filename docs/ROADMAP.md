@@ -8,6 +8,8 @@ measured baseline shows that it would not improve a real outcome.
 ## Status guide
 
 - **Shipped** — implemented and covered by the completed product baseline.
+- **In validation** — source implementation and local proof are complete, but
+  publication, managed deployment, or live-host acceptance is still pending.
 - **Next** — the first planned work unit; implementation has not started.
 - **Stopped** — intentionally ended incomplete; partial evidence remains
   diagnostic and no completion claim is made.
@@ -23,7 +25,8 @@ measured baseline shows that it would not improve a real outcome.
 | Source distribution and hardening | Shipped | Source-based installation, public/private data boundary, security and contribution policies, dependency checks, and a reviewed public-release runbook |
 | Measured Codex-quality parity | Shipped | Signed-in Web-plus-helix passes the frozen suite 8/8 versus retained local Codex 5/8 without weakening permissions, evidence truth, or existing work |
 | GPT-5.6 Sol effort comparison | Stopped | Owner stopped the incomplete 24/96 matrix because it no longer changes a current product, release, or setting decision |
-| Daily operation quality and continuity | Next | Observe one fresh-session real workflow and fix only the highest-impact repeated friction supported by direct evidence |
+| Daily operation quality and continuity | Shipped | Fresh-session operation, reconnect continuity, direct tools, handoffs, and bounded nested-instruction discovery are live-verified |
+| Selective upstream continuity and card clarity | In validation | Conversation-aware checkout reuse, restart-safe review checkpoints, compact workspace IDs, clearer MCP App cards, and worker cold-start tolerance pass local source gates; managed deployment and live-host acceptance remain |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -69,18 +72,46 @@ partial records remain diagnostic only: they do not select an effort, change a
 default, or support a complete P01-P08 conclusion. Resume only if a concrete
 effort-selection decision or observed model-quality regression requires it.
 
-## Next: daily operation quality and continuity
+## Shipped: daily operation quality and continuity
 
-The next workstream is WS-OPS-05. It starts in a cleared session with one
-fresh, signed-in normal-Chat workflow through the existing production path.
-Observe correct app/tool selection, one workspace open and reuse, direct
-read/edit/verification/review continuity, absence of unintended delegation or
-duplicate work, bounded waiting, reconnect continuity, and truthful status.
+WS-OPS-05 completed one fresh, signed-in normal-Chat workflow through the
+production path. It verified correct app/tool selection, workspace open and
+reuse, direct read/exec continuity, reconnect health, and truthful handoff
+state. The only repeated product gap was nested-instruction discovery walking
+ignored evaluation copies. The accepted fix extended the existing ephemeral
+directory exclusions to `.tmp`, reducing one fresh workspace result from 1,055
+advertised nested instruction paths to the nine real tracked paths with zero
+`.tmp` entries. No new context service, Gitignore parser, pagination protocol,
+or automation owner was added.
 
-The baseline itself is not the outcome. It ends by selecting one highest-impact
-repeated friction for a bounded implementation work unit, or by recording that
-no actionable product gap was observed. Do not add generic automation, UI, or
-infrastructure without that evidence.
+## In validation: selective upstream continuity and card clarity
+
+The current source candidate audits upstream DevSpace through `v1.0.6` by
+observable contract instead of attempting to merge unrelated histories. It
+adapts conversation-aware checkout reuse and review-checkpoint recovery to
+Helix's Project, Handoff, repository-context, policy, and Operations owners. It
+also adopts only the correctness-bearing card improvements: explicit
+opened/reused/worktree state, structured workspace details, accurate file-kind
+and rename presentation, direct single-file diffs, and bounded scrollbars.
+
+During the same audit, a real delegated worker failed before provider execution
+because its fixed ten-second launch acknowledgement expired during a cold
+Windows CLI start. The source candidate keeps the same detached worker and IPC
+owner, extends the bounded internal acknowledgement grace to thirty seconds,
+adds a lightweight heartbeat while the provider is active, and reconciles a
+starting/running record as interrupted only after one hour without activity.
+The long-lived service performs that check at startup and every five minutes;
+worker children skip the scan before acknowledging readiness. This prevents
+dead workers from remaining permanently `running` while preserving genuinely
+active detached workers and avoiding more cold-start work. It does not add a
+retry loop, daemon, user setting, second worker entrypoint, PID registry, or
+provider-specific exception.
+
+The source and local proof are not yet the shipped outcome. Completion requires
+the normal reviewed publication and managed self-update path, then live-host
+acceptance for normal and reused project opens, a worktree, representative
+diffs, restart continuity, and one delegated worker launch. Until those gates
+pass, the installed product remains the previous verified release.
 
 ## Decision rules
 

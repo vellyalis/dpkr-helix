@@ -9,10 +9,12 @@ import {
   Files,
   FolderOpen,
   FolderTree,
+  GitBranch,
   LoaderCircle,
   Search,
   SquareTerminal,
   Terminal,
+  TriangleAlert,
   createElement,
   type IconNode,
 } from "lucide";
@@ -26,11 +28,13 @@ export const toolIcons = {
   files: Files,
   folderOpen: FolderOpen,
   folderTree: FolderTree,
+  gitBranch: GitBranch,
   loading: LoaderCircle,
   readFile: FileText,
   search: Search,
   terminal: Terminal,
   terminalSquare: SquareTerminal,
+  warning: TriangleAlert,
   writeFile: FilePlus,
 } as const satisfies Record<string, IconNode>;
 

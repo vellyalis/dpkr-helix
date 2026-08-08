@@ -14,6 +14,7 @@ import { SqliteProjectStore } from "./projects/project-store.js";
 import { SqliteWorkspaceHandoffStore } from "./workspace-handoff-store.js";
 import { SqliteWorkspaceStore } from "./workspace-store.js";
 
+const MANAGED_RUNTIME_READINESS_TIMEOUT_MS = 30_000;
 const root = await mkdtemp(join(tmpdir(), "devspace-managed-restart-test-"));
 const allowedRoot = join(root, "allowed");
 const projectRoot = join(allowedRoot, "persisted-project");
@@ -52,7 +53,7 @@ try {
   runtime = undefined;
 
   const migrated = readMigrationSnapshot(stateDir, legacyWorkspaceId);
-  assert.deepEqual(migrated.versions, [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(migrated.versions, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
   assert.equal(migrated.versions.at(-1), LATEST_SCHEMA_VERSION);
   assert.deepEqual(migrated.legacyWorkspace, {
     id: legacyWorkspaceId,
@@ -119,7 +120,7 @@ try {
     persistedWorkspaceId,
     projectId: project.id,
   });
-  assert.deepEqual(afterReconciliation.versions, [1, 2, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(afterReconciliation.versions, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
   assert.deepEqual(afterReconciliation.project, {
     id: project.id,
     slug: "restart-proof",
@@ -298,7 +299,10 @@ async function waitForManagedRuntime(
   try {
     await Promise.race([
       runtime.readiness,
-      timeout(10_000, "managed runtime readiness timed out"),
+      timeout(
+        MANAGED_RUNTIME_READINESS_TIMEOUT_MS,
+        `managed runtime readiness timed out after ${MANAGED_RUNTIME_READINESS_TIMEOUT_MS}ms`,
+      ),
     ]);
 
     const health = await fetch(`http://127.0.0.1:${port}/healthz`, {

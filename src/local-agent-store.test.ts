@@ -50,6 +50,10 @@ try {
     disposition: undefined,
     question: undefined,
   }).latestResponse, undefined);
+  const touched = store.touch(created.id);
+  assert.equal(touched.status, "idle");
+  assert.equal(touched.providerSessionId, "thread_123");
+  assert.equal(store.get(created.id)?.updatedAt, touched.updatedAt);
   assert.deepEqual(
     store.list({ workspaceRoot: join(root, "project") }).map((agent) => agent.latestResponse),
     [undefined],

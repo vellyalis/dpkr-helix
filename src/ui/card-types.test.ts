@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import {
   isEditTool,
   isExpandableCard,
+  isInitiallyExpandedCard,
   isPatchTool,
   isShellTool,
   isToolName,
@@ -55,6 +56,25 @@ assert.equal(
 assert.equal(isExpandableCard({ tool: "open_project", project: { id: "prj_1" } }), true);
 assert.equal(
   isExpandableCard({
+    tool: "open_workspace",
+    repositoryContext: {
+      state: "available",
+      branch: "main",
+      dirty: { total: 0 },
+    },
+  }),
+  true,
+);
+assert.equal(
+  isExpandableCard({
+    tool: "open_project",
+    workspaceId: "ws_1234567890",
+    handoff: { status: "ready", summary: "Continue from the next action." },
+  }),
+  true,
+);
+assert.equal(
+  isExpandableCard({
     tool: "get_agent_status",
     agent: {
       id: "agt_1",
@@ -68,4 +88,31 @@ assert.equal(
     },
   }),
   true,
+);
+
+assert.equal(
+  isInitiallyExpandedCard({
+    tool: "open_workspace",
+    repositoryContext: { state: "available", dirty: { total: 0 } },
+  }),
+  true,
+);
+assert.equal(
+  isInitiallyExpandedCard({
+    tool: "apply_patch",
+    files: [{ path: "single.ts", operation: "update" }],
+    payload: { patch: "diff --git a/single.ts b/single.ts" },
+  }),
+  true,
+);
+assert.equal(
+  isInitiallyExpandedCard({
+    tool: "apply_patch",
+    files: [
+      { path: "a.ts", operation: "update" },
+      { path: "b.ts", operation: "update" },
+    ],
+    payload: { patch: "diff --git a/a.ts b/a.ts" },
+  }),
+  false,
 );

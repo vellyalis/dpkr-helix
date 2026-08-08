@@ -489,7 +489,9 @@ async function runAgentsWorker(args: string[]): Promise<void> {
   }
 
   const config = loadConfig();
-  const service = createCliLocalAgentService(config);
+  const service = createCliLocalAgentService(config, {
+    reconcileStaleActive: false,
+  });
   process.send?.({ type: "devspace-agent-worker-ready", id });
   if (process.connected) process.disconnect?.();
   await service.runWorker(id, promptFile);
@@ -515,7 +517,10 @@ function formatAgentLine(agent: Pick<
   return `${agent.id} ${agent.status} ${agent.profileName} ${agent.provider}${model}${thinking}`;
 }
 
-function createCliLocalAgentService(config: ReturnType<typeof loadConfig>): LocalAgentService {
+function createCliLocalAgentService(
+  config: ReturnType<typeof loadConfig>,
+  options: { reconcileStaleActive?: boolean } = {},
+): LocalAgentService {
   const operationStore = new OperationStore(config.stateDir);
   return new LocalAgentService({
     config,
@@ -524,6 +529,7 @@ function createCliLocalAgentService(config: ReturnType<typeof loadConfig>): Loca
       new OperationRunService(operationStore),
       operationStore,
     ),
+    staleActiveAfterMs: options.reconcileStaleActive === false ? false : undefined,
     workerSpawner: createDetachedLocalAgentWorkerSpawner(fileURLToPath(import.meta.url)),
   });
 }

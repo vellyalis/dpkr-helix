@@ -43,6 +43,7 @@ interface LocalAgentStoreOwner {
     id: string,
     patch: Partial<Omit<LocalAgentRecord, "id" | "createdAt">>,
   ): LocalAgentRecord;
+  touch?(id: string): LocalAgentRecord;
   close?(): void;
 }
 
@@ -71,6 +72,15 @@ export type LocalAgentWorkerSpawner = (
   promptFile: string,
 ) => void | Promise<void>;
 
+export const LOCAL_AGENT_WORKER_ACKNOWLEDGEMENT_TIMEOUT_MS = 30_000;
+export const LOCAL_AGENT_WORKER_HEARTBEAT_INTERVAL_MS = 30_000;
+export const LOCAL_AGENT_STALE_ACTIVE_AFTER_MS = 60 * 60 * 1_000;
+export const LOCAL_AGENT_STALE_RECONCILIATION_INTERVAL_MS = 5 * 60 * 1_000;
+
+export interface DetachedLocalAgentWorkerSpawnerOptions {
+  acknowledgementTimeoutMs?: number;
+}
+
 type LocalAgentAuthorizer = <T>(input: AuthorizedLocalAgentActionInput<T>) => Promise<T>;
 
 export interface LocalAgentObservation {
@@ -98,6 +108,9 @@ export interface LocalAgentServiceOptions {
   authorizer?: LocalAgentAuthorizer;
   now?: () => number;
   delay?: (ms: number) => Promise<void>;
+  workerHeartbeatIntervalMs?: number | false;
+  staleActiveAfterMs?: number | false;
+  staleReconciliationIntervalMs?: number | false;
   observation?: LocalAgentObservation;
 }
 
@@ -117,6 +130,9 @@ export class LocalAgentService {
   private readonly authorizer: LocalAgentAuthorizer;
   private readonly now: () => number;
   private readonly delay: (ms: number) => Promise<void>;
+  private readonly workerHeartbeatIntervalMs: number | undefined;
+  private readonly staleActiveAfterMs: number | undefined;
+  private readonly staleReconciliationTimer: NodeJS.Timeout | undefined;
   private readonly observation?: LocalAgentObservation;
 
   constructor(options: LocalAgentServiceOptions) {
@@ -134,7 +150,29 @@ export class LocalAgentService {
     this.authorizer = options.authorizer ?? runAuthorizedLocalAgentAction;
     this.now = options.now ?? Date.now;
     this.delay = options.delay ?? sleep;
+    this.workerHeartbeatIntervalMs = optionalDuration(
+      options.workerHeartbeatIntervalMs,
+      LOCAL_AGENT_WORKER_HEARTBEAT_INTERVAL_MS,
+    );
+    this.staleActiveAfterMs = optionalDuration(
+      options.staleActiveAfterMs,
+      LOCAL_AGENT_STALE_ACTIVE_AFTER_MS,
+    );
     this.observation = options.observation;
+    this.reconcileStaleActiveWorkers();
+    const staleReconciliationIntervalMs = this.staleActiveAfterMs
+      ? optionalDuration(
+          options.staleReconciliationIntervalMs,
+          LOCAL_AGENT_STALE_RECONCILIATION_INTERVAL_MS,
+        )
+      : undefined;
+    this.staleReconciliationTimer = staleReconciliationIntervalMs
+      ? setInterval(
+          () => this.reconcileStaleActiveWorkers(),
+          staleReconciliationIntervalMs,
+        )
+      : undefined;
+    this.staleReconciliationTimer?.unref();
   }
 
   list(scope: LocalAgentListScope): LocalAgentRecord[] {
@@ -308,6 +346,7 @@ export class LocalAgentService {
 
   async runWorker(id: string, promptFile: string): Promise<void> {
     const record = this.getStatus(id);
+    let heartbeat: NodeJS.Timeout | undefined;
     try {
       await this.authorizer({
         config: this.config,
@@ -322,6 +361,7 @@ export class LocalAgentService {
             error: undefined,
           });
           this.observe(() => this.observation?.statusChanged(running));
+          heartbeat = this.startWorkerHeartbeat(record.id);
           try {
             const profiles = await this.profileLoader(this.config, record.workspaceRoot);
             const profile = profiles.find((candidate) => candidate.name === record.profileName);
@@ -360,11 +400,15 @@ export class LocalAgentService {
         },
       });
     } finally {
+      if (heartbeat) clearInterval(heartbeat);
       await this.promptFileCleanup(promptFile);
     }
   }
 
   close(): void {
+    if (this.staleReconciliationTimer) {
+      clearInterval(this.staleReconciliationTimer);
+    }
     this.store.close?.();
   }
 
@@ -374,6 +418,55 @@ export class LocalAgentService {
       error: error instanceof Error ? error.message : String(error),
     });
     this.observe(() => this.observation?.statusChanged(failed));
+  }
+
+  private startWorkerHeartbeat(id: string): NodeJS.Timeout | undefined {
+    if (!this.workerHeartbeatIntervalMs || !this.store.touch) return undefined;
+    const timer = setInterval(() => {
+      try {
+        this.store.touch?.(id);
+      } catch {
+        // A heartbeat must never interrupt provider execution.
+      }
+    }, this.workerHeartbeatIntervalMs);
+    timer.unref();
+    return timer;
+  }
+
+  private reconcileStaleActiveWorkers(): void {
+    if (!this.staleActiveAfterMs) return;
+    const cutoff = this.now() - this.staleActiveAfterMs;
+    let records: LocalAgentRecord[];
+    try {
+      records = this.store.list();
+    } catch {
+      return;
+    }
+
+    for (const record of records) {
+      if (!isLocalAgentActive(record)) continue;
+      const updatedAt = Date.parse(record.updatedAt);
+      if (!Number.isFinite(updatedAt) || updatedAt > cutoff) continue;
+      try {
+        const current = this.store.get(record.id);
+        if (
+          !current
+          || !isLocalAgentActive(current)
+          || current.updatedAt !== record.updatedAt
+        ) {
+          continue;
+        }
+        const failed = this.store.update(current.id, {
+          status: "error",
+          disposition: undefined,
+          question: undefined,
+          error: "Local agent worker stopped reporting activity and was reconciled as interrupted.",
+        });
+        this.observe(() => this.observation?.statusChanged(failed));
+      } catch {
+        // Reconciliation must not prevent the service from starting.
+      }
+    }
   }
 
   private runProfile(
@@ -427,7 +520,14 @@ export class LocalAgentService {
 
 export function createDetachedLocalAgentWorkerSpawner(
   cliFilePath: string,
+  options: DetachedLocalAgentWorkerSpawnerOptions = {},
 ): LocalAgentWorkerSpawner {
+  const acknowledgementTimeoutMs = Math.max(
+    1,
+    options.acknowledgementTimeoutMs
+      ?? LOCAL_AGENT_WORKER_ACKNOWLEDGEMENT_TIMEOUT_MS,
+  );
+
   return (agentId, promptFile) => {
     const child = spawn(process.execPath, [
       ...process.execArgv,
@@ -446,8 +546,10 @@ export function createDetachedLocalAgentWorkerSpawner(
     return new Promise<void>((resolveReady, rejectReady) => {
       const timeout = setTimeout(() => {
         child.kill();
-        rejectReady(new Error(`Local agent worker did not acknowledge launch: ${agentId}`));
-      }, 10_000);
+        rejectReady(new Error(
+          `Local agent worker did not acknowledge launch within ${acknowledgementTimeoutMs}ms: ${agentId}`,
+        ));
+      }, acknowledgementTimeoutMs);
 
       const fail = (error: Error) => {
         clearTimeout(timeout);
@@ -509,4 +611,12 @@ function assertSafeLocalAgentRequest(fields: ReadonlyArray<readonly [string, str
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolveSleep) => setTimeout(resolveSleep, ms));
+}
+
+function optionalDuration(
+  value: number | false | undefined,
+  fallback: number,
+): number | undefined {
+  if (value === false) return undefined;
+  return Math.max(1, value ?? fallback);
 }

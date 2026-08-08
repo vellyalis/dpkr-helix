@@ -53,6 +53,8 @@ The Runs screen makes direct MCP, DevSpace-managed process, and local-agent work
 - `13_UI_SCREEN_SPECIFICATIONS.md`: Projects, Runs, live run, Agents, and System screen contracts
 - `14_REQUIREMENTS_EVIDENCE_MATRIX.md`: requirement-to-proof traceability
 - `15_STATE_LEDGER.md`: append-only, public-safe milestone history
+- `16_UPSTREAM_DEVSPACE_V1_0_6_AUDIT.md`: contract-level upstream comparison,
+  adoption decisions, and retained Helix ownership boundaries
 - `HANDOFF.md`: current Micro Work Unit, exact evidence, risks, and next executable action
 - `goals/`: one implementation Goal contract per increment
 - `goals/GOAL_08_CODEX_PARITY.md`: accepted quality/parity extension, bounded

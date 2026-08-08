@@ -57,6 +57,32 @@ for (const [card, expected] of displayCases) {
 }
 
 assert.equal(getToolDisplay({ tool: "open_workspace", root: "/tmp/project" }).label, "/tmp/project");
+assert.deepEqual(
+  pickDisplay(getToolDisplay({
+    tool: "open_workspace",
+    root: "/tmp/project",
+    workspaceReused: true,
+    mode: "checkout",
+  })),
+  { title: "Reused workspace", tone: "workspace" },
+);
+assert.equal(
+  getToolDisplay({
+    tool: "open_workspace",
+    root: "/tmp/project-worktree",
+    mode: "worktree",
+  }).icon,
+  toolIcons.gitBranch,
+);
+assert.deepEqual(
+  pickDisplay(getToolDisplay({
+    tool: "open_project",
+    project: { id: "prj_1", slug: "alpha", name: "Alpha" },
+    workspaceReused: true,
+    mode: "checkout",
+  })),
+  { title: "Reused project", tone: "workspace" },
+);
 assert.equal(
   getToolDisplay({ tool: "grep", summary: { pattern: "needle", scope: "src" } }).label,
   "needle in src",
@@ -113,6 +139,34 @@ assert.equal(
     files: [{ path: "src/removed.ts", operation: "delete" }],
   }).icon,
   toolIcons.deleteFile,
+);
+
+assert.equal(
+  getToolDisplay({
+    tool: "apply_patch",
+    files: [{
+      path: "src/new-name.ts",
+      previousPath: "src/old-name.ts",
+      operation: "move",
+    }],
+  }).label,
+  "src/old-name.ts → src/new-name.ts",
+);
+
+assert.deepEqual(
+  pickDisplay(getToolDisplay({
+    tool: "show_changes",
+    files: [{ path: "removed.ts", type: "deleted" }],
+  })),
+  { title: "Deleted 1 file", tone: "review" },
+);
+
+assert.deepEqual(
+  pickDisplay(getToolDisplay({
+    tool: "show_changes",
+    payload: { patch: "diff --git a/a.ts b/a.ts" },
+  })),
+  { title: "Changes ready", tone: "review" },
 );
 
 assert.deepEqual(

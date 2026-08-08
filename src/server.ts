@@ -73,6 +73,7 @@ import { OperationVerificationProjector } from "./operations/verification-projec
 import { readCurrentRepositoryFingerprint } from "./operations/repository-diff.js";
 import { createReviewCheckpointManager } from "./review-checkpoints.js";
 import { registerReviewTool } from "./review-tool.js";
+import { openAiConversationScopeId } from "./request-meta.js";
 import { repositoryContextOutputSchema } from "./repository-context-output.js";
 import { shutdownHttpServer } from "./server-shutdown.js";
 import { formatPathForPrompt } from "./skills.js";
@@ -414,12 +415,12 @@ const workspaceOutputSchema = {
     })
     .optional(),
   project: workspaceProjectOutputSchema.optional(),
-  agentsFiles: z.array(workspaceAgentsFileOutputSchema),
-  availableAgentsFiles: z.array(workspaceAvailableAgentsFileOutputSchema),
-  skills: z.array(workspaceSkillOutputSchema),
-  agentProviders: z.array(workspaceLocalAgentProviderOutputSchema),
-  agents: z.array(workspaceLocalAgentOutputSchema),
-  skillDiagnostics: z.array(z.unknown()),
+  agentsFiles: z.array(workspaceAgentsFileOutputSchema).optional(),
+  availableAgentsFiles: z.array(workspaceAvailableAgentsFileOutputSchema).optional(),
+  skills: z.array(workspaceSkillOutputSchema).optional(),
+  agentProviders: z.array(workspaceLocalAgentProviderOutputSchema).optional(),
+  agents: z.array(workspaceLocalAgentOutputSchema).optional(),
+  skillDiagnostics: z.array(z.unknown()).optional(),
   handoff: workspaceHandoffOutputSchema.optional(),
   repositoryContext: repositoryContextOutputSchema,
   instruction: z.string(),
@@ -776,38 +777,58 @@ function createWorkspaceToolResult(input: {
   localAgentProviders: LocalAgentProviderAvailability[];
   prefixLines?: string[];
 }) {
-  const { workspace, agentsFiles, availableAgentsFiles, repositoryContext } = input.context;
+  const {
+    workspace,
+    agentsFiles,
+    availableAgentsFiles,
+    repositoryContext,
+    workspaceReused,
+  } = input.context;
+  const includeBootstrapContext = !workspaceReused;
   const handoff = input.handoffs.get(workspace.root);
-  const visibleSkills = workspace.skills
+  const cardSkills = workspace.skills
     .filter((skill) => !skill.disableModelInvocation)
     .map((skill) => ({
       name: skill.name,
       description: skill.description,
       path: formatPathForPrompt(skill.filePath),
     }));
-  const visibleAgentProviders = input.config.subagents ? input.localAgentProviders : [];
-  const visibleAgents = workspace.agentProfiles.map((profile) => {
+  const cardAgentProviders = input.config.subagents ? input.localAgentProviders : [];
+  const cardAgents = workspace.agentProfiles.map((profile) => {
     const summary = summarizeLocalAgentProfile(profile);
-    const availability = visibleAgentProviders.find((provider) => provider.name === summary.provider);
+    const availability = cardAgentProviders.find((provider) => provider.name === summary.provider);
     return {
       ...summary,
       providerAvailable: availability?.available,
       providerUnavailableReason: availability?.reason,
     };
   });
-  const loadedAgentsFiles = agentsFiles.map((file) => ({
+  const cardAgentsFiles = agentsFiles.map((file) => ({
     path: formatAgentsPath(file.path, workspace.root),
     content: file.content,
   }));
-  const availableAgentsFileOutputs = availableAgentsFiles.map((file) => ({
+  const cardAvailableAgentsFiles = availableAgentsFiles.map((file) => ({
     path: formatAgentsPath(file.path, workspace.root),
   }));
-  const workspaceInstruction = input.config.skillsEnabled
+  const visibleSkills = includeBootstrapContext ? cardSkills : [];
+  const visibleAgentProviders = includeBootstrapContext ? cardAgentProviders : [];
+  const visibleAgents = includeBootstrapContext ? cardAgents : [];
+  const loadedAgentsFiles = includeBootstrapContext ? cardAgentsFiles : [];
+  const availableAgentsFileOutputs = includeBootstrapContext ? cardAvailableAgentsFiles : [];
+  const fullWorkspaceInstruction = input.config.skillsEnabled
     ? `Use this workspaceId in all subsequent tool calls for this project. Do not call open_workspace or open_project again for this same folder unless this workspaceId stops working, the user asks to reopen, or you switch to a different folder/worktree. Follow loaded agentsFiles instructions. Before working under a path listed in availableAgentsFiles, read that instruction file. When a task matches an available skill in skills, read its path before proceeding only when that path is inside the granted read scope. ${SKILL_READ_BOUNDARY_INSTRUCTION}`
     : "Use this workspaceId in all subsequent tool calls for this project. Do not call open_workspace or open_project again for this same folder unless this workspaceId stops working, the user asks to reopen, or you switch to a different folder/worktree. Follow loaded agentsFiles instructions. Before working under a path listed in availableAgentsFiles, read that instruction file.";
+  const workspaceInstruction = workspaceReused
+    ? "Reuse this workspaceId for subsequent tool calls. This is the same checkout previously opened for this project in the current ChatGPT conversation. Continue following the project instructions, nested instruction files, skills, and agent profiles previously returned for this workspace; that static bootstrap context remains active and is not repeated here."
+    : fullWorkspaceInstruction;
   const instruction = `${workspaceInstruction} ${DEVSPACE_SESSION_CONTINUITY_INSTRUCTION}`;
+  const cardInstruction = `${fullWorkspaceInstruction} ${DEVSPACE_SESSION_CONTINUITY_INSTRUCTION}`;
   const resultText = [
-    ...(input.prefixLines ?? [`Opened workspace ${workspace.id}`]),
+    ...(input.prefixLines ?? [
+      workspaceReused
+        ? `Workspace already open as ${workspace.id}`
+        : `Opened workspace ${workspace.id}`,
+    ]),
     `Root: ${workspace.root}`,
     `Mode: ${workspace.mode}`,
     workspace.project ? `Project: ${workspace.project.name} (${workspace.project.slug})` : undefined,
@@ -847,15 +868,29 @@ function createWorkspaceToolResult(input: {
         workspaceId: workspace.id,
         root: workspace.root,
         path: workspace.root,
+        mode: workspace.mode,
+        sourceRoot: workspace.sourceRoot,
+        worktree: workspace.worktree,
         project: workspace.project,
+        workspaceReused,
+        agentsFiles: cardAgentsFiles,
+        availableAgentsFiles: cardAvailableAgentsFiles,
+        skills: cardSkills,
+        agentProviders: cardAgentProviders,
+        agentProfiles: cardAgents,
+        agents: cardAgents,
+        skillDiagnostics: workspace.skillDiagnostics,
+        handoff,
+        repositoryContext,
+        instruction: cardInstruction,
         summary: {
           mode: workspace.mode,
           preset: workspace.project?.permissionPreset,
-          agentsFiles: loadedAgentsFiles.length,
-          availableAgentsFiles: availableAgentsFileOutputs.length,
-          skills: visibleSkills.length,
-          agentProviders: visibleAgentProviders.length,
-          agents: visibleAgents.length,
+          agentsFiles: cardAgentsFiles.length,
+          availableAgentsFiles: cardAvailableAgentsFiles.length,
+          skills: cardSkills.length,
+          agentProviders: cardAgentProviders.length,
+          agents: cardAgents.length,
           skillDiagnostics: workspace.skillDiagnostics.length,
         },
       },
@@ -868,12 +903,16 @@ function createWorkspaceToolResult(input: {
       sourceRoot: workspace.sourceRoot,
       worktree: workspace.worktree,
       project: workspace.project,
-      agentsFiles: loadedAgentsFiles,
-      availableAgentsFiles: availableAgentsFileOutputs,
-      skills: visibleSkills,
-      agentProviders: visibleAgentProviders,
-      agents: visibleAgents,
-      skillDiagnostics: workspace.skillDiagnostics,
+      ...(includeBootstrapContext
+        ? {
+            agentsFiles: loadedAgentsFiles,
+            availableAgentsFiles: availableAgentsFileOutputs,
+            skills: visibleSkills,
+            agentProviders: visibleAgentProviders,
+            agents: visibleAgents,
+            skillDiagnostics: workspace.skillDiagnostics,
+          }
+        : {}),
       handoff,
       repositoryContext,
       instruction,
@@ -1413,7 +1452,7 @@ export function createMcpServer(
     {
       title: "Open project",
       description:
-        "Open a registered dpkr helix project by exact project ID, exact slug, or unambiguous exact display name. If mode is omitted, the registered project's default workspace mode is used. Ambiguous or unavailable projects return an error without opening a workspace.",
+        "Open a registered dpkr helix project by exact project ID, exact slug, or unambiguous exact display name. If mode is omitted, the registered project's default workspace mode is used. Reopening the same checkout in one ChatGPT conversation reuses its existing workspaceId; worktree requests remain fresh.",
       inputSchema: {
         project: z
           .string()
@@ -1431,7 +1470,7 @@ export function createMcpServer(
       ...toolWidgetDescriptorMeta(config, "projects", PROJECT_OPEN_TOOL_VISIBILITY),
       annotations: PROJECT_OPEN_TOOL_ANNOTATIONS,
     },
-    async ({ project: selector, mode, baseRef }) => {
+    async ({ project: selector, mode, baseRef }, { _meta }) => {
       const startedAt = performance.now();
       try {
         const project = projects.resolveSelector(selector);
@@ -1464,29 +1503,37 @@ export function createMcpServer(
         }
 
         const openMode = mode ?? project.defaultMode;
-        const context = await workspaces.openWorkspace({
-          path: project.root,
-          mode: openMode,
-          baseRef,
-        });
+        const context = await workspaces.openWorkspace(
+          {
+            path: project.root,
+            mode: openMode,
+            baseRef,
+          },
+          { conversationScopeId: openAiConversationScopeId(_meta) },
+        );
         if (config.widgets === "changes") {
-          void reviewCheckpoints.initializeWorkspace({
+          await reviewCheckpoints.initializeWorkspace({
             workspaceId: context.workspace.id,
             root: context.workspace.root,
           });
         }
-        const prefix = formatProjectOpenResult({
-          workspaceId: context.workspace.id,
-          root: context.workspace.root,
-          mode: context.workspace.mode,
-          project: context.workspace.project ?? {
-            id: project.id,
-            slug: project.slug,
-            name: project.name,
-            permissionPreset: project.permissionPreset,
-            defaultMode: project.defaultMode,
-          },
-        }).split("\n");
+        const prefix = context.workspaceReused
+          ? [
+              `Project already open: ${project.name} (${project.slug})`,
+              `Workspace: ${context.workspace.id}`,
+            ]
+          : formatProjectOpenResult({
+              workspaceId: context.workspace.id,
+              root: context.workspace.root,
+              mode: context.workspace.mode,
+              project: context.workspace.project ?? {
+                id: project.id,
+                slug: project.slug,
+                name: project.name,
+                permissionPreset: project.permissionPreset,
+                defaultMode: project.defaultMode,
+              },
+            }).split("\n");
         const response = createWorkspaceToolResult({
           tool: toolNames.openProject,
           config,
@@ -1540,7 +1587,7 @@ export function createMcpServer(
     {
       title: "Open workspace",
       description:
-        "Open a local project directory as a coding workspace. Call this once per project folder or worktree before reading, editing, searching, writing, showing changes, or running commands. Reuse the returned workspaceId for later calls in the same folder; do not call open_workspace again unless switching folders/worktrees, changing checkout/worktree mode, the workspaceId is rejected as unknown, or the user explicitly asks to reopen. By default this opens the actual checkout; set mode=\"worktree\" when the user asks for an isolated or parallel coding session. Returns a workspaceId, loaded root project instructions, and nested instruction file paths the model should read before working in those directories.",
+        "Open a local project directory as a coding workspace. Reopening the same checkout in one ChatGPT conversation reuses its existing workspaceId; worktree requests always create a fresh isolated workspace. Returns the current project instructions, handoff, repository context, and workspace-scoped capabilities.",
       inputSchema: {
         path: z
           .string()
@@ -1562,11 +1609,14 @@ export function createMcpServer(
       ...toolWidgetDescriptorMeta(config, "workspace"),
       annotations: { readOnlyHint: true },
     },
-    async ({ path, mode, baseRef }) => {
+    async ({ path, mode, baseRef }, { _meta }) => {
       const startedAt = performance.now();
-      const context = await workspaces.openWorkspace({ path, mode, baseRef });
+      const context = await workspaces.openWorkspace(
+        { path, mode, baseRef },
+        { conversationScopeId: openAiConversationScopeId(_meta) },
+      );
       if (config.widgets === "changes") {
-        void reviewCheckpoints.initializeWorkspace({
+        await reviewCheckpoints.initializeWorkspace({
           workspaceId: context.workspace.id,
           root: context.workspace.root,
         });

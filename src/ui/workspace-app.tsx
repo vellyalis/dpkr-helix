@@ -9,6 +9,7 @@ import {
   isAgentTool,
   isEditTool,
   isExpandableCard,
+  isInitiallyExpandedCard,
   isPatchTool,
   isReadTool,
   isReviewTool,
@@ -22,7 +23,7 @@ import {
   type ToolName,
   type ToolResultCard,
 } from "./card-types.js";
-import { renderIcon, toolIcons } from "./icons.js";
+import { renderIcon, toolIcons, type ToolIcon } from "./icons.js";
 import {
   canCallServerTools,
   canSendMessages,
@@ -145,12 +146,7 @@ function handleToolResult(result: CallToolResult): void {
 
   const nextCard = { ...structured, tool };
   card = nextCard;
-  expanded = (
-    isReviewTool(tool) ||
-    isAgentTool(tool) ||
-    tool === "list_projects" ||
-    tool === "open_project"
-  ) && isExpandableCard(nextCard);
+  expanded = isInitiallyExpandedCard(nextCard);
   reviewFilesExpanded = false;
   errorMessage = result.isError ? payloadText(nextCard.payload) || "The tool returned an error." : null;
   render();
@@ -262,7 +258,7 @@ async function renderPayloadIfNeeded(): Promise<void> {
   }
 
   if (card.tool === "open_workspace") {
-    renderPrePayload(target, workspacePayloadText(card), "open_workspace");
+    renderWorkspacePayload(target, card);
     return;
   }
 
@@ -412,18 +408,14 @@ function renderProjectOpenCard(card: ToolResultCard, display: ToolDisplay): void
   const section = element("section", { className: `tool-card ${display.tone}` });
   section.append(renderStaticHeader(card, display));
 
-  const body = element("div", { className: "project-open" });
-  if (card.project) {
-    const project = card.project;
-    body.append(renderKeyValue("Project", project.name && project.slug ? `${project.name} (${project.slug})` : project.name ?? project.slug ?? "unknown"));
-    if (project.permissionPreset) body.append(renderKeyValue("Preset", project.permissionPreset));
-    if (project.defaultMode) body.append(renderKeyValue("Default mode", project.defaultMode));
+  if (card.summary?.status || errorMessage) {
+    const body = element("div", { className: "project-open" });
+    const text = payloadText(card.payload) || errorMessage || "Project could not be opened.";
+    body.append(element("div", { className: "status error", text }));
+    section.append(body);
+  } else {
+    section.append(renderWorkspaceDetails(card));
   }
-  if (card.workspaceId) body.append(renderKeyValue("Workspace", card.workspaceId));
-  if (card.root) body.append(renderKeyValue("Root", card.root));
-  const text = payloadText(card.payload);
-  if (text) body.append(element("pre", { className: "text-payload open_project", text }));
-  section.append(body);
   main.append(section);
   appRoot.replaceChildren(main);
 }
@@ -715,37 +707,357 @@ function setPayloadLoading(container: HTMLElement, loading: boolean): void {
   if (button) button.setAttribute("aria-busy", String(loading));
 }
 
-function workspacePayloadText(card: ToolResultCard): string {
-  const agentsFiles = card.agentsFiles ?? [];
-  const availableAgentsFiles = card.availableAgentsFiles ?? [];
-  const skills = card.skills ?? [];
-  const lines = [
-    card.workspaceId ? `Workspace: ${card.workspaceId}` : undefined,
-    card.root ? `Root: ${card.root}` : undefined,
-    skills.length > 0
-      ? `Skills: ${skills.map((skill) => skill.name ?? skill.path ?? "unnamed").join(", ")}`
-      : "Skills: none",
-    availableAgentsFiles.length > 0
-      ? `Nested instructions: ${availableAgentsFiles.map((file) => file.path ?? "unknown").join(", ")}`
-      : undefined,
-    agentsFiles.length > 0
-      ? `\n${formatAgentsFilesForPayload(agentsFiles)}`
-      : "\nAGENTS.md: none loaded",
-  ].filter((line): line is string => typeof line === "string");
-
-  return lines.join("\n");
+function renderWorkspacePayload(container: HTMLElement, card: ToolResultCard): void {
+  unmountCurrentPayload();
+  container.replaceChildren(renderWorkspaceDetails(card));
 }
 
-function formatAgentsFilesForPayload(
-  agentsFiles: NonNullable<ToolResultCard["agentsFiles"]>,
-): string {
-  return agentsFiles
-    .map((file) => {
-      const path = file.path ?? "AGENTS.md";
-      const content = file.content?.trim();
-      return content ? `${path}\n\n${content}` : `${path}\n\nNo content loaded.`;
-    })
-    .join("\n\n");
+function renderWorkspaceDetails(card: ToolResultCard): HTMLElement {
+  const details = element("div", { className: "workspace-details pretty-scrollbar" });
+  const rows = element("div", { className: "workspace-rows" });
+
+  if (card.project) {
+    const project = card.project;
+    const content = element("span", { className: "workspace-value-group" });
+    const projectLabel = project.name && project.slug
+      ? `${project.name} (${project.slug})`
+      : project.name ?? project.slug ?? "Unknown project";
+    content.append(element("span", {
+      className: "workspace-value",
+      text: projectLabel,
+      title: projectLabel,
+    }));
+    const chips: WorkspaceChip[] = [];
+    if (project.permissionPreset) {
+      chips.push({ label: project.permissionPreset, tone: "accent" });
+    }
+    if (project.defaultMode && project.defaultMode !== card.mode) {
+      chips.push({ label: `default ${project.defaultMode}`, tone: "muted" });
+    }
+    if (chips.length > 0) content.append(renderWorkspaceChips(chips));
+    appendWorkspaceRow(rows, "Project", content, toolIcons.folderTree);
+  }
+
+  if (card.mode) {
+    const chips: WorkspaceChip[] = [{ label: card.mode, mono: true }];
+    if (card.workspaceReused) chips.push({ label: "reused", tone: "success" });
+    appendWorkspaceRow(rows, "Mode", renderWorkspaceChips(chips), toolIcons.gitBranch);
+  }
+
+  if (card.workspaceId) {
+    appendWorkspaceTextRow(rows, "Workspace", card.workspaceId, toolIcons.folderOpen, true);
+  }
+
+  if (card.root) {
+    appendWorkspaceTextRow(rows, "Root", card.root, toolIcons.folderOpen, true);
+  }
+
+  const worktree = card.worktree;
+  if (worktree) {
+    const base = [worktree.baseRef, worktree.baseSha?.slice(0, 8)]
+      .filter((value): value is string => Boolean(value))
+      .join(" · ") || "Worktree";
+    const content = element("span", { className: "workspace-value-group" });
+    content.append(element("span", {
+      className: "workspace-value mono",
+      text: base,
+      title: base,
+    }));
+    if (worktree.dirtySource) {
+      const warning = element("span", {
+        className: "workspace-inline-warning",
+        title: "The source checkout had uncommitted changes when this worktree was created. Those changes are not included here.",
+      });
+      warning.setAttribute("role", "img");
+      warning.setAttribute("aria-label", "Source checkout changes are not included in this worktree");
+      warning.append(renderIcon(toolIcons.warning, "workspace-inline-warning-icon"));
+      content.append(warning);
+    }
+    appendWorkspaceRow(rows, "Base", content, toolIcons.gitBranch);
+  }
+
+  if (card.sourceRoot && card.sourceRoot !== card.root) {
+    appendWorkspaceTextRow(rows, "Source", card.sourceRoot, toolIcons.folderOpen, true);
+  }
+
+  appendRepositoryContext(rows, card);
+  appendWorkspaceHandoff(rows, card);
+  appendWorkspaceInstructions(rows, card);
+  appendWorkspaceSkills(rows, card);
+  appendWorkspaceAgents(rows, card);
+
+  if (rows.childElementCount === 0) {
+    details.append(element("div", {
+      className: "status muted",
+      text: "No workspace details are available.",
+    }));
+    return details;
+  }
+
+  details.append(rows);
+  return details;
+}
+
+function appendRepositoryContext(container: HTMLElement, card: ToolResultCard): void {
+  const context = card.repositoryContext;
+  if (!context) return;
+
+  if (context.state !== "available") {
+    const content = element("span", { className: "workspace-value-group" });
+    content.append(
+      renderWorkspaceChips([{ label: "unavailable", tone: "muted" }]),
+      element("span", {
+        className: "workspace-value secondary",
+        text: context.message ?? "Repository context is unavailable.",
+        title: context.message,
+      }),
+    );
+    appendWorkspaceRow(container, "Repository", content, toolIcons.diff);
+    return;
+  }
+
+  const dirtyCount = context.dirty?.total ?? 0;
+  const branch = context.branch ?? "detached";
+  const chips: WorkspaceChip[] = [
+    { label: branch, mono: true },
+    dirtyCount === 0
+      ? { label: "clean", tone: "success" }
+      : { label: `${dirtyCount} changed`, tone: "warning" },
+  ];
+  if (context.head) chips.push({ label: context.head.slice(0, 8), mono: true, tone: "muted" });
+  appendWorkspaceRow(container, "Repository", renderWorkspaceChips(chips), toolIcons.diff);
+}
+
+function appendWorkspaceHandoff(container: HTMLElement, card: ToolResultCard): void {
+  const handoff = card.handoff;
+  if (!handoff) return;
+
+  const content = element("div", { className: "workspace-handoff" });
+  const heading = element("div", { className: "workspace-handoff-heading" });
+  if (handoff.status) {
+    heading.append(renderWorkspaceChips([{
+      label: handoff.status.replaceAll("_", " "),
+      tone: handoffTone(handoff.status),
+    }]));
+  }
+  if (handoff.updatedAt) {
+    heading.append(element("span", {
+      className: "workspace-handoff-time",
+      text: formatTimestamp(handoff.updatedAt),
+      title: handoff.updatedAt,
+    }));
+  }
+  if (heading.childElementCount > 0) content.append(heading);
+
+  if (handoff.summary) {
+    content.append(element("span", {
+      className: "workspace-handoff-summary",
+      text: handoff.summary,
+      title: handoff.summary,
+    }));
+  }
+
+  const counts = [
+    countWorkspaceItem(handoff.completed?.length, "completed"),
+    countWorkspaceItem(handoff.verification?.length, "verification"),
+    countWorkspaceItem(handoff.risks?.length, "risk"),
+    countWorkspaceItem(handoff.activeAgents?.length, "active agent"),
+  ].filter((value): value is string => Boolean(value));
+  if (counts.length > 0) {
+    content.append(element("span", {
+      className: "workspace-handoff-meta",
+      text: counts.join(" · "),
+    }));
+  }
+
+  const nextAction = handoff.nextActions?.[0];
+  if (nextAction) {
+    content.append(element("span", {
+      className: "workspace-handoff-next",
+      text: `Next: ${nextAction}`,
+      title: nextAction,
+    }));
+  }
+
+  appendWorkspaceRow(container, "Handoff", content, toolIcons.readFile, "workspace-handoff-row");
+}
+
+function appendWorkspaceInstructions(container: HTMLElement, card: ToolResultCard): void {
+  const loaded = card.agentsFiles ?? [];
+  const available = card.availableAgentsFiles ?? [];
+  if (loaded.length === 0 && available.length === 0) return;
+
+  const content = element("div", { className: "workspace-instructions" });
+  for (const file of loaded) {
+    const path = file.path ?? "AGENTS.md";
+    const item = document.createElement("details");
+    item.className = "workspace-instruction-item";
+    const summary = document.createElement("summary");
+    summary.className = "workspace-instruction-summary";
+    summary.append(
+      element("span", {
+        className: "workspace-instruction-name",
+        text: workspacePathBasename(path),
+        title: path,
+      }),
+      renderWorkspaceChips([{ label: "loaded", tone: "success" }]),
+    );
+    item.append(summary);
+    if (file.content !== undefined) {
+      item.append(element("pre", {
+        className: "workspace-instruction-preview pretty-scrollbar",
+        text: file.content,
+      }));
+    }
+    content.append(item);
+  }
+
+  if (available.length > 0) {
+    content.append(renderWorkspaceChips(available.map((file) => ({
+      label: file.path ?? "Nested instructions",
+      title: file.path,
+      tone: "muted",
+      mono: true,
+    }))));
+  }
+
+  appendWorkspaceRow(container, "Instructions", content, toolIcons.readFile, "workspace-instructions-row");
+}
+
+function appendWorkspaceSkills(container: HTMLElement, card: ToolResultCard): void {
+  const skills = card.skills ?? [];
+  if (skills.length === 0) return;
+
+  const chips = skills.map((skill) => ({
+    label: skill.name ?? skill.path ?? "Unnamed skill",
+    title: [skill.description, skill.path].filter(Boolean).join("\n\n") || undefined,
+  }));
+  appendWorkspaceRow(container, "Skills", renderWorkspaceChips(chips), toolIcons.files);
+}
+
+function appendWorkspaceAgents(container: HTMLElement, card: ToolResultCard): void {
+  const profiles = card.agentProfiles ?? [];
+  const providers = card.agentProviders ?? [];
+  if (profiles.length === 0 && providers.length === 0) return;
+
+  const profileChips: WorkspaceChip[] = profiles.map((profile) => {
+    const provider = profile.provider?.trim();
+    return {
+      label: profile.name ?? "Unnamed profile",
+      title: [
+        profile.description,
+        provider ? `Provider: ${provider}` : undefined,
+        profile.model ? `Model: ${profile.model}` : undefined,
+        profile.thinking ? `Thinking: ${profile.thinking}` : undefined,
+        profile.providerAvailable === false
+          ? profile.providerUnavailableReason ?? "Provider unavailable"
+          : undefined,
+      ].filter((value): value is string => Boolean(value)).join("\n"),
+      tone: profile.providerAvailable === false ? "muted" : "accent",
+    };
+  });
+  const providerChips: WorkspaceChip[] = providers.map((provider) => ({
+    label: provider.name ?? "Unknown provider",
+    title: provider.available === false ? provider.reason : provider.name,
+    tone: provider.available === false ? "muted" : undefined,
+    mono: true,
+  }));
+
+  appendWorkspaceRow(
+    container,
+    profiles.length > 0 ? "Agents" : "Providers",
+    renderWorkspaceChips([...profileChips, ...providerChips]),
+    toolIcons.agent,
+  );
+}
+
+interface WorkspaceChip {
+  label: string;
+  title?: string;
+  tone?: "accent" | "success" | "warning" | "danger" | "muted";
+  mono?: boolean;
+}
+
+function appendWorkspaceTextRow(
+  container: HTMLElement,
+  label: string,
+  value: string,
+  icon: ToolIcon,
+  mono = false,
+): void {
+  appendWorkspaceRow(
+    container,
+    label,
+    element("span", {
+      className: `workspace-value${mono ? " mono" : ""}`,
+      text: value,
+      title: value,
+    }),
+    icon,
+  );
+}
+
+function appendWorkspaceRow(
+  container: HTMLElement,
+  label: string,
+  content: HTMLElement,
+  icon: ToolIcon,
+  rowClassName?: string,
+): void {
+  const row = element("div", {
+    className: ["workspace-row", rowClassName].filter(Boolean).join(" "),
+  });
+  const rowIcon = element("span", { className: "workspace-row-icon", ariaHidden: "true" });
+  rowIcon.append(renderIcon(icon, "workspace-row-icon-svg"));
+  row.append(
+    rowIcon,
+    element("span", { className: "workspace-key", text: label }),
+    content,
+  );
+  container.append(row);
+}
+
+function renderWorkspaceChips(chips: WorkspaceChip[]): HTMLElement {
+  const list = element("span", { className: "workspace-chip-list" });
+  for (const chip of chips) {
+    list.append(element("span", {
+      className: [
+        "workspace-chip",
+        chip.tone,
+        chip.mono ? "mono" : undefined,
+      ].filter(Boolean).join(" "),
+      text: chip.label,
+      title: chip.title,
+    }));
+  }
+  return list;
+}
+
+function handoffTone(status: NonNullable<ToolResultCard["handoff"]>["status"]): WorkspaceChip["tone"] {
+  if (status === "blocked") return "danger";
+  if (status === "ready" || status === "complete") return "success";
+  return "warning";
+}
+
+function countWorkspaceItem(count: number | undefined, noun: string): string | undefined {
+  if (!count) return undefined;
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+function formatTimestamp(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function workspacePathBasename(path: string): string {
+  const parts = path.replaceAll("\\", "/").split("/").filter(Boolean);
+  return parts.at(-1) ?? path;
 }
 
 function toolNameFromMeta(result: CallToolResult): ToolName | undefined {

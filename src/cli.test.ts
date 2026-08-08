@@ -3,7 +3,9 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import Database from "better-sqlite3";
 import { loadConfig } from "./config.js";
+import { databasePath } from "./db/client.js";
 import { LocalAgentStore } from "./local-agent-store.js";
 import { ProjectRegistry } from "./projects/project-registry.js";
 import { SqliteProjectStore } from "./projects/project-store.js";
@@ -234,6 +236,24 @@ try {
   assert.equal(afterContinue?.updatedAt, existing.updatedAt);
   policyStore.close();
 
+  policyStore = new LocalAgentStore(stateDir);
+  const staleSibling = policyStore.update(
+    policyStore.create({
+      workspaceId: workspace.id,
+      workspaceRoot: inspectRoot,
+      profileName: "reviewer",
+      provider: "codex",
+    }).id,
+    { status: "running" },
+  );
+  policyStore.close();
+  const staleUpdatedAt = "2026-01-01T00:00:00.000Z";
+  const sqlite = new Database(databasePath(stateDir));
+  sqlite
+    .prepare("update local_agent_sessions set updated_at = ? where id = ?")
+    .run(staleUpdatedAt, staleSibling.id);
+  sqlite.close();
+
   const blockedWorker = spawnSync(
     "node",
     [
@@ -254,6 +274,9 @@ try {
   const afterWorker = policyStore.get(existing.id);
   assert.equal(afterWorker?.status, "idle");
   assert.equal(afterWorker?.updatedAt, existing.updatedAt);
+  const staleAfterWorker = policyStore.get(staleSibling.id);
+  assert.equal(staleAfterWorker?.status, "running");
+  assert.equal(staleAfterWorker?.updatedAt, staleUpdatedAt);
   policyStore.close();
 } finally {
   rmSync(policyRoot, { recursive: true, force: true });

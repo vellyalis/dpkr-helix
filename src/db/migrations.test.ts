@@ -15,7 +15,7 @@ try {
       .prepare("select version from devspace_schema_migrations order by version")
       .pluck()
       .all(),
-    [1, 2, 3, 4, 5, 6, 7, 8],
+    [1, 2, 3, 4, 5, 6, 7, 8, 9],
   );
   assert.deepEqual(
     tableColumns(fresh.sqlite, "registered_projects"),
@@ -35,6 +35,13 @@ try {
     ],
   );
   assert.equal(tableColumns(fresh.sqlite, "workspace_sessions").includes("project_id"), true);
+  assert.deepEqual(tableColumns(fresh.sqlite, "workspace_conversation_bindings"), [
+    "conversation_scope_id",
+    "target_key",
+    "workspace_session_id",
+    "created_at",
+    "last_used_at",
+  ]);
   assert.deepEqual(tableColumns(fresh.sqlite, "workspace_handoffs"), [
     "root_key",
     "root",
@@ -68,7 +75,7 @@ try {
   const freshAgain = openDatabase(freshStateDir);
   assert.equal(
     freshAgain.sqlite.prepare("select count(*) from devspace_schema_migrations").pluck().get(),
-    8,
+    9,
   );
   freshAgain.close();
 
@@ -143,6 +150,14 @@ try {
   assert.equal(tableColumns(upgraded.sqlite, "operation_runs").length, 23);
   assert.equal(tableColumns(upgraded.sqlite, "operation_events").length, 9);
   assert.equal(tableColumns(upgraded.sqlite, "operation_evidence").length, 7);
+  assert.equal(
+    upgraded.sqlite
+      .prepare("select count(*) from devspace_schema_migrations where version = 9")
+      .pluck()
+      .get(),
+    1,
+  );
+  assert.equal(tableColumns(upgraded.sqlite, "workspace_conversation_bindings").length, 5);
   upgraded.close();
 
   const failingV6StateDir = join(root, "failing-v6");

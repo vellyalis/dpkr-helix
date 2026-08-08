@@ -26,6 +26,19 @@ interface TextToolResult {
   structuredContent?: Record<string, unknown>;
   _meta?: {
     card?: {
+      workspaceReused?: boolean;
+      mode?: string;
+      sourceRoot?: string;
+      worktree?: unknown;
+      agentsFiles?: unknown[];
+      availableAgentsFiles?: unknown[];
+      skills?: unknown[];
+      agentProviders?: unknown[];
+      agentProfiles?: unknown[];
+      agents?: unknown[];
+      skillDiagnostics?: unknown[];
+      handoff?: unknown;
+      repositoryContext?: { state?: string };
       payload?: { diff?: string; patch?: string };
     };
   };
@@ -56,6 +69,7 @@ try {
   await mkdir(legacyRoot, { recursive: true });
   await mkdir(missingRoot, { recursive: true });
   await mkdir(agentDir, { recursive: true });
+  await writeFile(join(checkoutRoot, "AGENTS.md"), "checkout project instructions\n");
   await writeFile(join(legacyRoot, "README.md"), "# Legacy workspace\n");
   await git(legacyRoot, ["init"]);
   await git(legacyRoot, ["config", "user.email", "devspace@example.com"]);
@@ -171,7 +185,9 @@ try {
     assert.ok("baseRef" in (openTool.inputSchema.properties ?? {}));
     assert.ok("workspaceId" in (openTool.outputSchema?.properties ?? {}));
     assert.ok("project" in (openTool.outputSchema?.properties ?? {}));
+    assert.equal("workspaceReused" in (openTool.outputSchema?.properties ?? {}), false);
     assert.ok("repositoryContext" in (openTool.outputSchema?.properties ?? {}));
+    assert.equal("workspaceReused" in (openWorkspaceTool.outputSchema?.properties ?? {}), false);
     assert.ok("repositoryContext" in (openWorkspaceTool.outputSchema?.properties ?? {}));
     for (const remoteMutationTool of [
       "register_project",
@@ -221,6 +237,7 @@ try {
     const openedCheckout = asTextToolResult(await client.callTool({
       name: "open_project",
       arguments: { project: checkout.slug },
+      _meta: { "openai/session": "project-conversation" },
     }));
     assert.equal(openedCheckout.isError, undefined);
     assert.match(openedCheckout.content[0]?.text ?? "", /Opened project Shared Name \(checkout-project\)/);
@@ -236,6 +253,49 @@ try {
       permissionPreset: "develop",
       defaultMode: "checkout",
     });
+    assert.equal(openedCheckout.structuredContent?.workspaceReused, undefined);
+    assert.equal(openedCheckout._meta?.card?.workspaceReused, false);
+    assert.equal(openedCheckout._meta?.card?.mode, "checkout");
+    assert.equal(openedCheckout._meta?.card?.repositoryContext?.state, "unavailable");
+    assert.ok(Array.isArray(openedCheckout._meta?.card?.agentProfiles));
+    assert.ok(Array.isArray(openedCheckout.structuredContent?.agentsFiles));
+    assert.match(openedCheckout.content[0]?.text ?? "", /Loaded project instructions/);
+
+    const reopenedCheckout = asTextToolResult(await client.callTool({
+      name: "open_project",
+      arguments: { project: checkout.slug },
+      _meta: { "openai/session": "project-conversation" },
+    }));
+    assert.equal(
+      reopenedCheckout.structuredContent?.workspaceId,
+      openedCheckout.structuredContent?.workspaceId,
+    );
+    assert.equal(reopenedCheckout.structuredContent?.workspaceReused, undefined);
+    assert.equal(reopenedCheckout._meta?.card?.workspaceReused, true);
+    assert.equal(reopenedCheckout.structuredContent?.agentsFiles, undefined);
+    assert.equal(reopenedCheckout.structuredContent?.skills, undefined);
+    assert.ok(Array.isArray(reopenedCheckout._meta?.card?.agentsFiles));
+    assert.ok(Array.isArray(reopenedCheckout._meta?.card?.skills));
+    assert.ok(Array.isArray(reopenedCheckout._meta?.card?.agentProfiles));
+    assert.equal(reopenedCheckout._meta?.card?.repositoryContext?.state, "unavailable");
+    assert.match(reopenedCheckout.content[0]?.text ?? "", /Project already open/);
+    assert.doesNotMatch(reopenedCheckout.content[0]?.text ?? "", /Loaded project instructions/);
+    assert.match(
+      String(reopenedCheckout.structuredContent?.instruction ?? ""),
+      /static bootstrap context remains active and is not repeated here/,
+    );
+
+    const separatelyOpenedCheckout = asTextToolResult(await client.callTool({
+      name: "open_project",
+      arguments: { project: checkout.slug },
+      _meta: { "openai/session": "other-project-conversation" },
+    }));
+    assert.notEqual(
+      separatelyOpenedCheckout.structuredContent?.workspaceId,
+      openedCheckout.structuredContent?.workspaceId,
+    );
+    assert.equal(separatelyOpenedCheckout.structuredContent?.workspaceReused, undefined);
+    assert.equal(separatelyOpenedCheckout._meta?.card?.workspaceReused, false);
 
     const openedWorktree = asTextToolResult(await client.callTool({
       name: "open_project",
@@ -244,6 +304,8 @@ try {
     assert.equal(openedWorktree.isError, undefined);
     assert.match(openedWorktree.content[0]?.text ?? "", /Mode: worktree/);
     assert.equal(openedWorktree.structuredContent?.mode, "worktree");
+    assert.equal(openedWorktree._meta?.card?.mode, "worktree");
+    assert.ok(openedWorktree._meta?.card?.worktree);
     assert.deepEqual(openedWorktree.structuredContent?.project, {
       id: worktree.id,
       slug: worktree.slug,
@@ -255,10 +317,15 @@ try {
     const openedLegacy = asTextToolResult(await client.callTool({
       name: "open_workspace",
       arguments: { path: legacyRoot },
+      _meta: { "openai/session": "legacy-conversation" },
     }));
     assert.equal(openedLegacy.isError, undefined);
     assert.match(openedLegacy.content[0]?.text ?? "", /Opened workspace/);
     assert.equal(openedLegacy.structuredContent?.mode, "checkout");
+    assert.equal(openedLegacy.structuredContent?.workspaceReused, undefined);
+    assert.equal(openedLegacy._meta?.card?.workspaceReused, false);
+    assert.equal(openedLegacy._meta?.card?.mode, "checkout");
+    assert.equal(openedLegacy._meta?.card?.repositoryContext?.state, "available");
     assert.equal(openedLegacy.structuredContent?.project, undefined);
     assert.doesNotMatch(openedLegacy.content[0]?.text ?? "", /Repository context:/);
     assert.match(openedLegacy.content[1]?.text ?? "", /Repository context: \{/);
@@ -276,6 +343,22 @@ try {
     );
     const legacyWorkspaceId = openedLegacy.structuredContent?.workspaceId;
     assert.equal(typeof legacyWorkspaceId, "string");
+
+    const reopenedLegacy = asTextToolResult(await client.callTool({
+      name: "open_workspace",
+      arguments: { path: legacyRoot },
+      _meta: { "openai/session": "legacy-conversation" },
+    }));
+    assert.equal(reopenedLegacy.structuredContent?.workspaceId, legacyWorkspaceId);
+    assert.equal(reopenedLegacy.structuredContent?.workspaceReused, undefined);
+    assert.equal(reopenedLegacy._meta?.card?.workspaceReused, true);
+    assert.equal(reopenedLegacy.structuredContent?.agentsFiles, undefined);
+    assert.equal(reopenedLegacy.structuredContent?.skills, undefined);
+    assert.ok(Array.isArray(reopenedLegacy._meta?.card?.agentsFiles));
+    assert.ok(Array.isArray(reopenedLegacy._meta?.card?.skills));
+    assert.ok(Array.isArray(reopenedLegacy._meta?.card?.agentProfiles));
+    assert.equal(reopenedLegacy._meta?.card?.repositoryContext?.state, "available");
+    assert.match(reopenedLegacy.content[0]?.text ?? "", /Workspace already open/);
 
     const legacyRead = asTextToolResult(await client.callTool({
       name: "read",

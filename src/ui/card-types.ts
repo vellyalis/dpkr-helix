@@ -24,6 +24,61 @@ export type HostContext = NonNullable<ReturnType<App["getHostContext"]>>;
 
 export type PatchOperation = "add" | "update" | "delete" | "move";
 export type ProjectOpenMode = "checkout" | "worktree";
+export type ReviewFileType =
+  | "change"
+  | "rename-pure"
+  | "rename-changed"
+  | "new"
+  | "deleted";
+
+export interface WorkspaceWorktreeCardView {
+  path?: string;
+  baseRef?: string;
+  baseSha?: string;
+  dirtySource?: boolean;
+  detached?: boolean;
+  managed?: boolean;
+}
+
+export interface WorkspaceAgentProviderCardView {
+  name?: string;
+  available?: boolean;
+  reason?: string;
+}
+
+export interface WorkspaceAgentProfileCardView {
+  name?: string;
+  description?: string;
+  provider?: string;
+  model?: string;
+  thinking?: string;
+  providerAvailable?: boolean;
+  providerUnavailableReason?: string;
+}
+
+export interface WorkspaceHandoffCardView {
+  status?: "in_progress" | "blocked" | "ready" | "complete";
+  summary?: string;
+  completed?: string[];
+  nextActions?: string[];
+  verification?: string[];
+  risks?: string[];
+  activeAgents?: string[];
+  updatedAt?: string;
+}
+
+export interface RepositoryContextCardView {
+  state?: "available" | "unavailable";
+  refreshedAt?: string;
+  branch?: string;
+  head?: string;
+  dirty?: {
+    total?: number;
+    returned?: number;
+    truncated?: boolean;
+  };
+  message?: string;
+}
 
 export interface ProjectCardView {
   id: string;
@@ -64,6 +119,10 @@ export interface ToolResultCard {
   workspaceId?: string;
   path?: string;
   root?: string;
+  workspaceReused?: boolean;
+  mode?: ProjectOpenMode;
+  sourceRoot?: string;
+  worktree?: WorkspaceWorktreeCardView;
   status?: string;
   summary?: Record<string, unknown>;
   projects?: ProjectCardView[];
@@ -80,7 +139,7 @@ export interface ToolResultCard {
     path?: string;
     previousPath?: string;
     operation?: PatchOperation;
-    type?: string;
+    type?: ReviewFileType;
     additions?: number;
     removals?: number;
   }>;
@@ -97,6 +156,10 @@ export interface ToolResultCard {
     description?: string;
     path?: string;
   }>;
+  agentProviders?: WorkspaceAgentProviderCardView[];
+  agentProfiles?: WorkspaceAgentProfileCardView[];
+  handoff?: WorkspaceHandoffCardView;
+  repositoryContext?: RepositoryContextCardView;
   skillDiagnostics?: unknown[];
   instruction?: string;
 }
@@ -200,7 +263,16 @@ export function summaryNumber(
 
 export function isExpandableCard(card: ToolResultCard): boolean {
   if (card.tool === "list_projects") return Boolean(card.projects?.length);
-  if (card.tool === "open_project") return Boolean(card.project || card.payload);
+  if (card.tool === "open_project") {
+    return Boolean(
+      card.project
+      || card.workspaceId
+      || card.worktree
+      || card.handoff
+      || card.repositoryContext
+      || card.payload,
+    );
+  }
   if (isAgentTool(card.tool)) return Boolean(card.agent || card.agents?.length || card.payload);
 
   if (card.tool === "open_workspace") {
@@ -211,7 +283,13 @@ export function isExpandableCard(card: ToolResultCard): boolean {
       Boolean(card.agentsFiles?.length) ||
       Boolean(card.availableAgentsFiles?.length) ||
       Boolean(card.skills?.length) ||
-      Boolean(card.skillDiagnostics?.length)
+      Boolean(card.agentProviders?.length) ||
+      Boolean(card.agentProfiles?.length) ||
+      Boolean(card.skillDiagnostics?.length) ||
+      Boolean(card.worktree) ||
+      Boolean(card.handoff) ||
+      Boolean(card.repositoryContext) ||
+      Boolean(card.instruction)
     );
   }
 
@@ -219,4 +297,17 @@ export function isExpandableCard(card: ToolResultCard): boolean {
   if (isPatchTool(card.tool)) return Boolean(card.payload?.patch);
 
   return Boolean(card.payload);
+}
+
+export function isInitiallyExpandedCard(card: ToolResultCard): boolean {
+  if (card.tool === "open_workspace") return isExpandableCard(card);
+  if (card.tool === "open_project") return isExpandableCard(card);
+  if (card.tool === "list_projects" || isAgentTool(card.tool)) {
+    return isExpandableCard(card);
+  }
+  if (isReviewTool(card.tool)) return isExpandableCard(card);
+  if (isPatchTool(card.tool)) {
+    return card.files?.length === 1 && isExpandableCard(card);
+  }
+  return false;
 }

@@ -7,6 +7,10 @@ import type { ServerConfig } from "./config.js";
 import {
   cleanupLocalAgentPromptFile,
   createDetachedLocalAgentWorkerSpawner,
+  LOCAL_AGENT_WORKER_ACKNOWLEDGEMENT_TIMEOUT_MS,
+  LOCAL_AGENT_WORKER_HEARTBEAT_INTERVAL_MS,
+  LOCAL_AGENT_STALE_ACTIVE_AFTER_MS,
+  LOCAL_AGENT_STALE_RECONCILIATION_INTERVAL_MS,
   LocalAgentService,
   type LocalAgentServiceOptions,
   writeLocalAgentPromptFile,
@@ -21,6 +25,7 @@ class FakeStore {
   readonly records = new Map<string, LocalAgentRecord>();
   createCount = 0;
   updateCount = 0;
+  touchCount = 0;
 
   list(scope: LocalAgentListScope = {}): LocalAgentRecord[] {
     return Array.from(this.records.values()).filter((record) => {
@@ -58,6 +63,18 @@ class FakeStore {
       ...current,
       ...patch,
       updatedAt: `2026-07-29T00:00:0${this.updateCount}.000Z`,
+    };
+    this.records.set(id, updated);
+    return updated;
+  }
+
+  touch(id: string): LocalAgentRecord {
+    const current = this.records.get(id);
+    if (!current) throw new Error(`Unknown subagent id: ${id}`);
+    this.touchCount += 1;
+    const updated = {
+      ...current,
+      updatedAt: `2026-07-29T00:00:${String(10 + this.touchCount).padStart(2, "0")}.000Z`,
     };
     this.records.set(id, updated);
     return updated;
@@ -121,6 +138,8 @@ const baseOptions: LocalAgentServiceOptions = {
   promptFileCleanup: async (path) => {
     cleanedPromptFiles.push(path);
   },
+  workerHeartbeatIntervalMs: false,
+  staleActiveAfterMs: false,
   authorizer: async (input) => {
     authorizationEvents.push(`${input.scope.workspaceRoot}:${input.writeMode}`);
     return input.action();
@@ -405,6 +424,84 @@ await assert.rejects(
 assert.equal(deniedWorkerStore.get(deniedWorker.id)?.status, "starting");
 assert.deepEqual(deniedWorkerCleanup, ["owned-prompt.txt"]);
 
+assert.equal(LOCAL_AGENT_WORKER_HEARTBEAT_INTERVAL_MS, 30_000);
+assert.equal(LOCAL_AGENT_STALE_ACTIVE_AFTER_MS, 60 * 60 * 1_000);
+assert.equal(LOCAL_AGENT_STALE_RECONCILIATION_INTERVAL_MS, 5 * 60 * 1_000);
+
+const staleWorkerStore = new FakeStore();
+const staleWorker = staleWorkerStore.create({
+  workspaceRoot: "C:\\repo",
+  profileName: "reviewer",
+  provider: "codex",
+});
+const staleWorkerStatuses: string[] = [];
+const staleWorkerService = new LocalAgentService({
+  ...baseOptions,
+  store: staleWorkerStore,
+  staleActiveAfterMs: 60_000,
+  now: () => Date.parse("2026-07-29T02:00:00.000Z"),
+  observation: {
+    created: () => undefined,
+    statusChanged: (record) => staleWorkerStatuses.push(record.status),
+    assistantMessage: () => undefined,
+    resultAvailable: () => undefined,
+    inputRequired: () => undefined,
+  },
+});
+assert.equal(staleWorkerStore.get(staleWorker.id)?.status, "error");
+assert.match(
+  staleWorkerStore.get(staleWorker.id)?.error ?? "",
+  /reconciled as interrupted/,
+);
+assert.deepEqual(staleWorkerStatuses, ["error"]);
+staleWorkerService.close();
+
+const periodicStore = new FakeStore();
+const periodicWorker = periodicStore.create({
+  workspaceRoot: "C:\\repo",
+  profileName: "reviewer",
+  provider: "codex",
+});
+let periodicNow = Date.parse("2026-07-29T00:00:00.000Z");
+const periodicService = new LocalAgentService({
+  ...baseOptions,
+  store: periodicStore,
+  staleActiveAfterMs: 1_000,
+  staleReconciliationIntervalMs: 5,
+  now: () => periodicNow,
+});
+assert.equal(periodicStore.get(periodicWorker.id)?.status, "starting");
+periodicNow += 2_000;
+await new Promise((resolvePeriodicSweep) => setTimeout(resolvePeriodicSweep, 30));
+assert.equal(periodicStore.get(periodicWorker.id)?.status, "error");
+periodicService.close();
+
+const heartbeatStore = new FakeStore();
+const heartbeatWorker = heartbeatStore.create({
+  workspaceRoot: "C:\\repo",
+  profileName: "reviewer",
+  provider: "codex",
+});
+const heartbeatService = new LocalAgentService({
+  ...baseOptions,
+  store: heartbeatStore,
+  workerHeartbeatIntervalMs: 5,
+  providerRunner: async () => {
+    await new Promise((resolveHeartbeat) => setTimeout(resolveHeartbeat, 30));
+    return {
+      provider: "codex",
+      providerSessionId: "thread_heartbeat",
+      finalResponse: "heartbeat complete",
+      items: [],
+    };
+  },
+  promptFileReader: async () => "Run long enough to emit a heartbeat.",
+  promptFileCleanup: async () => undefined,
+});
+await heartbeatService.runWorker(heartbeatWorker.id, "heartbeat-prompt.txt");
+assert.equal(heartbeatStore.get(heartbeatWorker.id)?.status, "idle");
+assert.ok(heartbeatStore.touchCount > 0);
+
 const ownedPrompt = writeLocalAgentPromptFile("temporary prompt");
 const ownedDirectory = dirname(ownedPrompt);
 assert.equal(existsSync(ownedPrompt), true);
@@ -423,14 +520,23 @@ try {
 
 const workerFixtureDirectory = mkdtempSync(join(tmpdir(), "devspace-worker-ready-test-"));
 const readyWorkerScript = join(workerFixtureDirectory, "ready-worker.cjs");
+const delayedReadyWorkerScript = join(workerFixtureDirectory, "delayed-ready-worker.cjs");
 const failingWorkerScript = join(workerFixtureDirectory, "failing-worker.cjs");
 writeFileSync(
   readyWorkerScript,
   'process.send?.({ type: "devspace-agent-worker-ready", id: process.argv[4] });\nprocess.disconnect?.();\n',
 );
+writeFileSync(
+  delayedReadyWorkerScript,
+  'setTimeout(() => { process.send?.({ type: "devspace-agent-worker-ready", id: process.argv[4] }); process.disconnect?.(); }, 75);\n',
+);
 writeFileSync(failingWorkerScript, "process.exit(7);\n");
 try {
+  assert.equal(LOCAL_AGENT_WORKER_ACKNOWLEDGEMENT_TIMEOUT_MS, 30_000);
   await createDetachedLocalAgentWorkerSpawner(readyWorkerScript)("agt_ready", "prompt.txt");
+  await createDetachedLocalAgentWorkerSpawner(delayedReadyWorkerScript, {
+    acknowledgementTimeoutMs: 1_000,
+  })("agt_delayed", "prompt.txt");
   await assert.rejects(
     Promise.resolve(
       createDetachedLocalAgentWorkerSpawner(failingWorkerScript)("agt_fail", "prompt.txt"),

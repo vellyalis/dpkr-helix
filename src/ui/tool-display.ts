@@ -9,7 +9,10 @@ import {
   type ToolResultCard,
 } from "./card-types.js";
 import { toolIcons, type ToolIcon } from "./icons.js";
-import { getPatchDisplayParts } from "./patch-display.js";
+import {
+  getFileChangePathDisplay,
+  getPatchDisplayParts,
+} from "./patch-display.js";
 
 export interface ToolDisplay {
   icon: ToolIcon;
@@ -66,15 +69,23 @@ export function getToolDisplay(card: ToolResultCard): ToolDisplay {
       };
     case "open_project":
       return {
-        icon: toolIcons.folderOpen,
-        title: card.summary?.status ? "Project not opened" : "Opened project",
+        icon: card.mode === "worktree" ? toolIcons.gitBranch : toolIcons.folderOpen,
+        title: card.summary?.status
+          ? "Project not opened"
+          : card.workspaceReused
+            ? "Reused project"
+            : "Opened project",
         label: projectLabel(card),
         tone: card.summary?.status ? "edit" : "workspace",
       };
     case "open_workspace":
       return {
-        icon: toolIcons.folderOpen,
-        title: "Opened workspace",
+        icon: card.mode === "worktree" ? toolIcons.gitBranch : toolIcons.folderOpen,
+        title: card.workspaceReused
+          ? "Reused workspace"
+          : card.mode === "worktree"
+            ? "Opened worktree"
+            : "Opened workspace",
         label: card.root ?? card.path,
         tone: "workspace",
       };
@@ -102,7 +113,7 @@ export function getToolDisplay(card: ToolResultCard): ToolDisplay {
     case "apply_patch": {
       const display = getPatchDisplayParts(card);
       return {
-        icon: patchIcon(display.iconOperation),
+        icon: patchIcon(display.iconKind),
         title: display.title,
         label: singleFilePath(card),
         tone: display.tone,
@@ -146,10 +157,12 @@ export function getToolDisplay(card: ToolResultCard): ToolDisplay {
         tone: "shell",
       };
     case "show_changes": {
-      const display = getPatchDisplayParts(card);
+      const display = getPatchDisplayParts(card, { emptyTitle: "Changes ready" });
+      const fileCount = card.files?.length ?? 0;
       return {
         icon: toolIcons.diff,
-        title: (card.files?.length ?? 0) > 0 ? display.title : "No changes",
+        title: fileCount > 0 || card.payload?.patch ? display.title : "No changes",
+        label: singleFilePath(card),
         tone: "review",
       };
     }
@@ -211,15 +224,17 @@ export function getToolHeaderSummary(card: ToolResultCard): ToolHeaderSummary {
   return { kind: "empty" };
 }
 
-function patchIcon(operation: ReturnType<typeof getPatchDisplayParts>["iconOperation"]): ToolIcon {
-  if (operation === "add") return toolIcons.writeFile;
-  if (operation === "delete") return toolIcons.deleteFile;
-  if (operation === "move") return toolIcons.files;
+function patchIcon(kind: ReturnType<typeof getPatchDisplayParts>["iconKind"]): ToolIcon {
+  if (kind === "added") return toolIcons.writeFile;
+  if (kind === "deleted") return toolIcons.deleteFile;
+  if (kind === "renamed" || kind === "renamed-edited") return toolIcons.files;
   return toolIcons.editFile;
 }
 
 function singleFilePath(card: ToolResultCard): string | undefined {
-  if (card.files?.length === 1) return card.files[0]?.path ?? card.path;
+  if (card.files?.length === 1) {
+    return getFileChangePathDisplay(card.files[0])?.title ?? card.path;
+  }
   return undefined;
 }
 

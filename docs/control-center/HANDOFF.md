@@ -1,9 +1,42 @@
 # DevSpace Control Center Handoff
 
-Last synchronized: 2026-08-03
+Last synchronized: 2026-08-08
 
 ## Current position
 
+- Selective upstream `v1.0.6` ingestion plus independent Helix reliability
+  hardening is `SOURCE VERIFIED / PUBLICATION + LIVE ACCEPTANCE PENDING` in the
+  dirty `main` checkout at `e257511`. Same-conversation checkout reuse now
+  applies to both `open_workspace` and `open_project`, survives restart, keeps
+  worktrees fresh, suppresses repeated static bootstrap, and persists only a
+  prefixed SHA-256 key of the opaque host conversation scope. Review checkpoints
+  recover without replacing Helix's workspace-bounded fingerprint owner.
+- MCP App cards now distinguish opened, reused, and worktree contexts; expose
+  Helix-owned Project, Handoff, repository, instruction, Skill, and agent-profile
+  state; classify added/edited/deleted/renamed files accurately; show rename
+  source and destination; open single-file diffs directly; and use bounded
+  scrollbars. No branded provider assets, UI framework, or second card owner was
+  added.
+- A real read-only delegation exposed a pre-provider worker acknowledgement
+  timeout. The source candidate keeps the existing detached worker and IPC
+  contract, extends the finite launch grace to thirty seconds, touches the
+  existing agent row every thirty seconds while provider work is active, and
+  has the long-lived service reconcile only a starting/running row with no
+  activity for one hour, at startup and every five minutes. Worker children skip
+  that scan before readiness. Focused tests prove delayed acknowledgement,
+  heartbeat refresh, periodic stale-active failure projection, and worker-start
+  isolation without retry, PID storage, daemon, or duplicate worker.
+- Complete `npm test`, `npm run test:policy`, `npm run typecheck`, production
+  build, `npm run audit:production`, isolated-index public-release scan, and
+  `git diff --check` pass. Production audit verifies reviewed Pi dependency
+  repairs, hidden Codex Windows spawn behavior, and zero reported vulnerabilities.
+  No commit, push, self-update, service restart, or live-host acceptance has
+  occurred; the installed package remains the prior verified release.
+- Two unmerged post-release upstream branches using host-installed Codex and the
+  experimental `codex app-server` were classified as promising research, not a
+  safe runtime replacement. A future isolated comparison must preserve
+  structured outcomes, continuation, no-focus Windows launch, Operations,
+  verification, version gating, and rollback without state migration.
 - Completed work units: GOAL_08 MWU-08.01 through MWU-08.06. Its measured
   GPT-5.5 baseline and signed-in parity evidence remain frozen historical
   checkpoints; the owner explicitly replaced the active managed profiles on

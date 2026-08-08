@@ -1505,3 +1505,183 @@ tools remain usable in already refreshed hosts.
 **Reconsider when:** ChatGPT documents and proves automatic MCP tool-list-change
 handling, a future update must add or rename a tool, or a supported account API
 replaces the developer-mode browser action.
+
+## ADR-045: Ingest upstream DevSpace by contract instead of tree merge
+
+**Date:** 2026-08-08
+
+**Status:** Accepted; focused implementation and MCP proof complete
+
+**Context:** Upstream DevSpace reached `v1.0.6` after adding conversation-aware
+checkout reuse, review-checkpoint recovery, compact workspace IDs, and several
+tool/workspace-card refinements. The public dpkr helix repository was released
+from an intentional clean root, so the two current histories have no Git merge
+base. More importantly, Helix now owns registered projects and policy,
+persistent handoffs, repository context, live operations, verified outcomes,
+Windows recovery/self-update, and the official Codex launcher. A raw merge or
+bulk cherry-pick would confuse ownership even when the upstream feature itself
+is valuable.
+
+**Decision:** Audit upstream changes as product contracts. Adopt the
+conversation checkout-reuse and review-recovery mechanisms inside the existing
+Helix owners, extend reuse to both `open_workspace` and `open_project`, and use
+the existing SQLite database for opaque conversation bindings. Persist only a
+prefixed SHA-256 key of the host conversation scope, never the raw host value.
+Keep worktrees
+fresh, preserve project-policy refresh, retain Helix's workspace-bounded review
+fingerprint, and shorten only newly created workspace IDs. On repeated opens,
+return fresh handoff/repository state and a clear reuse instruction while
+omitting repeated static model bootstrap; keep the complete card context in MCP
+result metadata. Adopt only the UI portions whose value is observable and whose
+ownership remains inside existing card helpers: explicit reused/worktree
+titles, structured Helix workspace details, correct add/edit/delete/rename
+classification, rename-source presentation, direct single-file diff display,
+and bounded scrollbars. The workspace details surface must expose Project
+policy, repository state, Handoff, instructions, Skills, profiles, and providers
+without turning the MCP App card into a second Control Center.
+
+Do not expose the host conversation value as a user identity, add a global
+active project, create another workspace/review owner, or make no-metadata hosts
+reuse implicitly. Do not import upstream card trees or root instructions
+wholesale. UI and guidance changes remain individually selectable only when
+they preserve Helix responsibility boundaries and close an observed gap.
+
+**Alternatives rejected:** Merging unrelated histories; replaying every
+upstream commit; copying the upstream workspace card over Helix Project and
+Handoff cards; solving duplicate opens only with stronger prompt wording; or
+using project path alone and accidentally sharing one workspace across
+different conversations.
+
+**Complexity receipt:** One additive SQLite table and index, one small request
+metadata parser, one standard-library storage-key hash, binding methods on the
+existing workspace store, a bounded in-memory single-flight map, focused
+card-display helpers, and one local
+scrollbar CSS bridge for the existing diff component. The workspace card reuses
+the existing server metadata and MCP App renderer; it adds no query, storage,
+provider-logo asset set, dependency, service, daemon, queue, new database,
+permission, model, provider, or execution lifecycle.
+
+**Security and compatibility:** The conversation scope is an opaque exact
+string supplied by the MCP host. It is used transiently to derive a prefixed
+SHA-256 storage key and is not persisted as a raw correlatable host value. Reuse
+is additionally keyed by a canonical allowed checkout target. Different
+conversations remain separate, worktrees remain fresh, stale/disallowed
+bindings are discarded, and all file/shell and registered-project policies
+continue through their prior owners. Hosts without the metadata keep the old
+explicit-open behavior. Existing persisted long workspace IDs remain valid;
+only new IDs use the compact format.
+
+**Evidence:** Focused metadata, migration, workspace, review, and real in-memory
+MCP server tests pass, including concurrent opens, different conversations,
+no-metadata behavior, worktree freshness, restart recovery, static-bootstrap
+suppression, card-context retention, review root mismatch rejection, and
+missing-baseline fallback. Storage inspection proves that binding rows contain
+only prefixed SHA-256 keys and no raw conversation values. Focused UI contracts
+also prove reused/worktree
+titles, single-file expansion, operation-vs-parser file-kind resolution,
+rename-source paths, and the complete Helix workspace metadata card. The
+complete test suite, policy suite, typecheck,
+production build, production dependency audit with zero vulnerabilities, and
+diff checks pass. The public-release content scan also
+passes through an isolated temporary index; the normal scan remains expectedly
+blocked only by the intentionally untracked new files. The detailed
+classification is recorded in `16_UPSTREAM_DEVSPACE_V1_0_6_AUDIT.md`.
+
+**Failure and recovery:** Reverting the runtime changes leaves the additive
+binding table unused and restores explicit-open behavior; existing workspaces,
+project records, handoffs, and review refs are not rewritten. A stale binding
+is safe to delete because it owns no workspace content or execution. If the
+host metadata contract changes, disable conversation reuse rather than infer a
+replacement identity.
+
+**Reconsider when:** A supported MCP host supplies a standard authenticated
+conversation-scope field, live ChatGPT evidence contradicts the upstream
+metadata behavior, branded provider recognition becomes measurably ambiguous,
+or an upstream security/correctness fix affects a shared primitive below
+Helix's added product layers.
+
+## ADR-046: Repair worker cold-start tolerance before replacing the Codex runtime
+
+**Date:** 2026-08-07
+
+**Status:** Accepted; all source gates complete, installed acceptance pending
+
+**Context:** A read-only delegated audit failed because the detached local-agent
+worker did not acknowledge launch inside the existing ten-second bound. The
+record never reached provider execution. The worker child loads the complete
+CLI module graph, configuration, local-agent service, and SQLite owners before
+sending its IPC ready message. On the observed Windows source environment, a
+cold CLI start crossed the old bound while a warmed worker acknowledged in
+roughly two seconds.
+
+At the same time, two unmerged upstream branches replace the bundled Codex SDK
+with a host-installed Codex CLI and then an experimental `codex app-server`
+protocol harness. That direction could eventually remove the SDK dependency and
+its install-time Windows spawn repair, but it cannot repair a timeout that
+occurs before `runLocalAgentProvider`. The branch also does not preserve
+Helix's structured completed/needs-input schema, assistant-message projection,
+Operations evidence, or verification lifecycle.
+
+**Decision:** Keep the existing detached child, prompt file, SQLite record, and
+single IPC acknowledgement. Extend only the internal default acknowledgement
+grace from ten to thirty seconds. Permit a private constructor option so focused
+tests can exercise delayed acknowledgement without sleeping for the production
+duration. Keep the bound finite and continue to kill and mark a child that does
+not acknowledge.
+
+Use the existing `updated_at` field as a bounded worker lease rather than adding
+PID identity. While a provider run is active, the worker touches its own record
+every thirty seconds without emitting duplicate status events. When a service
+starts and every five minutes thereafter, a starting/running record is
+reconciled to an interrupted error only if it has reported no activity for one
+hour. Worker children disable this reconciliation before sending their ready
+acknowledgement. The existing status observer projects the failure into the
+current Operations owner. Do not add a retry, daemon, persistent worker pool,
+user setting, provider exception, PID registry, or second lightweight worker
+executable.
+
+Treat host-installed Codex/app-server as a separate comparative experiment, not
+as part of this reliability repair. It may replace the SDK lane only after it
+preserves `LOCAL_AGENT_OUTCOME_JSON_SCHEMA`, same-thread continuation,
+no-focus Windows launch, current Operations and verification projections,
+version-gated failures, and rollback without state migration.
+
+**Alternatives rejected:** Increasing every MCP timeout; acknowledging before
+configuration and store initialization, which could leave a failed child
+reported as ready; retrying automatically and risking duplicate workers;
+creating a warm worker service; persisting only a PID, which is reusable and not
+a sufficient cross-restart identity; declaring every active record interrupted
+at startup, which could terminate the truthful state of a detached worker; or
+importing the experimental Codex runtime as an unrelated fix.
+
+**Complexity receipt:** Four bounded constants, three optional internal test
+seams, one timestamp-only store operation, one unref'd heartbeat timer owned by
+the existing worker, one unref'd five-minute sweep owned by the existing
+long-lived service, worker-child suppression before readiness, and focused
+fixtures. No dependency, schema migration, new storage field, process owner,
+service, daemon, queue, provider setting, permission, retry policy, or
+model-facing field was added.
+
+**Evidence:** The live failure was recorded before provider execution. A direct
+child probe confirmed that the existing IPC contract works once the CLI graph is
+warm. The focused service test now proves a non-immediate healthy child inside a
+bounded grace, heartbeat refresh, and one-hour stale-active reconciliation. The
+store test confirms a heartbeat changes only `updated_at`, and TypeScript
+typecheck passes. Focused tests also prove periodic reconciliation and that a
+worker child skips the stale scan before acknowledging readiness. Complete
+regression and policy suites, production build,
+production dependency audit, isolated-index public-release scan, and diff checks
+also pass. Installed deployment and live-host acceptance remain required before
+the behavior is called shipped.
+
+**Failure and recovery:** Reverting the constant restores the former ten-second
+behavior; reverting the heartbeat/reconciliation methods leaves existing rows
+unchanged. A child that exceeds the new bound is still killed and recorded as
+an error, and an already-terminal or needs-input record is never reconciled.
+No duplicate execution or automatic continuation occurs.
+
+**Reconsider when:** Installed cold-start measurements remain safely below a
+shorter bound across repeated runs, a worker still exceeds thirty seconds, a
+configuration failure cannot be distinguished from slow startup, or a
+host-installed Codex experiment closes all of the separate runtime acceptance
+obligations.

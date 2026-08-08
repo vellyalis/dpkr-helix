@@ -204,6 +204,16 @@ export class LocalAgentStore {
     return updated;
   }
 
+  touch(id: string): LocalAgentRecord {
+    const current = this.getById(id);
+    if (!current) throw new Error(`Unknown subagent id: ${id}`);
+    const updatedAt = new Date().toISOString();
+    this.database.sqlite
+      .prepare("update local_agent_sessions set updated_at = ? where id = ?")
+      .run(updatedAt, id);
+    return { ...current, updatedAt };
+  }
+
   close(): void {
     this.database.close();
   }
