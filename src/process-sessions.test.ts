@@ -108,7 +108,7 @@ assert.match(inputResult.output, /input:hello/);
 const defaultInteractive = await manager.start({
   workspaceId: "workspace-a",
   cwd: process.cwd(),
-  command: `${node} -e "process.stdin.once('data', data => setTimeout(() => { console.log('default-input:' + data.toString().trim()); process.exit(0); }, 100))"`,
+  command: `${node} -e "process.stdin.once('data', data => { console.log('default-input:' + data.toString().trim()); process.exit(0); })"`,
   yieldTimeMs: 5,
 });
 assert.equal(defaultInteractive.running, true);
