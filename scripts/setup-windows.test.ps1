@@ -83,9 +83,13 @@ function Get-SetupFunctionSource {
         "Invoke-RestoredManagedStart",
         "Get-GlobalNpmRoot",
         "Get-GlobalNpmPrefix",
+        "Get-InstalledDevSpaceRoot",
         "Get-ExtendedLengthPath",
         "Remove-DirectoryTreeLongPath",
         "Get-Sha256",
+        "Assert-DevSpaceRuntimeBinContract",
+        "Assert-DevSpaceGlobalBinShims",
+        "Install-PreparedDevSpaceRuntime",
         "Get-RuntimePackagePath",
         "Save-RuntimePackageCache",
         "Get-ValidatedRuntimePackage",
@@ -147,6 +151,56 @@ try {
   Assert-True `
     -Condition ($missingResultFailure -and $missingResultFailure.Contains("missing-result (255)")) `
     -Message "Parallel candidate verification did not fail closed when its result sidecar was absent."
+
+  $swapPrefix = Join-Path $temporaryRoot "swap-prefix"
+  $installedRuntime = Join-Path $swapPrefix "node_modules\@waishnav\devspace"
+  $preparedRuntime = Join-Path $temporaryRoot "prepared-runtime"
+  $runtimeBackup = Join-Path $temporaryRoot "runtime-backup"
+  foreach ($rootAndMarker in @(
+      @($installedRuntime, "previous", ("p" * 64)),
+      @($preparedRuntime, "candidate", ("c" * 64))
+    )) {
+    New-Item -ItemType Directory -Path (Join-Path $rootAndMarker[0] "dist") -Force | Out-Null
+    Write-Utf8NoBom -Path (Join-Path $rootAndMarker[0] "package.json") -Content (
+      '{"name":"@waishnav/devspace","bin":{"devspace":"dist/cli.js","helix":"dist/helix-cli.js"}}'
+    )
+    Write-Utf8NoBom -Path (Join-Path $rootAndMarker[0] "dist\cli.js") -Content $rootAndMarker[1]
+    Write-Utf8NoBom -Path (Join-Path $rootAndMarker[0] "dist\helix-cli.js") -Content $rootAndMarker[1]
+    Write-Utf8NoBom -Path (Join-Path $rootAndMarker[0] "fingerprint.txt") -Content $rootAndMarker[2]
+  }
+  foreach ($name in @("devspace", "helix")) {
+    foreach ($suffix in @("", ".cmd", ".ps1")) {
+      Write-Utf8NoBom -Path (Join-Path $swapPrefix ($name + $suffix)) -Content "shim"
+    }
+  }
+  $previousPrefix = $env:npm_config_prefix
+  try {
+    $env:npm_config_prefix = $swapPrefix
+    $installedFingerprint = & {
+      function Get-DevSpaceRuntimeFingerprint {
+        param([string] $Root)
+        return (Get-Content -LiteralPath (Join-Path $Root "fingerprint.txt") -Raw)
+      }
+      function Get-InstalledDevSpaceRuntimeFingerprint {
+        return Get-DevSpaceRuntimeFingerprint -Root (Get-InstalledDevSpaceRoot)
+      }
+      Install-PreparedDevSpaceRuntime `
+        -PreparedRoot $preparedRuntime `
+        -ExpectedFingerprint ("c" * 64) `
+        -BackupRoot $runtimeBackup
+    }
+  }
+  finally {
+    $env:npm_config_prefix = $previousPrefix
+  }
+  Assert-True `
+    -Condition (
+      $installedFingerprint -eq ("c" * 64) -and
+      (Get-Content -LiteralPath (Join-Path $installedRuntime "dist\cli.js") -Raw) -eq "candidate" -and
+      (Get-Content -LiteralPath (Join-Path $runtimeBackup "dist\cli.js") -Raw) -eq "previous" -and
+      -not (Test-Path -LiteralPath $preparedRuntime)
+    ) `
+    -Message "Prepared runtime replacement did not preserve the previous generation and install the candidate."
 
   $unicodeText = [string]([char] 0x6625) + [char] 0x306E + [char] 0x7A93
   $jsonPath = Join-Path $temporaryRoot "round-trip.json"
@@ -1059,6 +1113,29 @@ try {
       $desiredStateIndex -gt $settingsRereadIndex
     ) `
     -Message "Update does not re-read desired runtime state after candidate preflight."
+  $updateSource = Get-SetupFunctionSource -Names @("Invoke-UpdateMode")
+  $prepareRuntimeIndex = $updateSource.IndexOf("New-PreparedDevSpaceRuntime")
+  $runtimeLockIndex = $updateSource.IndexOf("`$runtimeMutex = Enter-RuntimeOperation")
+  $stopRuntimeIndex = $updateSource.IndexOf("Stop-DevSpaceRuntime")
+  $installPreparedIndex = $updateSource.IndexOf("Install-PreparedDevSpaceRuntime")
+  Assert-True `
+    -Condition (
+      $prepareRuntimeIndex -ge 0 -and
+      $runtimeLockIndex -gt $prepareRuntimeIndex -and
+      $stopRuntimeIndex -gt $runtimeLockIndex -and
+      $installPreparedIndex -gt $stopRuntimeIndex
+    ) `
+    -Message "Update does not prepare the locked runtime before downtime and swap it only after Stop."
+  $runtimeSwapSource = Get-SetupFunctionSource -Names @("Install-PreparedDevSpaceRuntime")
+  Assert-True `
+    -Condition (
+      $runtimeSwapSource.Contains("Assert-DevSpaceGlobalBinShims") -and
+      $runtimeSwapSource.Contains("Move-Item -LiteralPath `$installedRoot -Destination `$backup") -and
+      $runtimeSwapSource.Contains("Move-Item -LiteralPath `$prepared -Destination `$installedRoot") -and
+      $runtimeSwapSource.Contains("Get-InstalledDevSpaceRuntimeFingerprint") -and
+      $runtimeSwapSource.Contains("Immediate runtime replacement recovery failed")
+    ) `
+    -Message "Prepared runtime replacement lacks CLI preservation, fingerprint proof, or immediate physical recovery."
   Assert-True `
     -Condition (
       $sourceText.Contains('"merge", "--ff-only"') -and

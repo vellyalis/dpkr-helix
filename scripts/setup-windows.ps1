@@ -994,6 +994,193 @@ function New-InstalledDevSpacePackage {
   return $packages[0].FullName
 }
 
+function Assert-DevSpaceRuntimeBinContract {
+  param([Parameter(Mandatory = $true)][string] $Root)
+  $manifestPath = Join-Path $Root "package.json"
+  $manifest = Read-JsonFile -Path $manifestPath
+  if (
+    -not $manifest -or
+    [string](Get-PropertyValue -InputObject $manifest -Name "name") -ne "@waishnav/devspace"
+  ) {
+    throw "The DevSpace runtime package identity is invalid."
+  }
+  $bin = Get-PropertyValue -InputObject $manifest -Name "bin"
+  if (-not $bin) {
+    throw "The DevSpace runtime package has no CLI contract."
+  }
+  $expected = [ordered]@{
+    devspace = "dist/cli.js"
+    helix = "dist/helix-cli.js"
+  }
+  foreach ($name in $expected.Keys) {
+    $actual = [string](Get-PropertyValue -InputObject $bin -Name $name)
+    $normalized = $actual.Replace("\", "/")
+    if ($normalized -ne [string] $expected[$name]) {
+      throw "The DevSpace runtime CLI contract changed unexpectedly: $name"
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $Root $actual) -PathType Leaf)) {
+      throw "The DevSpace runtime CLI target is missing: $name"
+    }
+  }
+}
+
+function Assert-DevSpaceGlobalBinShims {
+  $prefix = Get-GlobalNpmPrefix
+  foreach ($name in @("devspace", "helix")) {
+    foreach ($suffix in @("", ".cmd", ".ps1")) {
+      $path = Join-Path $prefix ($name + $suffix)
+      if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+        throw "The installed DevSpace CLI shim is missing: $name$suffix"
+      }
+    }
+  }
+}
+
+function New-PreparedDevSpaceRuntime {
+  param(
+    [Parameter(Mandatory = $true)][string] $PackagePath,
+    [Parameter(Mandatory = $true)][string] $DestinationRoot
+  )
+  if (-not (Test-Path -LiteralPath $PackagePath -PathType Leaf)) {
+    throw "The verified candidate package is missing."
+  }
+  $destination = [System.IO.Path]::GetFullPath($DestinationRoot)
+  if (Test-Path -LiteralPath $destination) {
+    throw "The prepared runtime destination already exists."
+  }
+  $parent = Split-Path -Parent $destination
+  if (-not (Test-Path -LiteralPath $parent -PathType Container)) {
+    New-Item -ItemType Directory -Path $parent -Force | Out-Null
+  }
+  $extractRoot = Join-Path $parent (
+    ".extract-" + [Guid]::NewGuid().ToString("N")
+  )
+  New-Item -ItemType Directory -Path $extractRoot | Out-Null
+  try {
+    $tar = Get-CommandPath -Name "tar.exe"
+    if (-not $tar) {
+      throw "Windows tar is required for prepared runtime installation."
+    }
+    Invoke-Checked -FilePath $tar -Arguments @(
+      "-xzf", ([System.IO.Path]::GetFullPath($PackagePath)),
+      "-C", $extractRoot
+    ) | Out-Host
+    $entries = @(Get-ChildItem -LiteralPath $extractRoot -Force)
+    if (
+      $entries.Count -ne 1 -or
+      -not $entries[0].PSIsContainer -or
+      $entries[0].Name -ne "package"
+    ) {
+      throw "The verified candidate package has an unexpected archive layout."
+    }
+    Move-Item -LiteralPath $entries[0].FullName -Destination $destination
+  }
+  finally {
+    if (Test-Path -LiteralPath $extractRoot -PathType Container) {
+      Remove-DirectoryTreeLongPath -Path $extractRoot
+    }
+  }
+
+  Assert-DevSpaceRuntimeBinContract -Root $destination
+  $npm = Get-CommandPath -Name "npm.cmd"
+  if (-not $npm) {
+    $npm = Get-CommandPath -Name "npm"
+  }
+  if (-not $npm) {
+    throw "npm is required for prepared runtime installation."
+  }
+  Push-Location $destination
+  try {
+    Invoke-Checked -FilePath $npm -Arguments @(
+      "ci",
+      "--omit=dev",
+      "--prefer-offline",
+      "--no-audit",
+      "--no-fund"
+    ) | Out-Host
+  }
+  finally {
+    Pop-Location
+  }
+  $fingerprint = Get-DevSpaceRuntimeFingerprint -Root $destination
+  return [pscustomobject]@{
+    Root = $destination
+    Fingerprint = $fingerprint
+  }
+}
+
+function Install-PreparedDevSpaceRuntime {
+  param(
+    [Parameter(Mandatory = $true)][string] $PreparedRoot,
+    [Parameter(Mandatory = $true)][string] $ExpectedFingerprint,
+    [Parameter(Mandatory = $true)][string] $BackupRoot
+  )
+  if ($ExpectedFingerprint -notmatch "^[0-9a-f]{64}$") {
+    throw "The prepared runtime fingerprint is invalid."
+  }
+  $prepared = [System.IO.Path]::GetFullPath($PreparedRoot)
+  $preparedFingerprint = Get-DevSpaceRuntimeFingerprint -Root $prepared
+  if (-not [string]::Equals(
+      $preparedFingerprint,
+      $ExpectedFingerprint,
+      [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    throw "The prepared runtime changed before installation."
+  }
+  Assert-DevSpaceRuntimeBinContract -Root $prepared
+  Assert-DevSpaceGlobalBinShims
+
+  $installedRoot = Get-InstalledDevSpaceRoot
+  Assert-DevSpaceRuntimeBinContract -Root $installedRoot
+  if (-not [string]::Equals(
+      [System.IO.Path]::GetPathRoot($prepared),
+      [System.IO.Path]::GetPathRoot($installedRoot),
+      [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+    throw "The prepared runtime is not on the installed runtime volume."
+  }
+  $backup = [System.IO.Path]::GetFullPath($BackupRoot)
+  if (Test-Path -LiteralPath $backup) {
+    throw "The installed runtime backup destination already exists."
+  }
+  $backupParent = Split-Path -Parent $backup
+  if (-not (Test-Path -LiteralPath $backupParent -PathType Container)) {
+    New-Item -ItemType Directory -Path $backupParent -Force | Out-Null
+  }
+
+  Move-Item -LiteralPath $installedRoot -Destination $backup
+  try {
+    Move-Item -LiteralPath $prepared -Destination $installedRoot
+    $installedFingerprint = Get-InstalledDevSpaceRuntimeFingerprint
+    if (-not [string]::Equals(
+        $installedFingerprint,
+        $ExpectedFingerprint,
+        [System.StringComparison]::OrdinalIgnoreCase
+      )) {
+      throw "The installed runtime does not match the prepared runtime fingerprint."
+    }
+    return $installedFingerprint
+  }
+  catch {
+    $replacementFailure = $_
+    try {
+      if (Test-Path -LiteralPath $installedRoot -PathType Container) {
+        Remove-DirectoryTreeLongPath -Path $installedRoot
+      }
+      if (
+        -not (Test-Path -LiteralPath $installedRoot) -and
+        (Test-Path -LiteralPath $backup -PathType Container)
+      ) {
+        Move-Item -LiteralPath $backup -Destination $installedRoot
+      }
+    }
+    catch {
+      Write-Warning "Immediate runtime replacement recovery failed: $($_.Exception.Message)"
+    }
+    throw $replacementFailure
+  }
+}
+
 function Install-BuiltDevSpacePackage {
   param(
     [Parameter(Mandatory = $true)][string] $PackagePath,
@@ -1305,8 +1492,16 @@ function Get-Sha256 {
   }
 }
 
-function Get-InstalledDevSpaceRuntimeFingerprint {
-  $root = Get-InstalledDevSpaceRoot
+function Get-DevSpaceRuntimeFingerprint {
+  param([Parameter(Mandatory = $true)][string] $Root)
+  $root = [System.IO.Path]::GetFullPath($Root)
+  $rootItem = Get-Item -LiteralPath $root -Force -ErrorAction Stop
+  if (-not $rootItem.PSIsContainer) {
+    throw "The DevSpace runtime root is not a directory: $root"
+  }
+  if ($rootItem.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+    throw "The DevSpace runtime root is linked to mutable state."
+  }
   $piRoot = Join-Path $root "node_modules\@earendil-works\pi-coding-agent"
   $requiredFiles = @(
     (Join-Path $root "package.json"),
@@ -1322,7 +1517,7 @@ function Get-InstalledDevSpaceRuntimeFingerprint {
   )
   foreach ($path in $requiredFiles) {
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-      throw "The installed DevSpace runtime is incomplete: $path"
+      throw "The DevSpace runtime is incomplete: $path"
     }
   }
   $requiredDirectories = @(
@@ -1336,10 +1531,10 @@ function Get-InstalledDevSpaceRuntimeFingerprint {
   foreach ($path in $requiredDirectories) {
     $item = Get-Item -LiteralPath $path -Force -ErrorAction Stop
     if (-not $item.PSIsContainer) {
-      throw "The installed DevSpace runtime directory is missing: $path"
+      throw "The DevSpace runtime directory is missing: $path"
     }
     if ($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
-      throw "The installed DevSpace runtime contains a linked dependency directory: $path"
+      throw "The DevSpace runtime contains a linked dependency directory: $path"
     }
   }
   $files = @(
@@ -1375,6 +1570,10 @@ function Get-InstalledDevSpaceRuntimeFingerprint {
     $sha.Dispose()
   }
   return ([System.BitConverter]::ToString($hash)).Replace("-", "").ToLowerInvariant()
+}
+
+function Get-InstalledDevSpaceRuntimeFingerprint {
+  return Get-DevSpaceRuntimeFingerprint -Root (Get-InstalledDevSpaceRoot)
 }
 
 function Get-InstalledDevSpaceRuntimeStatus {
@@ -3151,6 +3350,7 @@ function Invoke-UpdateMode {
   $plan = $null
   $runtimeMutex = $null
   $deploymentStarted = $false
+  $preparedRuntime = $null
   try {
     Write-UpdateStatus `
       -State "preflight" `
@@ -3205,9 +3405,41 @@ function Invoke-UpdateMode {
       -Root $worktreePath `
       -Destination $candidatePackagePath
     $candidateRecoveryPackage = Save-RuntimePackageCache -PackagePath $candidatePackage
+    $installedRootForPlan = $null
+    try {
+      $installedRootForPlan = Get-InstalledDevSpaceRoot
+      Assert-DevSpaceRuntimeBinContract -Root $installedRootForPlan
+      Assert-DevSpaceGlobalBinShims
+    }
+    catch {
+      Write-Warning (
+        "Prepared runtime replacement is unavailable for the current installation; " +
+        "using the verified package installer."
+      )
+      $installedRootForPlan = $null
+    }
+    $preparedRuntimePath = Join-Path $temporaryRoot "prepared-runtime"
+    if ($installedRootForPlan) {
+      if ([string]::Equals(
+          [System.IO.Path]::GetPathRoot($preparedRuntimePath),
+          [System.IO.Path]::GetPathRoot($installedRootForPlan),
+          [System.StringComparison]::OrdinalIgnoreCase
+        )) {
+        $preparedRuntime = New-PreparedDevSpaceRuntime `
+          -PackagePath ([string] $candidateRecoveryPackage.Path) `
+          -DestinationRoot $preparedRuntimePath
+      }
+      else {
+        Write-Warning (
+          "Prepared runtime replacement is unavailable across volumes; " +
+          "using the verified package installer."
+        )
+      }
+    }
     $rollbackPackage = $null
     $settingsBackup = Join-Path $backupPath "windows-bootstrap.previous.json"
     $setupBackup = Join-Path $backupPath "setup-windows.previous.ps1"
+    $installedRuntimeBackup = Join-Path $backupPath "installed-runtime.previous"
     $hadRecovery = $false
     $recoveryBackup = $null
 
@@ -3245,8 +3477,16 @@ function Invoke-UpdateMode {
     $deploymentStarted = $true
     try {
       Stop-DevSpaceRuntime
-      Install-BuiltDevSpacePackage -PackagePath $candidatePackage
-      $candidateFingerprint = Get-InstalledDevSpaceRuntimeFingerprint
+      if ($preparedRuntime) {
+        $candidateFingerprint = Install-PreparedDevSpaceRuntime `
+          -PreparedRoot ([string] $preparedRuntime.Root) `
+          -ExpectedFingerprint ([string] $preparedRuntime.Fingerprint) `
+          -BackupRoot $installedRuntimeBackup
+      }
+      else {
+        Install-BuiltDevSpacePackage -PackagePath $candidatePackage
+        $candidateFingerprint = Get-InstalledDevSpaceRuntimeFingerprint
+      }
       $settings = Set-RuntimeRecoveryState `
         -PackageHash ([string] $candidateRecoveryPackage.Hash) `
         -RuntimeFingerprint $candidateFingerprint `
