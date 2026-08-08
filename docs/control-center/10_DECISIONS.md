@@ -2139,3 +2139,93 @@ collisions at concurrency four, clean dependency installation becomes the only
 material cost and a substantially stronger immutable package cache can prove
 its complete integrity/lifecycle contract, or another supported platform needs
 a non-Windows parallel process owner.
+
+## ADR-054: Prepare the exact lock-restored runtime before downtime and replace only its fixed package root
+
+**Date:** 2026-08-08
+
+**Status:** Accepted; functional source and transition installation complete,
+installed end-to-end timing pending
+
+**Context:** After ADR-053 reduced candidate verification, the installed-lane
+deployment still took 282.348 seconds. The replacement runtime became healthy
+after 249.782 seconds, so package creation and installation before restart were
+the next measured bottleneck. The existing installer performed two dependency
+resolutions: npm first installed the verified tarball into the global prefix,
+then the updater copied the reviewed shrinkwrap into that package and ran
+`npm ci --omit=dev` again.
+
+The second pass could not simply be removed. An isolated global install omitted
+`node_modules/.package-lock.json`, selected 41 package versions different from
+the deployment shrinkwrap, and introduced four additional package paths. Among
+the observed drifts were ACP, Claude, MCP Apps, OpenCode, Pierre and SQLite
+packages. The later locked `npm ci` restored the exact production fingerprint.
+The issue was therefore redundant work around a necessary lock restoration,
+not an unnecessary lock restoration.
+
+**Decision:** Continue creating and SHA-256-caching the npm package from the
+fully verified candidate. Before acquiring the runtime mutex or stopping the
+service, extract that exact cached archive into the existing update temporary
+root, require its single npm `package/` layout, validate the exact
+`@waishnav/devspace` identity and `devspace`/`helix` bin targets, run one
+`npm ci --omit=dev --prefer-offline --no-audit --no-fund`, execute the existing
+postinstall repairs, and compute the existing physical-runtime fingerprint over
+the prepared root.
+
+Use the prepared path only when the current fixed package and all six npm global
+CLI shims are present and when the prepared and installed roots share a volume.
+After the existing source-plan recheck, rollback-package capture and desired
+state read, stop the managed runtime, move the previous fixed
+`node_modules/@waishnav/devspace` root into the existing rollback directory,
+move the prepared root to the same fixed location, and recompute the installed
+fingerprint. Existing global shims remain untouched because their targets are
+stable. If the move or fingerprint check fails, restore the old physical root
+immediately; any later failure continues through the established verified
+rollback package, source reset, settings restoration and health verification.
+When the fast-path prerequisites are absent or the volumes differ, use the
+previous verified npm package installer rather than inventing another repair
+path.
+
+**Alternatives rejected:** Removing the locked production `npm ci`, which the
+measured dependency drift disproved; copying a mutable `node_modules` cache;
+replacing the complete global prefix and its unrelated tools; regenerating npm
+shim files independently; moving the candidate worktree into production;
+installing dependencies after stopping the service; or replacing the existing
+rollback package with the temporary physical backup. Each weakens lock truth,
+expands ownership, increases downtime, or turns a local optimization into a new
+deployment system.
+
+**Complexity receipt:** One explicit-root reuse of the existing fingerprint
+algorithm, exact bin/shim predicates, one pre-stop package preparation function,
+one same-volume package-root replacement function, and focused PowerShell
+contracts inside the existing Windows updater. No dependency, cache, database,
+schema, setting, service, daemon, scheduler, public tool, credential, permission,
+or second rollback owner was added.
+
+**Evidence:** Global install alone showed 41 version mismatches, four extra
+package paths and no hidden lock. An isolated extract-plus-locked-install run
+took 71.448 seconds after 0.417-second extraction; the accepted implementation
+later prepared the same runtime in 52.282 seconds. The physical root replacement
+took 0.664 seconds, preserved existing CLI shims, reproduced fingerprint
+`66fc4bf14554d5220233324016e66988793390e225924d96cbfb2542240cb067`,
+and passed `devspace doctor`, SQLite native loading and `helix --help`. Focused
+contracts prove preparation before runtime locking, replacement only after
+Stop, old-generation retention, bin/shim preservation, post-swap fingerprinting
+and immediate physical recovery. Complete 68/68 regression, policy, typecheck,
+build, zero-vulnerability production audit, Windows setup/recovery,
+public-release and diff gates pass. Functional checkpoint `cbdfad8` is public
+and installed; transition request `27333c6e-d378-4060-869e-2c4e34f01423`
+completed in 371.668 seconds but began under the preceding updater.
+
+**Failure and recovery:** Candidate preparation fails before downtime. Fast-path
+ineligibility falls back to the existing installer. A replacement failure first
+restores the retained old root; the outer update failure path still installs the
+verified rollback package and restores settings, scripts, source and desired
+runtime state. Reverting this decision returns to two npm resolution passes and
+does not require state migration.
+
+**Reconsider when:** npm provides a documented global-install mode that consumes
+the package's deployment shrinkwrap exactly and creates the same hidden lock and
+physical fingerprint in one pass; the fixed CLI shim contract changes; a
+supported installation uses different volumes routinely; or installed timing
+shows that package-root replacement no longer contributes material latency.

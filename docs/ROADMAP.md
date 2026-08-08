@@ -30,6 +30,7 @@ measured baseline shows that it would not improve a real outcome.
 | Operations standby presentation | Shipped | Connected MCP session roots are separated from active `NOW` work without changing canonical state or lifecycle |
 | Practical daily-use controls | Shipped | Provider quota cooldowns, reversible workspace-session archive, and one Current/Resume plus failure-diagnosis surface are public, managed-deployed, and installed-verified |
 | Managed update verification throughput | Shipped | Every existing update gate remains mandatory while independent read-only checks use bounded parallel execution; installed end-to-end timing is live-verified |
+| Prepared runtime replacement | In validation | The exact lock-restored runtime is built and fingerprinted before downtime, then its fixed package root replaces the previous generation without rerunning global dependency resolution |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -230,6 +231,40 @@ healthy after 257.628 seconds and the remaining provenance and health closure
 took 34.121 seconds. This observed end-to-end run is 69.341 seconds, or 19.2
 percent, below the transition run; the stronger same-candidate preflight
 evidence remains the 292.9-to-123.106-second comparison above.
+
+## In validation: prepared runtime replacement
+
+After the verification fast lane shipped, the largest remaining cost was the
+physical package replacement. The previous installer asked npm to install the
+verified tarball globally and then copied the deployment shrinkwrap into the
+installed package and ran a second `npm ci --omit=dev`. Direct inspection proved
+the second pass was not redundant in correctness terms: global npm resolution
+omitted the hidden deployment lock, selected 41 package versions different from
+the reviewed shrinkwrap, and introduced four additional package paths. Removing
+the locked pass would therefore trade deployment truth for speed.
+
+The accepted source instead removes the unsafe first dependency resolution. It
+extracts the already SHA-256-verified runtime tarball into the existing update
+temporary root, validates the exact package and `devspace`/`helix` bin contract,
+runs one locked production `npm ci` with the existing postinstall repairs, and
+computes the same physical runtime fingerprint before the runtime mutex or stop.
+After the source plan and rollback package are rechecked, the updater stops the
+service, retains the old fixed package root inside the existing rollback area,
+moves the prepared root into the same global package location, and verifies the
+installed fingerprint before restart. Existing global CLI shims remain in
+place. A damaged existing install, missing shim contract, or cross-volume layout
+uses the established verified npm installer instead.
+
+Isolated acceptance prepared the exact production runtime in 52.282 seconds and
+replaced the fixed package directory in 0.664 seconds. The prepared and installed
+fingerprints both equaled
+`66fc4bf14554d5220233324016e66988793390e225924d96cbfb2542240cb067`;
+`devspace doctor` confirmed the SQLite native dependency and `helix --help`
+exited successfully. Functional checkpoint `cbdfad8` is public and installed.
+Its 371.668-second deployment is a transition observation only because the
+request began under the preceding installed updater. A following documentation
+checkpoint will provide the first valid end-to-end timing for the prepared
+replacement lane.
 
 ## Decision rules
 

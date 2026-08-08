@@ -17,8 +17,9 @@ Last synchronized: 2026-08-08
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-OPS-05 is live-verified and complete.
-- Current release line: `PRACTICAL CONTROLS / UPDATE FAST LANE SHIPPED`; the
-  measured installed validation checkpoint is `a70a192`. The selective
+- Current release line: `PRACTICAL CONTROLS / UPDATE FAST LANE SHIPPED /
+  PREPARED RUNTIME IN VALIDATION`; the installed functional checkpoint is
+  `cbdfad8`. The selective
   upstream and worker-reliability candidate is public from `16e236c`. It adapts
   upstream DevSpace `v1.0.6`
   conversation-aware checkout reuse, restart-safe review checkpoints, compact
@@ -103,6 +104,24 @@ Last synchronized: 2026-08-08
   same-candidate reduction from about 292.9 to 123.106 seconds. HEAD,
   `origin/main`, installed source commit, fingerprint, Doctor, local/public
   health, and local/public OAuth metadata agree.
+- Prepared runtime replacement is `IN VALIDATION` from functional checkpoint
+  `cbdfad8`. Benchmarking proved that global npm installation alone does not
+  honor the deployment shrinkwrap: it omitted the hidden lock, resolved 41
+  package versions differently, and added four package paths. The accepted lane
+  extracts the verified package, performs one locked production `npm ci`, runs
+  postinstall repairs, and fingerprints the complete candidate before runtime
+  downtime. After stop, it preserves the existing global CLI shims, moves the
+  previous fixed package root into the existing rollback area, installs the
+  prepared root in the same location, and verifies the physical fingerprint
+  before restart. Missing shims, an invalid current package contract, or a
+  cross-volume layout conservatively uses the established verified installer.
+  Isolated acceptance prepared the runtime in 52.282 seconds and replaced it in
+  0.664 seconds; the resulting fingerprint exactly matched production and both
+  Doctor/SQLite and `helix --help` passed. Complete regression, policy,
+  typecheck, build, zero-vulnerability audit, setup/recovery, public-release,
+  and diff gates pass. Transition request
+  `27333c6e-d378-4060-869e-2c4e34f01423` installed `cbdfad8` in 371.668 seconds,
+  but began under the prior updater and is not the final performance measure.
 - Post-`v1.0.6` upstream host-installed Codex and experimental `app-server`
   branches were audited but not imported. They remain isolated research because
   they do not yet preserve Helix's schema-constrained completed/needs-input

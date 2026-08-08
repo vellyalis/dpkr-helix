@@ -6,8 +6,8 @@ Last synchronized: 2026-08-08
 
 - Selective upstream `v1.0.6` ingestion plus independent Helix reliability
   hardening is published from `16e236c`; updater truth, migration repair,
-  Operations standby, practical controls, and the update fast-lane functional
-  checkpoint are installed through `be3fd0d`, and
+  Operations standby, practical controls, update verification fast lane, and
+  prepared-runtime functional checkpoint are installed through `cbdfad8`, and
   same-conversation checkout reuse is live-verified.
   Reuse now
   applies to both `open_workspace` and `open_project`, survives restart, keeps
@@ -108,6 +108,23 @@ Last synchronized: 2026-08-08
   an observed 69.341-second / 19.2-percent reduction from the transition run.
   Source, origin, installed commit, fingerprint, Doctor, local/public health,
   and local/public OAuth metadata agreed for the measured `a70a192` run.
+- Prepared runtime replacement is `IN VALIDATION` at installed checkpoint
+  `cbdfad8`. Global npm installation alone was measured and rejected because it
+  omitted the hidden deployment lock, resolved 41 reviewed package versions
+  differently, and added four paths. The accepted source extracts the verified
+  recovery tarball, runs one lock-restored production install and all reviewed
+  postinstall repairs before downtime, computes the physical fingerprint, then
+  retains the previous package root and swaps only the fixed
+  `node_modules/@waishnav/devspace` directory after Stop. Existing global
+  `devspace`/`helix` shims stay in place. Invalid current bins/shims or
+  cross-volume roots fall back to the established package installer. Isolated
+  acceptance prepared the exact runtime in 52.282 seconds, swapped it in 0.664
+  seconds, reproduced production fingerprint
+  `66fc4bf14554d5220233324016e66988793390e225924d96cbfb2542240cb067`, and passed
+  Doctor/SQLite plus `helix --help`. Functional transition request
+  `27333c6e-d378-4060-869e-2c4e34f01423` completed in 371.668 seconds but began
+  under the previous updater; the next state-only deployment is the first valid
+  installed timing of the new replacement lane.
 - Two unmerged post-release upstream branches using host-installed Codex and the
   experimental `codex app-server` were classified as promising research, not a
   safe runtime replacement. A future isolated comparison must preserve
