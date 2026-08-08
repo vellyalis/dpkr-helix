@@ -49,6 +49,11 @@ const migrations: Migration[] = [
   },
   {
     version: 9,
+    name: "local-agent-fallbacks",
+    up: migrateLocalAgentFallbacks,
+  },
+  {
+    version: 10,
     name: "workspace-conversation-bindings",
     up: migrateWorkspaceConversationBindings,
   },
@@ -300,7 +305,17 @@ function migrateLocalAgentOutcomes(sqlite: Database.Database): void {
   addColumnIfMissing(sqlite, "local_agent_sessions", "question", "text");
 }
 
+function migrateLocalAgentFallbacks(sqlite: Database.Database): void {
+  migrateLocalAgentSessions(sqlite);
+  addColumnIfMissing(sqlite, "local_agent_sessions", "failure_code", "text");
+  addColumnIfMissing(sqlite, "local_agent_sessions", "attempts_json", "text");
+}
+
 function migrateWorkspaceConversationBindings(sqlite: Database.Database): void {
+  // A short-lived public build reused version 9 for this table after older
+  // managed installations had already applied version 9 as local-agent-fallbacks.
+  // Normalize both histories before recording the permanent version 10 owner.
+  migrateLocalAgentFallbacks(sqlite);
   sqlite.exec(`
     create table if not exists workspace_conversation_bindings (
       conversation_scope_id text not null,

@@ -5,9 +5,10 @@ Last synchronized: 2026-08-08
 ## Current position
 
 - Selective upstream `v1.0.6` ingestion plus independent Helix reliability
-  hardening is published at `16e236c`; the follow-up updater-truth repair is
-  `SOURCE VERIFIED / PUBLICATION + LIVE ACCEPTANCE PENDING`. Same-conversation
-  checkout reuse now
+  hardening is published at `16e236c`; updater-truth commit `a791771` is
+  installed and live-verified, while the migration-collision repair is `SOURCE
+  VERIFIED / PUBLICATION + LIVE ACCEPTANCE PENDING`. Same-conversation checkout
+  reuse now
   applies to both `open_workspace` and `open_project`, survives restart, keeps
   worktrees fresh, suppresses repeated static bootstrap, and persists only a
   prefixed SHA-256 key of the opaque host conversation scope. Review checkpoints
@@ -31,8 +32,8 @@ Last synchronized: 2026-08-08
   build, `npm run audit:production`, isolated-index public-release scan, and
   `git diff --check` pass. Production audit verifies reviewed Pi dependency
   repairs, hidden Codex Windows spawn behavior, and zero reported vulnerabilities.
-  The base candidate was committed and pushed normally; the installed package
-  remains the prior verified release pending the follow-up bootstrap.
+  The physical installed package, settings, runtime record, doctor, health,
+  OAuth metadata, and canonical update status agree on `a791771`.
 - The first managed update request falsely returned `UP_TO_DATE` because source
   `HEAD` already matched `origin/main`, even though the physical installed
   package lacked the new runtime. The follow-up stores a clean source commit
@@ -41,6 +42,14 @@ Last synchronized: 2026-08-08
   near-fresh physical Windows integration pass, including running reinstall and
   package-based repair. Older installations without commit provenance will
   redeploy once instead of being misreported as current.
+- Live same-conversation acceptance then failed before workspace reuse because
+  the existing managed SQLite ledger already owned migration version 9 as
+  `local-agent-fallbacks`; the clean-root source had reused version 9 for
+  conversation bindings. The repair restores the historical version-9 owner,
+  moves conversation bindings to version 10, and normalizes both the managed-v9
+  and short-lived-public-v9 histories. Focused fixtures, managed restart, and an
+  online backup of the exact live database with 1,052 workspace rows all apply
+  version 10 without data loss. The live database itself is not yet modified.
 - Two unmerged post-release upstream branches using host-installed Codex and the
   experimental `codex app-server` were classified as promising research, not a
   safe runtime replacement. A future isolated comparison must preserve

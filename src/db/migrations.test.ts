@@ -15,7 +15,7 @@ try {
       .prepare("select version from devspace_schema_migrations order by version")
       .pluck()
       .all(),
-    [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
   );
   assert.deepEqual(
     tableColumns(fresh.sqlite, "registered_projects"),
@@ -70,12 +70,14 @@ try {
   assert.equal(tableColumns(fresh.sqlite, "operation_evidence").includes("basis_fingerprint"), true);
   assert.equal(tableColumns(fresh.sqlite, "local_agent_sessions").includes("disposition"), true);
   assert.equal(tableColumns(fresh.sqlite, "local_agent_sessions").includes("question"), true);
+  assert.equal(tableColumns(fresh.sqlite, "local_agent_sessions").includes("failure_code"), true);
+  assert.equal(tableColumns(fresh.sqlite, "local_agent_sessions").includes("attempts_json"), true);
   fresh.close();
 
   const freshAgain = openDatabase(freshStateDir);
   assert.equal(
     freshAgain.sqlite.prepare("select count(*) from devspace_schema_migrations").pluck().get(),
-    9,
+    10,
   );
   freshAgain.close();
 
@@ -152,13 +154,74 @@ try {
   assert.equal(tableColumns(upgraded.sqlite, "operation_evidence").length, 7);
   assert.equal(
     upgraded.sqlite
-      .prepare("select count(*) from devspace_schema_migrations where version = 9")
+      .prepare("select count(*) from devspace_schema_migrations where version = 10")
       .pluck()
       .get(),
     1,
   );
   assert.equal(tableColumns(upgraded.sqlite, "workspace_conversation_bindings").length, 5);
   upgraded.close();
+
+  const managedLegacyV9StateDir = join(root, "managed-legacy-v9");
+  await mkdir(managedLegacyV9StateDir, { recursive: true });
+  createVersionNineDatabase(managedLegacyV9StateDir, {
+    migrationName: "local-agent-fallbacks",
+    includeConversationTable: false,
+    includeFallbackColumns: true,
+  });
+  const managedLegacyV9 = openDatabase(managedLegacyV9StateDir);
+  assert.deepEqual(
+    managedLegacyV9.sqlite
+      .prepare("select version, name from devspace_schema_migrations where version >= 9 order by version")
+      .all(),
+    [
+      { version: 9, name: "local-agent-fallbacks" },
+      { version: 10, name: "workspace-conversation-bindings" },
+    ],
+  );
+  assert.equal(
+    tableColumns(managedLegacyV9.sqlite, "workspace_conversation_bindings").length,
+    5,
+  );
+  assert.equal(
+    managedLegacyV9.sqlite
+      .prepare("select count(*) from local_agent_sessions where id = 'agt_preserved'")
+      .pluck()
+      .get(),
+    1,
+  );
+  managedLegacyV9.close();
+
+  const shortLivedPublicV9StateDir = join(root, "short-lived-public-v9");
+  await mkdir(shortLivedPublicV9StateDir, { recursive: true });
+  createVersionNineDatabase(shortLivedPublicV9StateDir, {
+    migrationName: "workspace-conversation-bindings",
+    includeConversationTable: true,
+    includeFallbackColumns: false,
+  });
+  const shortLivedPublicV9 = openDatabase(shortLivedPublicV9StateDir);
+  assert.deepEqual(
+    shortLivedPublicV9.sqlite
+      .prepare("select version, name from devspace_schema_migrations where version >= 9 order by version")
+      .all(),
+    [
+      { version: 9, name: "workspace-conversation-bindings" },
+      { version: 10, name: "workspace-conversation-bindings" },
+    ],
+  );
+  assert.equal(
+    tableColumns(shortLivedPublicV9.sqlite, "local_agent_sessions").includes("failure_code"),
+    true,
+  );
+  assert.equal(
+    tableColumns(shortLivedPublicV9.sqlite, "local_agent_sessions").includes("attempts_json"),
+    true,
+  );
+  assert.equal(
+    tableColumns(shortLivedPublicV9.sqlite, "workspace_conversation_bindings").length,
+    5,
+  );
+  shortLivedPublicV9.close();
 
   const failingV6StateDir = join(root, "failing-v6");
   await mkdir(failingV6StateDir, { recursive: true });
@@ -256,4 +319,87 @@ function tableColumns(sqlite: Database.Database, table: string): string[] {
   return (sqlite.prepare(`pragma table_info(${table})`).all() as Array<{ name: string }>).map(
     (column) => column.name,
   );
+}
+
+function createVersionNineDatabase(
+  stateDir: string,
+  options: {
+    migrationName: "local-agent-fallbacks" | "workspace-conversation-bindings";
+    includeConversationTable: boolean;
+    includeFallbackColumns: boolean;
+  },
+): void {
+  const sqlite = new Database(databasePath(stateDir));
+  const fallbackColumns = options.includeFallbackColumns
+    ? ", failure_code text, attempts_json text"
+    : "";
+  const conversationTable = options.includeConversationTable
+    ? `
+      create table workspace_conversation_bindings (
+        conversation_scope_id text not null,
+        target_key text not null,
+        workspace_session_id text not null,
+        created_at text not null,
+        last_used_at text not null,
+        primary key (conversation_scope_id, target_key),
+        foreign key (workspace_session_id)
+          references workspace_sessions(id)
+          on delete cascade
+      );
+    `
+    : "";
+  try {
+    sqlite.exec(`
+      create table devspace_schema_migrations (
+        version integer primary key,
+        name text not null,
+        applied_at text not null
+      );
+
+      insert into devspace_schema_migrations (version, name, applied_at) values
+        (1, 'workspace-state', '2026-01-01T00:00:00.000Z'),
+        (2, 'oauth-state', '2026-01-01T00:00:00.000Z'),
+        (3, 'local-agent-sessions', '2026-01-01T00:00:00.000Z'),
+        (4, 'registered-projects', '2026-01-01T00:00:00.000Z'),
+        (5, 'workspace-handoffs', '2026-01-01T00:00:00.000Z'),
+        (6, 'operation-projection', '2026-01-01T00:00:00.000Z'),
+        (7, 'verification-basis-fingerprint', '2026-01-01T00:00:00.000Z'),
+        (8, 'local-agent-outcomes', '2026-01-01T00:00:00.000Z'),
+        (9, '${options.migrationName}', '2026-01-01T00:00:00.000Z');
+
+      create table workspace_sessions (
+        id text primary key
+      );
+
+      insert into workspace_sessions (id) values ('ws_preserved');
+
+      create table local_agent_sessions (
+        id text primary key,
+        workspace_id text,
+        workspace_root text not null,
+        profile_name text not null,
+        provider text not null,
+        model text,
+        thinking text,
+        provider_session_id text,
+        status text not null,
+        latest_response text,
+        error text,
+        created_at text not null,
+        updated_at text not null
+        ${fallbackColumns}
+      );
+
+      insert into local_agent_sessions (
+        id, workspace_id, workspace_root, profile_name, provider, status, created_at, updated_at
+      ) values (
+        'agt_preserved', 'ws_preserved', 'C:\\preserved', 'reviewer', 'codex', 'idle',
+        '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z'
+      );
+
+      ${conversationTable}
+    `);
+  } finally {
+    sqlite.close();
+  }
 }

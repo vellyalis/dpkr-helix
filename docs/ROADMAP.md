@@ -26,7 +26,7 @@ measured baseline shows that it would not improve a real outcome.
 | Measured Codex-quality parity | Shipped | Signed-in Web-plus-helix passes the frozen suite 8/8 versus retained local Codex 5/8 without weakening permissions, evidence truth, or existing work |
 | GPT-5.6 Sol effort comparison | Stopped | Owner stopped the incomplete 24/96 matrix because it no longer changes a current product, release, or setting decision |
 | Daily operation quality and continuity | Shipped | Fresh-session operation, reconnect continuity, direct tools, handoffs, and bounded nested-instruction discovery are live-verified |
-| Selective upstream continuity and card clarity | In validation | The base source is public; conversation-aware reuse, review recovery, clearer cards, worker reliability, and installed-runtime provenance pass local and physical setup gates, while managed deployment and live-host acceptance remain |
+| Selective upstream continuity and card clarity | In validation | The base and updater provenance are live; migration v10 preserves both historical version-9 identities, while final managed deployment and reuse acceptance remain |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -122,6 +122,15 @@ older. The follow-up records the clean deployment commit alongside the existing
 package hash and installed-tree fingerprint. A no-op is now valid only when
 source, commit provenance, and physical fingerprint all agree. Older settings
 without provenance redeploy once rather than manufacturing an installed state.
+
+The first live reuse call then exposed a separate clean-history migration
+collision: managed installations had already assigned version 9 to
+`local-agent-fallbacks`, while the public source had assigned version 9 to the
+new conversation table. The accepted source repair restores the immutable
+historical version-9 meaning and creates conversation bindings at version 10.
+It also normalizes the short-lived public version-9 shape. Final completion now
+requires publishing and deploying that migration, then repeating the live reuse
+and delegated-worker acceptance against the migrated production database.
 
 ## Decision rules
 

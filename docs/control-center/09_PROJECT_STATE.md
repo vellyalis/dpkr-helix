@@ -17,9 +17,9 @@ Last synchronized: 2026-08-08
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-OPS-05 is live-verified and complete.
-- Current source candidate: `PUBLISHED BASE / FOLLOW-UP SOURCE VERIFIED / LIVE
-  ACCEPTANCE PENDING`. The selective upstream and worker-reliability candidate
-  is public at `16e236c`. It adapts upstream DevSpace `v1.0.6`
+- Current candidate: `PROVENANCE FIX DEPLOYED / MIGRATION FIX SOURCE VERIFIED /
+  LIVE ACCEPTANCE BLOCKED`. The selective upstream and worker-reliability
+  candidate is public at `16e236c`. It adapts upstream DevSpace `v1.0.6`
   conversation-aware checkout reuse, restart-safe review
   checkpoints, compact workspace IDs, and correctness-bearing MCP App card
   improvements without replacing Helix Project, Handoff, repository-context,
@@ -29,17 +29,27 @@ Last synchronized: 2026-08-08
   and has the long-lived service reconcile a starting/running agent only after
   one hour without activity, at startup and every five minutes. Worker children
   skip reconciliation before their ready acknowledgement.
-  Full tests, policy tests, typecheck, production build, dependency audit, public
-  content scan, and diff checks pass.
+  The installed physical runtime is now `a791771`, which also fixes update-state
+  truth by requiring source commit provenance and the installed fingerprint
+  before reporting `UP_TO_DATE`. Settings, runtime record, physical markers,
+  doctor, local/public health, public OAuth metadata, and the canonical updater
+  agree on that commit.
 - The first managed update request after publication exposed a separate truth
   defect: source `HEAD` and `origin/main` matched, so the old updater reported
   `UP_TO_DATE`, while direct inspection proved the physical installed package
   was still the previous generation. The follow-up source records the clean
   deployment commit with the existing package hash and installed fingerprint;
-  all three must now match before a no-op result is valid. Focused setup tests
-  and the near-fresh physical Windows integration pass. The installed runtime
-  remains unchanged until this follow-up is published and bootstrapped through
-  one direct managed reinstall.
+  all three must now match before a no-op result is valid. Focused setup tests,
+  near-fresh physical Windows integration, direct bootstrap, and a fresh
+  canonical `UP_TO_DATE` result pass.
+- The first live same-conversation `open_project` then exposed a migration
+  identity collision. The managed database already records version 9 as
+  `local-agent-fallbacks`, while the clean-root source had reused version 9 for
+  conversation bindings. The source fix restores the historical version-9
+  owner and moves conversation bindings to version 10 with an idempotent bridge
+  for both real histories. Fresh, managed-v9, short-lived-public-v9,
+  managed-restart, and exact live-database-copy proofs pass. The live database
+  remains unchanged until this migration fix is published and deployed.
 - Post-`v1.0.6` upstream host-installed Codex and experimental `app-server`
   branches were audited but not imported. They remain isolated research because
   they do not yet preserve Helix's schema-constrained completed/needs-input

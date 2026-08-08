@@ -1747,3 +1747,68 @@ the previous update predicate.
 manifest that supersedes the settings record, package identity becomes
 cryptographically tied to a source commit, or repeated measurements show that
 the additive comparison creates an unjustified redeployment loop.
+
+## ADR-048: Preserve historical migration identities across the clean-root release
+
+**Date:** 2026-08-08
+
+**Status:** Accepted; source and live-database-copy proof complete, managed
+deployment pending
+
+**Context:** After the provenance-correct runtime was installed, the first live
+same-conversation `open_project` call failed with `no such table:
+workspace_conversation_bindings`. The physical runtime and source commit were
+correct. Read-only inspection of the existing SQLite ledger showed that version
+9 had already been applied on 2026-08-05 as `local-agent-fallbacks`. The
+clean-root public source had reused numeric version 9 for
+`workspace-conversation-bindings`, so the migrator correctly skipped an already
+recorded version but thereby skipped the new table.
+
+**Decision:** Restore version 9 to its exact historical
+`local-agent-fallbacks` owner and assign conversation bindings permanent version
+10. Version 9 retains the prior idempotent `failure_code` and `attempts_json`
+column additions. Version 10 first normalizes those columns and then creates the
+conversation-binding table and index. That compatibility bridge supports both
+real histories:
+
+- managed installations whose version 9 is `local-agent-fallbacks` and lack the
+  conversation table; and
+- short-lived public installations whose version 9 is
+  `workspace-conversation-bindings` and may lack the historical fallback
+  columns.
+
+Do not delete, rename, or rewrite an applied migration ledger row. Numeric
+versions remain immutable once any managed installation has observed them,
+including across a parentless public-history cutover.
+
+**Alternatives rejected:** Manually creating the live table; deleting version 9
+from the production ledger; changing migration dispatch to trust the stored name
+instead of the version; resetting the state database; or accepting the failure
+because fresh installs pass. Those approaches either mutate production history,
+fork migration ownership, destroy continuity, or leave one of the two real
+database histories broken.
+
+**Complexity receipt:** One restored idempotent migration, one new sequential
+version, two collision-history fixtures, and updated exact-version assertions.
+No new database, migration framework, runtime service, dependency, configuration,
+permission, or data-copy path was added.
+
+**Evidence:** Fresh and legacy migration tests pass. Dedicated fixtures prove
+both version-9 histories converge on version 10 while retaining existing agent
+rows. OAuth and TypeScript checks pass. An online SQLite backup of the live
+database, containing 1,052 workspace rows and the historical version-9 ledger,
+was upgraded by the current source: version 9 remained
+`local-agent-fallbacks`, version 10 was recorded as
+`workspace-conversation-bindings`, and the missing table was created without
+touching the live database.
+
+**Failure and recovery:** All additions run inside the existing immediate
+migration transaction and use `create table if not exists` or
+`addColumnIfMissing`. A failed version-10 application records no version-10 row.
+Re-running is idempotent. The live database is not modified until the verified
+runtime starts through the normal managed deployment path.
+
+**Reconsider when:** A future migration system introduces immutable globally
+unique migration identities with an explicit import map for all historical
+installations, or another pre-public migration identity is found to collide with
+the clean-root sequence.

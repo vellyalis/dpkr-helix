@@ -183,8 +183,9 @@ store, permission expansion, or automatic local-agent workflow was added.
 Focused evidence completed during this audit:
 
 - TypeScript typecheck passes.
-- migration v9 creates the conversation-binding table and upgrades existing
-  Helix state without changing prior migration meanings;
+- migration v10 creates the conversation-binding table, preserves the managed
+  installation's historical v9 `local-agent-fallbacks` meaning, and upgrades
+  both the managed-v9 and short-lived public-v9 histories without data loss;
 - same/different/no-conversation and concurrent-open behavior passes;
 - checkout reuse survives SQLite store and registry recreation;
 - focused storage inspection proves raw conversation values are absent from the
