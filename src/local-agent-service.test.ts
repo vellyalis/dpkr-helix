@@ -526,11 +526,11 @@ const delayedReadyWorkerScript = join(workerFixtureDirectory, "delayed-ready-wor
 const failingWorkerScript = join(workerFixtureDirectory, "failing-worker.cjs");
 writeFileSync(
   readyWorkerScript,
-  'process.send?.({ type: "devspace-agent-worker-ready", id: process.argv[4] });\nprocess.disconnect?.();\n',
+  'if (process.argv[3] !== "--prompt-file" || process.argv[4] !== "prompt.txt") process.exit(8);\nprocess.send?.({ type: "devspace-agent-worker-ready", id: process.argv[2] });\nprocess.disconnect?.();\n',
 );
 writeFileSync(
   delayedReadyWorkerScript,
-  'setTimeout(() => { process.send?.({ type: "devspace-agent-worker-ready", id: process.argv[4] }); process.disconnect?.(); }, 75);\n',
+  'if (process.argv[3] !== "--prompt-file" || process.argv[4] !== "prompt.txt") process.exit(8);\nsetTimeout(() => { process.send?.({ type: "devspace-agent-worker-ready", id: process.argv[2] }); process.disconnect?.(); }, 75);\n',
 );
 writeFileSync(failingWorkerScript, "process.exit(7);\n");
 try {

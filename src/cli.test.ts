@@ -259,9 +259,7 @@ try {
     [
       "--import",
       "tsx",
-      "src/cli.ts",
-      "agents",
-      "__worker",
+      "src/local-agent-worker.ts",
       existing.id,
       "--prompt-file",
       promptFile,

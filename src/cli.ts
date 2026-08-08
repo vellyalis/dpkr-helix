@@ -3,7 +3,6 @@ import { createRequire } from "node:module";
 import { stdin as input, stdout as output } from "node:process";
 import type { Server } from "node:http";
 import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import * as prompts from "@clack/prompts";
 import { getShellConfig } from "@earendil-works/pi-coding-agent";
 import { satisfies } from "semver";
@@ -16,16 +15,9 @@ import {
 import {
   parseLocalAgentRunArgs,
 } from "./local-agent-targets.js";
-import {
-  createDetachedLocalAgentWorkerSpawner,
-  LocalAgentService,
-} from "./local-agent-service.js";
+import { createCliLocalAgentService } from "./local-agent-cli-service.js";
 import type { LocalAgentRecord } from "./local-agent-store.js";
-import type { LocalAgentWriteMode } from "./local-agent-runtime.js";
-import { LocalAgentOperationProjector } from "./operations/local-agent-operation-projector.js";
 import { logEvent } from "./logger.js";
-import { OperationRunService } from "./operations/operation-run-service.js";
-import { OperationStore } from "./operations/operation-store.js";
 import {
   ensureDevspaceDefaultSkills,
   generateDashboardToken,
@@ -42,7 +34,6 @@ import { shutdownHttpServer } from "./server-shutdown.js";
 type Command = "serve" | "init" | "doctor" | "config" | "agents" | "dashboard" | "help" | "version";
 const require = createRequire(import.meta.url);
 const SUPPORTED_NODE_RANGE = ">=20.12 <27";
-const CLI_LOCAL_AGENT_WRITE_MODE: LocalAgentWriteMode = "allowed";
 
 async function main(argv: string[]): Promise<void> {
   assertSupportedNode();
@@ -408,9 +399,6 @@ async function runAgentsCommand(args: string[]): Promise<void> {
     case "show":
       await runAgentsShow(rest);
       return;
-    case "__worker":
-      await runAgentsWorker(rest);
-      return;
     case undefined:
     case "help":
     case "--help":
@@ -482,21 +470,6 @@ async function runAgentsShow(args: string[]): Promise<void> {
   }
 }
 
-async function runAgentsWorker(args: string[]): Promise<void> {
-  const [id, promptFileFlag, promptFile] = args;
-  if (!id || promptFileFlag !== "--prompt-file" || !promptFile) {
-    throw new Error("Usage: devspace agents __worker <id> --prompt-file <path>");
-  }
-
-  const config = loadConfig();
-  const service = createCliLocalAgentService(config, {
-    reconcileStaleActive: false,
-  });
-  process.send?.({ type: "devspace-agent-worker-ready", id });
-  if (process.connected) process.disconnect?.();
-  await service.runWorker(id, promptFile);
-}
-
 function resolveCurrentWorkspaceRoot(): string {
   return resolve(process.env.DEVSPACE_WORKSPACE_ROOT || process.cwd());
 }
@@ -515,23 +488,6 @@ function formatAgentLine(agent: Pick<
   const model = agent.model ? ` ${agent.model}` : "";
   const thinking = agent.thinking ? ` thinking=${agent.thinking}` : "";
   return `${agent.id} ${agent.status} ${agent.profileName} ${agent.provider}${model}${thinking}`;
-}
-
-function createCliLocalAgentService(
-  config: ReturnType<typeof loadConfig>,
-  options: { reconcileStaleActive?: boolean } = {},
-): LocalAgentService {
-  const operationStore = new OperationStore(config.stateDir);
-  return new LocalAgentService({
-    config,
-    writeMode: CLI_LOCAL_AGENT_WRITE_MODE,
-    observation: new LocalAgentOperationProjector(
-      new OperationRunService(operationStore),
-      operationStore,
-    ),
-    staleActiveAfterMs: options.reconcileStaleActive === false ? false : undefined,
-    workerSpawner: createDetachedLocalAgentWorkerSpawner(fileURLToPath(import.meta.url)),
-  });
 }
 
 function printAgentsHelp(): void {

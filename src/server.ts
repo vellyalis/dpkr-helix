@@ -139,6 +139,7 @@ import {
   isLocalAgentActive,
   LocalAgentService,
 } from "./local-agent-service.js";
+import { localAgentWorkerFilePath } from "./local-agent-worker-path.js";
 import {
   createWindowsSystemUpdateController,
   type SystemUpdateController,
@@ -2748,7 +2749,7 @@ export function createServer(
             operationStore,
           ),
           workerSpawner: createDetachedLocalAgentWorkerSpawner(
-            fileURLToPath(new URL("./cli.js", import.meta.url)),
+            localAgentWorkerFilePath(),
           ),
         })
       : undefined

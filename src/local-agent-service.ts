@@ -543,7 +543,7 @@ export class LocalAgentService {
 }
 
 export function createDetachedLocalAgentWorkerSpawner(
-  cliFilePath: string,
+  workerFilePath: string,
   options: DetachedLocalAgentWorkerSpawnerOptions = {},
 ): LocalAgentWorkerSpawner {
   const acknowledgementTimeoutMs = Math.max(
@@ -555,9 +555,7 @@ export function createDetachedLocalAgentWorkerSpawner(
   return (agentId, promptFile) => {
     const child = spawn(process.execPath, [
       ...process.execArgv,
-      cliFilePath,
-      "agents",
-      "__worker",
+      workerFilePath,
       agentId,
       "--prompt-file",
       promptFile,
