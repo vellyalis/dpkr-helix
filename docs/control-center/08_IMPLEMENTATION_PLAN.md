@@ -408,7 +408,7 @@ Known residual risks:
 - `write_stdin` continues to operate on an already-started process and was not expanded into this process-start Micro Work Unit.
 - Artifact publication remains owned by the existing Linux-only descriptor-anchored implementation; Windows verification proves authorization ordering and platform fallback, while existing Linux tests cover successful publication.
 
-MWU-04.06 completed: existing local-agent CLI new-run, continuation, and hidden `__worker` execution paths now pass through `runAuthorizedLocalAgentAction` before prompt-file creation, local-agent store create/update, worker spawn, status mutation, prompt read, or provider execution. The helper maps the active `LocalAgentWriteMode` through `operationForDelegateMode`, resolves current registered policy from a persisted workspace session when present, resolves direct registered checkout/subdirectory CLI use through `ProjectRegistry.findByPath`, and recovers managed-worktree policy by canonical workspace-root session lookup when `DEVSPACE_WORKSPACE_ID` is absent. Registered `inspect` and `design` deny the current write-capable CLI mode, registered `develop` permits it, registered full access remains denied, read-only delegation remains allowed, project preset changes take effect immediately, forgotten projects fall back to legacy compatibility, and unregistered paths retain existing behavior. Root mismatches and unknown workspace IDs fail before action execution.
+MWU-04.06 completed: existing local-agent CLI new-run, continuation, and the dedicated worker execution path now pass through `runAuthorizedLocalAgentAction` before prompt-file creation, local-agent store create/update, worker spawn, status mutation, prompt read, or provider execution. The helper maps the active `LocalAgentWriteMode` through `operationForDelegateMode`, resolves current registered policy from a persisted workspace session when present, resolves direct registered checkout/subdirectory CLI use through `ProjectRegistry.findByPath`, and recovers managed-worktree policy by canonical workspace-root session lookup when `DEVSPACE_WORKSPACE_ID` is absent. Registered `inspect` and `design` deny the current write-capable CLI mode, registered `develop` permits it, registered full access remains denied, read-only delegation remains allowed, project preset changes take effect immediately, forgotten projects fall back to legacy compatibility, and unregistered paths retain existing behavior. Root mismatches and unknown workspace IDs fail before action execution.
 
 Changed modules:
 
@@ -430,7 +430,7 @@ Automated evidence:
 - `npm test` passed.
 - `npm run build` passed with the existing Vite chunk-size warning only.
 - `git diff --check` passed with Windows line-ending warnings only.
-- Focused tests prove registered checkout and managed-worktree direct CLI invocation cannot bypass policy without a workspace ID, Windows case variants resolve the same persisted worktree, denied new runs create no record, denied continuations do not mutate existing records, direct hidden-worker invocation does not update status or invoke a provider, live preset changes are authoritative, project forget preserves legacy compatibility, and root mismatch/unknown workspace contexts fail before action callbacks.
+- Focused tests prove registered checkout and managed-worktree direct CLI invocation cannot bypass policy without a workspace ID, Windows case variants resolve the same persisted worktree, denied new runs create no record, denied continuations do not mutate existing records, direct dedicated-worker invocation does not update status or invoke a provider, live preset changes are authoritative, project forget preserves legacy compatibility, and root mismatch/unknown workspace contexts fail before action callbacks.
 - Independent review initially reported one S1 type-narrowing issue from an earlier diff; it was fixed. Focused re-review of the current implementation reported zero unresolved S0-S2 findings.
 
 MWU-04.07 completed: the full GOAL_04 contract was reconciled against AC-04.1 through AC-04.10 and FR-POL-001 through FR-POL-011. Read, grep, glob, and ls now explicitly consult the centralized guard, matching the documented handler contract while preserving read/search/list behavior for inspect, design, develop, and legacy workspaces. The public MCP catalog is proven not to expose project registration, preset mutation, or forget operations and no MCP input schema accepts `permissionPreset`. `npm run test:policy` now runs the complete matrix, workspace/direct-open/worktree/restoration, file/edit, patch, artifact, shell/process, local-agent, MCP boundary, and dashboard preset compatibility proof as one durable closure suite.
@@ -1187,6 +1187,32 @@ build/audit/public/diff gates, independent review/governance, installed hash
 equality, doctor, and local/public health pass. No model/profile default,
 authentication state, dependency, new lifecycle owner, or remote publication
 changed. GOAL_08 is DONE.
+
+## Post-baseline operational optimization
+
+The completed product baseline remains authoritative. Later performance work is
+accepted only when it preserves the same correctness, policy, evidence and
+recovery owners and leaves a measured user-visible improvement.
+
+The 2026-08-09 Codex runtime audit compared the bundled SDK against corrected
+host app-server, host `codex exec`, and newer SDK versions under the same
+structured read-only workload. App-server proved output-schema,
+completed/needs-input, continuation, item/delta and hidden-spawn capability, but+its 11.360-second fresh-turn median was slower than the current SDK's 8.857
+seconds and required a new experimental protocol owner. `codex exec` and SDK
+0.146.1/0.147.0 were also slower. All candidates were removed and SDK 0.145.0
+remains the production Current Best; ADR-056 records the evidence and
+reconsideration conditions.
+
+The same work unit measured the detached worker's full-CLI bootstrap. The
+accepted `63036bf` source extracts the existing LocalAgentService construction
+and launches one dedicated `local-agent-worker` entrypoint, removing the old
+undocumented full-CLI worker route without adding a daemon, store, queue or
+second lifecycle owner. Isolated acknowledgement improved from 14.540 seconds
+cold / 2.590 seconds median to 1.459–1.570 seconds / 1.479 seconds median.
+Installed new/continued runs acknowledged in 2.671, 4.565 and 2.252 seconds,
+kept the same provider session ID, and preserved complete structured result and
+Operations projection. Complete 69-file regression and every production,
+Windows, package and public boundary gate pass; ADR-057 owns the decision.
 
 ## GOAL_09 public-release preparation
 

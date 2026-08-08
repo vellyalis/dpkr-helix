@@ -32,6 +32,8 @@ measured baseline shows that it would not improve a real outcome.
 | Managed update verification throughput | Shipped | Every existing update gate remains mandatory while independent read-only checks use bounded parallel execution; installed end-to-end timing is live-verified |
 | Prepared runtime replacement | Shipped | The exact lock-restored runtime is built and fingerprinted before downtime, then its fixed package root replaces the previous generation without rerunning global dependency resolution |
 | Installed Codex canary closure | Shipped | The same installed CLI, profile, worker, configured model, Codex adapter and external account are checked with a bounded exact-token canary instead of asking the model to interpret package metadata; two installed runs confirm materially lower closure |
+| Codex runtime selection | Shipped | The bundled Codex SDK 0.145.0 remains the measured production runtime after host app-server, host exec, and newer SDK comparisons failed to improve the same structured workload |
+| Local-agent worker startup | Shipped | One dedicated worker entrypoint replaces full CLI bootstrap before provider execution while preserving policy, SQLite, Operations, IPC readiness, heartbeat, continuation, and failure ownership |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -110,8 +112,7 @@ The long-lived service performs that check at startup and every five minutes;
 worker children skip the scan before acknowledging readiness. This prevents
 dead workers from remaining permanently `running` while preserving genuinely
 active detached workers and avoiding more cold-start work. It does not add a
-retry loop, daemon, user setting, second worker entrypoint, PID registry, or
-provider-specific exception.
+retry loop, daemon, user setting, PID registry, or provider-specific exception.
 
 The first update request after the base publication exposed why that bootstrap
 gate matters: source `HEAD` already equaled `origin/main`, so the previous
@@ -317,6 +318,66 @@ closure fell by 14.529 to 22.025 seconds, or 35.2 to 53.4 percent, and provider
 time fell by 15.906 to 21.083 seconds, or 45.6 to 60.5 percent. The deterministic
 gates, strict failure behavior, quota advisory and endpoint ordering remain
 unchanged, so the workstream is shipped.
+
+## Shipped: Codex runtime selection audit
+
+The host-installed Codex experiments were evaluated as runtime candidates
+rather than imported because they change process ownership, protocol stability,
+and rollback obligations. Installed `codex-cli 0.146.0` app-server proved that
+it can preserve Helix's output schema, `completed`/`needs_input` outcomes,
+same-thread continuation, item capture, assistant deltas, hidden Windows spawn,
+bounded termination, and clean exit. That capability proof closed the earlier
+assumption that app-server was necessarily too weak, but it did not make the
+experimental protocol the Current Best.
+
+Three alternating fresh-turn pairs under the same `gpt-5.6-sol` low-effort,
+read-only structured prompt measured app-server at 10.982, 11.360, and 12.682
+seconds versus the bundled SDK at 8.487, 8.857, and 8.973 seconds. The SDK
+median was 2.503 seconds, or 22.0 percent, lower. Non-experimental host
+`codex exec` completed fresh/resume/needs-input turns in 14.866, 12.808, and
+11.740 seconds and required an additional schema file plus process/event parser.
+
+The SDK itself was then compared without changing tracked dependencies. Version
+0.145.0 measured a 7.853-second median across three fresh turns; 0.146.1 measured
+12.021 seconds and 0.147.0 measured 13.273 seconds. The reviewed Windows-hidden
+spawn repair remained compatible, but both updates were materially slower.
+All experimental source and generated protocol files were removed, dependencies
+were restored from the canonical lock, and production retains SDK 0.145.0 with
+no dual runtime, version router, new protocol owner, or state migration.
+
+## Shipped: dedicated local-agent worker entrypoint
+
+The retained detached worker previously re-entered the complete `devspace` CLI
+before acknowledging readiness. That loaded interactive prompts, admin and
+diagnostic command modules that the worker never used. Seven isolated
+no-provider launches measured the old path at 14.540 seconds cold, 2.590 seconds
+median, and 4.213 seconds mean before IPC acknowledgement.
+
+The accepted source extracts the existing CLI LocalAgentService construction and
+starts one dedicated `local-agent-worker` entrypoint with only
+`<agent-id> --prompt-file <path>`. It keeps the same project-policy preflight,
+SQLite row, Operations projector, 30-second finite acknowledgement, hidden
+detached child, heartbeat, provider adapter, structured outcome, prompt-file
+cleanup, and interruption reconciliation. The undocumented full-CLI
+`agents __worker` path was removed, so this is one narrower entrypoint rather
+than a second lifecycle owner. No daemon, warm pool, queue, schema, setting,
+permission, dependency, or PID registry was added.
+
+The built entrypoint acknowledged seven isolated launches in 1.459 to 1.570
+seconds, with a 1.479-second median and 1.492-second mean. That reduced the cold
+path by 13.061 seconds / 89.8 percent, the median by 1.111 seconds / 42.9 percent,
+and the mean by 2.721 seconds / 64.6 percent. Functional checkpoint `63036bf`
+is public and installed. Three installed new/continued runs acknowledged in
+2.671, 4.565, and 2.252 seconds, a 2.671-second median and a 4.129-second /
+60.7-percent improvement from the prior 6.8-second live baseline. The same
+provider session survived continuation, each latest retained run projected the
+expected eight Operations events, and all exact-marker results completed.
+
+Complete 69/69 regression, policy, typecheck, production build, zero-vulnerability
+production audit, Windows setup/recovery, public-release, package-content, and
+diff gates pass. The physical installation contains the 1,190-byte compiled
+worker, source/runtime commits and fingerprints agree, Doctor loads SQLite, and
+local/public health plus OAuth metadata return 200.
 
 ## Decision rules
 

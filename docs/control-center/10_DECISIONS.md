@@ -2331,3 +2331,151 @@ health endpoint that proves the same installed adapter/account/model path, the
 exact-token canary stops detecting observed provider regressions, a configured
 model rejects low effort, or ordinary installed timings show no material closure
 improvement.
+
+## ADR-056: Retain Codex SDK 0.145.0 after equal-contract host-runtime and SDK-version comparison
+
+**Date:** 2026-08-09
+
+**Status:** Accepted; comparison complete, no production runtime change
+
+**Context:** Upstream experimentation proposed replacing the bundled
+`@openai/codex-sdk` lane with either the host-installed Codex executable or its
+experimental app-server protocol. A replacement could remove one dependency
+and share the host Codex session store, but it would also move protocol version,
+process lifetime, parsing, timeout and rollback ownership outside the reviewed
+Helix package. Capability and performance both had to be measured before
+adoption; novelty or a newer version was not evidence of improvement.
+
+**Decision:** Retain bundled `@openai/codex-sdk` 0.145.0 as the sole production
+Codex runtime. Do not add app-server, `codex exec`, a runtime selector, host
+version setting, protocol schema files, process parser, dual-state migration, or
+fallback-after-side-effects path. Re-audit an alternative only when it beats the
+same structured workload or closes a concrete SDK defect while preserving
+`completed`/`needs_input`, output schema, same-provider continuation,
+assistant-message projection, Operations, write-mode mapping, Windows-hidden
+launch, bounded termination and rollback.
+
+Installed `codex-cli 0.146.0` app-server did prove those core protocol
+capabilities in an isolated read-only spike: output schema, terminal outcomes,
+thread resume, agent items and deltas, hidden Windows spawn, clean exit and
+bounded process cleanup all passed. That corrected the earlier assumption that
+the experimental protocol was inherently too weak, but its implementation would
+still add a substantial protocol owner and its measured fresh-turn latency was
+worse than the existing SDK.
+
+**Alternatives rejected:** Importing the upstream experimental branch as-is,
+which omitted Helix outcome parsing, final-report projection and bounded
+timeouts; writing a corrected app-server dual lane; using host `codex exec` plus
+a temporary schema file and JSONL parser; automatically selecting whatever host
+Codex version is installed; upgrading the SDK merely to match the CLI version;
+or falling back from a failed app-server turn to SDK after provider side effects,
+which could duplicate execution.
+
+**Complexity receipt:** The accepted production difference is zero. All
+experimental source, generated protocol files, schema files and benchmark files
+were removed. Canonical `package.json` and lockfiles remain unchanged. No
+dependency, setting, store, migration, daemon, process owner, permission or
+public API was added.
+
+**Evidence:** Three alternating fresh-turn pairs used the same isolated
+workspace, `gpt-5.6-sol`, low effort, read-only mode and schema-conforming prompt.
+App-server measured 10.982, 11.360 and 12.682 seconds; SDK measured 8.487, 8.857
+and 8.973 seconds. The SDK median was 2.503 seconds / 22.0 percent lower.
+Host `codex exec` completed fresh, resumed and needs-input turns in 14.866,
+12.808 and 11.740 seconds. Separate three-run SDK comparisons measured medians
+of 7.853 seconds for 0.145.0, 12.021 seconds for 0.146.1 and 13.273 seconds for
+0.147.0. The existing Windows-hidden spawn patch remained compatible with the
+newer packages, so their rejection is based on measured runtime value rather
+than patch failure. `npm ci` restored the exact canonical dependency tree and
+Git showed no tracked dependency or source change after candidate removal.
+
+**Failure and recovery:** There is no production migration or fallback to
+recover. The retained SDK already owns schema-constrained results, continuation,
+projection and Windows launch behavior. If a future SDK regression appears,
+recreate the isolated comparison from the exact installed host version; do not
+activate an experimental protocol silently.
+
+**Reconsider when:** app-server becomes a stable documented protocol, the host
+runtime repeatedly beats the SDK under equal conditions, the SDK loses a
+required contract that the host runtime preserves, or a newer SDK version shows
+a reproducible quality, reliability, security or latency improvement rather than
+only a higher version number.
+
+## ADR-057: Replace full CLI worker bootstrap with one dedicated local-agent entrypoint
+
+**Date:** 2026-08-09
+
+**Status:** Accepted; public, managed-deployed, and installed continuation acceptance complete
+
+**Context:** The detached local-agent worker acknowledged only after launching
+the complete `devspace` CLI module graph. That path loaded interactive prompts,
+admin commands, diagnostics and unrelated command routing before constructing
+the LocalAgentService. The 30-second finite acknowledgement prevented false
+failure, but a prior live launch still spent 6.8 seconds before provider work,
+and isolated measurement exposed a 14.540-second cold start. A daemon or warm
+worker pool could reduce startup but would add a new lifecycle, queue, recovery
+and resource owner.
+
+**Decision:** Keep the existing LocalAgentService, project-policy preflight,
+SQLite record, Operations projector, worker heartbeat, provider adapters,
+structured result contract, prompt-file ownership and stale-worker
+reconciliation. Extract the CLI service construction into one shared focused
+module and launch one dedicated `local-agent-worker` entrypoint with only
+`<agent-id> --prompt-file <path>`. Resolve the matching `.ts` source path in
+development and `.js` compiled path in production. Remove the undocumented
+full-CLI `agents __worker` route so the system still has one worker entry and one
+lifecycle owner.
+
+The readiness message remains after config loading, SQLite/service construction
+and policy-capable ownership are available; it is not moved ahead merely to
+improve the metric. The existing hidden detached process, 30-second bounded ACK,
+prompt-file cleanup, error projection and provider execution remain unchanged.
+
+**Alternatives rejected:** Retaining the full CLI route; acknowledging before
+service construction; lowering the timeout without reducing work; a persistent
+worker daemon, warm pool or scheduler; a second worker database; provider-specific
+worker binaries; or deeper lazy-loading before evidence showed the focused
+entrypoint was insufficient. These either preserve measured waste, weaken
+readiness truth, or add disproportionate lifecycle complexity.
+
+**Complexity receipt:** One shared service factory, one small worker entrypoint,
+one source/compiled path resolver, and focused argv/path tests. Existing server
+and CLI owners call the same spawner and service. No dependency, database,
+schema, setting, daemon, queue, scheduler, permission, credential, provider
+router, retry owner or public tool was added. The compiled worker is 1,190 bytes.
+
+**Evidence:** Seven isolated no-provider launches through the former full CLI
+measured 14.540 seconds cold, 2.590 seconds median and 4.213 seconds mean before
+IPC acknowledgement. Seven launches through the built dedicated worker measured
+1.459–1.570 seconds, with a 1.479-second median and 1.492-second mean. The cold
+path improved by 13.061 seconds / 89.8 percent, the median by 1.111 seconds /
+42.9 percent, and the mean by 2.721 seconds / 64.6 percent.
+
+Functional checkpoint `63036bf` is public and installed through managed request
+`190e3c72-8ab4-4626-aa41-ba4925d0bebb`. Complete 69/69 regression, policy,
+typecheck, production build, zero-vulnerability production audit, Windows
+setup/recovery, public-release, package dry-run and diff gates pass. The package
+contains exactly one `dist/local-agent-worker.js`. Physical source/runtime
+commits and fingerprints agree; Doctor loads SQLite; local/public health and
+OAuth metadata return 200.
+
+Installed exact-marker acceptance started one new agent and continued it twice.
+The three starting-to-running intervals were 2.671, 4.565 and 2.252 seconds,
+with a 2.671-second median: 4.129 seconds / 60.7 percent below the prior
+6.8-second live baseline. The exact provider session ID remained unchanged
+across continuation, all three structured results completed, and the latest
+retained run contains the expected eight Operations events. Earlier detailed
+events may be removed by the existing global 50-run detail retention; those run
+rows correctly report `history_truncated=1` and zero retained details.
+
+**Failure and recovery:** A missing or damaged worker file fails before ACK and
+uses the existing agent error path; the package gate and physical installation
+check prevent a silent omission. Reverting the focused modules restores the old
+full-CLI spawn without database or state migration. The finite timeout,
+heartbeat and stale-active reconciliation remain the recovery boundary.
+
+**Reconsider when:** installed ACK latency materially regresses, the shared
+service factory diverges between CLI and server, packaging stops preserving the
+worker artifact, or a deeper lazy-loading change can prove additional value
+without adding a second lifecycle owner. The remaining roughly 1.5-second
+isolated startup alone does not justify a daemon.

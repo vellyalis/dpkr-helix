@@ -1,6 +1,6 @@
 # Project State
 
-Last synchronized: 2026-08-08
+Last synchronized: 2026-08-09
 
 ## Current state
 
@@ -18,8 +18,8 @@ Last synchronized: 2026-08-08
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-OPS-05 is live-verified and complete.
 - Current release line: `PRACTICAL CONTROLS / UPDATE FAST LANE / PREPARED
-  RUNTIME / BOUNDED CODEX CANARY SHIPPED`; the measured installed checkpoint is
-  `e26b6dd`. The selective
+  RUNTIME / BOUNDED CODEX CANARY / DEDICATED WORKER SHIPPED`; the installed
+  functional checkpoint is `63036bf`. The selective
   upstream and worker-reliability candidate is public from `16e236c`. It adapts
   upstream DevSpace `v1.0.6`
   conversation-aware checkout reuse, restart-safe review checkpoints, compact
@@ -157,11 +157,39 @@ Last synchronized: 2026-08-08
   by 15.906 to 21.083 seconds / 45.6 to 60.5 percent versus the old max-effort
   transition. The deterministic gates, strict failure semantics and endpoint
   ordering remain unchanged.
-- Post-`v1.0.6` upstream host-installed Codex and experimental `app-server`
-  branches were audited but not imported. They remain isolated research because
-  they do not yet preserve Helix's schema-constrained completed/needs-input
-  outcomes, same-thread continuation, assistant-message projection, Operations,
-  verification, and rollback obligations.
+- Codex runtime selection is `AUDITED / RETAINED`. Installed
+  `codex-cli 0.146.0` app-server proved schema-constrained completed/needs-input
+  outcomes, same-thread continuation, item/delta capture, hidden Windows spawn,
+  bounded termination and clean exit. Under three alternating equal-condition
+  fresh turns, app-server measured 10.982/11.360/12.682 seconds while the
+  bundled SDK measured 8.487/8.857/8.973 seconds; the SDK median was 22.0 percent
+  lower. Host `codex exec` measured 14.866 seconds fresh, 12.808 seconds resumed,
+  and 11.740 seconds for needs-input. Bundled SDK 0.145.0 then measured a
+  7.853-second fresh-turn median versus 12.021 seconds for 0.146.1 and 13.273
+  seconds for 0.147.0. All app-server/exec candidates, generated schemas and
+  temporary SDK installs were removed, canonical dependencies were restored,
+  and production retains SDK 0.145.0 without a runtime router, experimental
+  protocol owner, dependency update, or state migration.
+- Dedicated local-agent worker startup is `SHIPPED / LIVE VERIFIED` from
+  functional checkpoint `63036bf`. The former detached child re-entered the
+  complete CLI before IPC readiness; seven isolated no-provider launches
+  measured 14.540 seconds cold, 2.590 seconds median and 4.213 seconds mean.
+  The accepted source extracts the same CLI LocalAgentService construction and
+  starts one dedicated `<id> --prompt-file <path>` entrypoint while preserving
+  project policy, SQLite, Operations, the finite 30-second ACK, hidden detached
+  spawn, heartbeat, provider adapter, structured result, cleanup and stale-worker
+  reconciliation. The undocumented full-CLI `agents __worker` route was removed.
+  The built worker acknowledged seven launches in 1.459–1.570 seconds, with a
+  1.479-second median and 1.492-second mean: 89.8 percent faster cold, 42.9
+  percent faster at the median and 64.6 percent faster at the mean. Installed
+  new/continued runs acknowledged in 2.671, 4.565 and 2.252 seconds, preserving
+  the exact provider session across continuation and projecting terminal
+  structured results plus the expected Operations events. The 2.671-second live
+  median is 4.129 seconds / 60.7 percent below the prior 6.8-second baseline.
+  Complete 69/69 regression, policy, typecheck, build, zero-vulnerability audit,
+  Windows setup/recovery, public/package/diff gates pass. The physical package
+  contains the 1,190-byte worker; source/runtime commits, fingerprints, Doctor,
+  SQLite, local/public health and OAuth metadata agree.
 - Current program unit: WS-OPS-05 is `VERIFIED / DONE`. Source checkpoint
   `b65b986` is public and installed. The fresh dpkr helix workflow opened and
   reused workspaces for direct read, patch, verification, bounded process

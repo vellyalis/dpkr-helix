@@ -1,14 +1,14 @@
 # DevSpace Control Center Handoff
 
-Last synchronized: 2026-08-08
+Last synchronized: 2026-08-09
 
 ## Current position
 
 - Selective upstream `v1.0.6` ingestion plus independent Helix reliability
   hardening is published from `16e236c`; updater truth, migration repair,
   Operations standby, practical controls, update verification fast lane,
-  prepared-runtime replacement, and the bounded Codex canary functional
-  checkpoint are installed through measured state `e26b6dd`, and
+  prepared-runtime replacement, the bounded Codex canary, and the dedicated
+  worker functional checkpoint are installed through `63036bf`, and
   same-conversation checkout reuse is live-verified.
   Reuse now
   applies to both `open_workspace` and `open_project`, survives restart, keeps
@@ -55,11 +55,10 @@ Last synchronized: 2026-08-08
   version 10 without data loss. Managed deployment then preserved those rows,
   created one prefixed SHA-256 conversation binding, and reused the same compact
   workspace on the second open while suppressing repeated static bootstrap.
-- A live read-only `codex-explorer` launch acknowledged and reached the provider
-  in 6.8 seconds, closing the former ten-second cold-start failure. Provider
-  execution itself stopped at the external Codex usage limit; the retained
-  error is a usage-limit result, not an acknowledgement timeout, and Git stayed
-  clean.
+- The earlier live read-only `codex-explorer` launch acknowledged and reached
+  the provider in 6.8 seconds, closing the former ten-second timeout defect.
+  That value later became the installed baseline for the dedicated-worker
+  optimization described below.
 - The Operations/UI standby unit is shipped. A pre-deployment live trace
   classified 63 of 66 top-level active roots as connected MCP session waits,
   leaving one true `NOW` run and two `ACTION` runs. The predicate requires the
@@ -159,11 +158,34 @@ Last synchronized: 2026-08-08
   seconds / 35.2 to 53.4 percent and agent time by 15.906 to 21.083 seconds /
   45.6 to 60.5 percent. The deterministic gates, strict failure behavior,
   quota advisory and Doctor/OAuth-before-worker ordering are unchanged.
-- Two unmerged post-release upstream branches using host-installed Codex and the
-  experimental `codex app-server` were classified as promising research, not a
-  safe runtime replacement. A future isolated comparison must preserve
-  structured outcomes, continuation, no-focus Windows launch, Operations,
-  verification, version gating, and rollback without state migration.
+- Host Codex runtime selection is closed with the bundled SDK retained. Exact
+  installed `codex-cli 0.146.0` app-server passed output-schema,
+  completed/needs-input, continuation, item/delta, hidden-spawn and clean-exit
+  proof, but three alternating fresh turns measured a median 11.360 seconds
+  versus 8.857 seconds for the bundled SDK. Host `codex exec` measured 14.866
+  seconds fresh and 12.808 seconds resumed. Isolated SDK comparisons measured
+  medians of 7.853 seconds for retained 0.145.0, 12.021 seconds for 0.146.1 and
+  13.273 seconds for 0.147.0. The experimental dual-runtime candidate and all
+  generated files were removed, dependencies were restored from the canonical
+  lock, and no production source or state migration was retained.
+- Dedicated local-agent worker startup is shipped from `63036bf`. The old
+  detached child re-entered the full CLI; seven isolated no-provider launches
+  measured 14.540 seconds cold, 2.590 seconds median and 4.213 seconds mean.
+  The accepted entrypoint retains the same LocalAgentService, project policy,
+  SQLite, Operations, 30-second IPC readiness, hidden detach, heartbeat,
+  provider adapter, structured outcome and recovery owners while accepting only
+  `<id> --prompt-file <path>`. The undocumented full-CLI `agents __worker`
+  route is gone. Seven built-worker runs measured 1.459–1.570 seconds, median
+  1.479 and mean 1.492 seconds. Installed new/continued runs acknowledged in
+  2.671, 4.565 and 2.252 seconds; the 2.671-second median is 60.7 percent below
+  the prior 6.8-second live baseline. The exact provider session ID remained
+  unchanged across continuation, each exact-marker result completed, and the
+  latest retained run contains the full eight-event Operations projection.
+  Older detailed events may expire under the existing global 50-run retention;
+  their metadata correctly reports `history_truncated=1` rather than pretending
+  details remain. Complete 69/69 regression and all policy/build/audit/Windows/
+  public/package gates pass; the physical worker is 1,190 bytes and installed
+  provenance, fingerprint, Doctor, SQLite, health and OAuth checks agree.
 - Completed work units: GOAL_08 MWU-08.01 through MWU-08.06. Its measured
   GPT-5.5 baseline and signed-in parity evidence remain frozen historical
   checkpoints; the owner explicitly replaced the active managed profiles on

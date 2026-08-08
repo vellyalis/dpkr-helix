@@ -215,7 +215,9 @@ src/
     operation-event-store.ts
     operation-projector.ts
     operation-redaction.ts
+  local-agent-cli-service.ts
   local-agent-service.ts
+  local-agent-worker-path.ts
   local-agent-worker.ts
 ```
 
