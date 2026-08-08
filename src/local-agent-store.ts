@@ -2,6 +2,13 @@ import { randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { openDatabase, type DatabaseHandle } from "./db/client.js";
 import type { ServerConfig } from "./config.js";
+import {
+  isLocalAgentFailureCode,
+  normalizeLocalAgentFailure,
+  retryAtForLocalAgentFailure,
+  type LocalAgentFailureCode,
+} from "./local-agent-failure.js";
+import { isLocalAgentProvider } from "./local-agent-profiles.js";
 import type { LocalAgentDisposition } from "./local-agent-outcome.js";
 import { canonicalizePathAllowMissingSync } from "./roots.js";
 
@@ -21,6 +28,8 @@ export interface LocalAgentRecord {
   disposition?: LocalAgentDisposition;
   question?: string;
   error?: string;
+  failureCode?: LocalAgentFailureCode;
+  retryAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -53,6 +62,7 @@ interface LocalAgentRow {
   disposition: string | null;
   question: string | null;
   error: string | null;
+  failure_code: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -181,6 +191,7 @@ export class LocalAgentStore {
           disposition = ?,
           question = ?,
           error = ?,
+          failure_code = ?,
           updated_at = ?
          where id = ?`,
       )
@@ -197,6 +208,7 @@ export class LocalAgentStore {
         updated.disposition ?? null,
         updated.question ?? null,
         updated.error ?? null,
+        updated.failureCode ?? null,
         updated.updatedAt,
         updated.id,
       );
@@ -232,6 +244,18 @@ export function createLocalAgentStore(config: ServerConfig): LocalAgentStore {
 
 function rowToLocalAgentRecord(row: LocalAgentRow): LocalAgentRecord {
   const disposition = readDisposition(row.disposition);
+  const provider = isLocalAgentProvider(row.provider) ? row.provider : undefined;
+  const referenceTime = Date.parse(row.updated_at);
+  const normalizedFailure = row.error
+    ? normalizeLocalAgentFailure(
+        provider,
+        row.error,
+        Number.isFinite(referenceTime) ? referenceTime : Date.now(),
+      )
+    : undefined;
+  const failureCode = isLocalAgentFailureCode(row.failure_code)
+    ? row.failure_code
+    : normalizedFailure?.code;
   return {
     id: row.id,
     workspaceId: row.workspace_id ?? undefined,
@@ -246,6 +270,14 @@ function rowToLocalAgentRecord(row: LocalAgentRow): LocalAgentRecord {
     disposition,
     question: disposition === "needs_input" ? row.question?.trim() || undefined : undefined,
     error: row.error ?? undefined,
+    failureCode,
+    retryAt: failureCode && row.error
+      ? retryAtForLocalAgentFailure(
+          failureCode,
+          row.error,
+          Number.isFinite(referenceTime) ? referenceTime : Date.now(),
+        )
+      : undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

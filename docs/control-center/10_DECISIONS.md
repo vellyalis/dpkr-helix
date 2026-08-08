@@ -1877,3 +1877,172 @@ into standby.
 retaining the exact standby field combination, the five-column summary harms
 the accepted viewports, or the host provides a first-class connection-idle
 state that can replace the derived predicate without weakening truth.
+
+## ADR-050: Represent provider quota exhaustion as a bounded cooldown, not availability
+
+**Date:** 2026-08-08
+
+**Status:** Accepted; source and focused proof complete, managed deployment pending
+
+**Context:** The local-agent availability owner checked whether an SDK package or
+provider executable existed. A live Codex worker therefore appeared available,
+started normally, acknowledged inside 6.8 seconds, and only then failed because
+the external usage allowance was exhausted. Repeated starts would consume time,
+create duplicate failed records, and still provide no useful work. Silently
+switching to another provider would change model quality, billing, privacy, and
+possibly authorization expectations.
+
+**Decision:** Classify retained provider failures into a bounded vocabulary:
+usage limit, rate limit, provider unavailable, temporary, authentication,
+configuration, policy, and generic agent failure. Continue storing the stable
+code in the existing historical `failure_code` column; do not add a migration or
+provider-state database. Derive reset time from an ISO timestamp, compound
+duration, or local clock in the retained error; use a short finite fallback only
+when the provider omits it.
+
+When the newest usage/rate failure for a provider has not expired and no later
+success supersedes it, availability becomes `cooldown`. The existing service
+preflight rejects a duplicate run before prompt creation, agent-record creation,
+or worker spawn. Dashboard and MCP views show the reason and reset time. They
+must state that Helix did not switch provider automatically; retrying with a
+different configured profile/provider remains an explicit user decision.
+
+**Alternatives rejected:** treating package presence as runtime availability;
+retrying automatically; storing a second provider-status table; globally
+disabling the provider until restart; or silently falling back to Claude, Pi,
+Cursor, Copilot, or OpenCode. Each either repeats known failure, creates another
+state owner, or changes an external boundary without consent.
+
+**Complexity receipt:** One pure failure classifier/reset parser, additive fields
+on the existing in-memory/API records, use of the already-present nullable
+`failure_code` column, and the existing availability/service/UI owners. No
+migration, provider router, retry queue, daemon, scheduler, credential change,
+or dependency was added.
+
+**Evidence:** Focused tests cover actual usage-limit wording, HTTP/rate-limit
+shape, compound duration and local-clock reset parsing, finite fallback reset,
+authentication classification, later-success cancellation, availability
+summary, store compatibility, worker/provider/launch failures, MCP output, and
+dashboard projection. TypeScript and the UI build pass. Full regression,
+publication and installed acceptance remain required before shipped status.
+
+**Failure and recovery:** Removing the cooldown projection restores package-only
+availability. Existing `failure_code` values remain compatible and optional. A
+malformed or expired reset never creates an indefinite block. A successful later
+provider record clears the derived cooldown without editing historical rows.
+
+**Reconsider when:** A provider exposes an authenticated official quota API with
+a stronger stable reset contract, or measurements show the finite fallback
+blocks legitimate recovered access longer than repeated failed launches cost.
+
+## ADR-051: Archive only reversible workspace-session index state after live safety rechecks
+
+**Date:** 2026-08-08
+
+**Status:** Accepted; source and focused proof complete, production archive not run
+
+**Context:** Post-reuse observation found 1,072 persisted workspace sessions
+across 242 roots. All rows reported `active`; 149 were created in 24 hours and
+944 in seven days, while only 19 had conversation bindings. The database was not
+large enough to justify deletion, but the active label and missing growth
+diagnostics made historical evaluation/test sessions indistinguishable from
+current work.
+
+**Decision:** System reports workspace totals, active/archived split, checkout
+and worktree counts, distinct roots, bindings, active-work protection, ephemeral
+roots, 24-hour/seven-day creation counts, and fixed archive eligibility. A local
+dashboard action may archive only an active checkout row whose `last_used_at` is
+older than seven days and which is neither bound nor protected by current
+Operations/local-agent state.
+
+The action accepts no custom threshold, requires CSRF and a count-aware
+confirmation, and never deletes repository files or worktrees. Before each
+update, the SQLite transaction rechecks the exact last-use timestamp,
+conversation binding, active operation states, active local-agent states, and
+checkout mode so a race cannot turn a stale preview into an unsafe archive. Any
+later workspace use calls the existing touch owner and returns the row to
+`active` automatically.
+
+**Alternatives rejected:** deleting old rows or worktrees; age-only cleanup;
+automatic background retention; accepting arbitrary thresholds; marking every
+row inactive at startup; or continuing to call every historical row active.
+These either destroy continuity, race current work, add policy/configuration
+surface, or preserve misleading diagnostics.
+
+**Complexity receipt:** One pure lifecycle analysis, three focused methods on the
+existing workspace store, one authenticated local-dashboard route, existing
+System UI/CSS, and tests. No new table, migration, cleanup daemon, scheduler,
+filesystem deletion owner, worktree command, or remote MCP mutation was added.
+
+**Evidence:** Focused integration proves an old unbound checkout archives while
+conversation-bound, active-operation, active-agent, managed-worktree and recent
+sessions remain active. It proves an archived row reactivates on touch. Admin
+tests prove the route is absent publicly, requires auth/CSRF, rejects options,
+reports no file/worktree deletion, and preserves a bound row. TypeScript and the
+UI build pass. The owner's live database has not been archived; publication and
+installed preview remain required.
+
+**Failure and recovery:** Reusing an archived ID reactivates it. Rolling back the
+runtime leaves `archived` rows readable; the current restore path can still load
+them by exact ID and touch them active. No filesystem recovery is needed because
+the action never deletes filesystem state.
+
+**Reconsider when:** Post-deployment creation rate remains high despite
+conversation reuse, archived rows materially slow indexed queries, or a future
+first-class workspace close owner can provide a stronger lifecycle event than
+the current conservative retention contract.
+
+## ADR-052: Project resume and last-failure diagnosis are one read-only projection over existing owners
+
+**Date:** 2026-08-08
+
+**Status:** Accepted; source and focused proof complete, managed deployment pending
+
+**Context:** After a chat switch or failed attempt, the owner had to correlate
+Project Registry, Git, Handoff, workspace rows, Operations, agent status and
+verification through several calls. All facts existed, but there was no single
+bounded answer to “where is this project now, why did it fail, and what should
+happen next?” Building a new orchestration/state service would duplicate the
+very owners already proven for continuity.
+
+**Decision:** Add read-only `get_project_resume` and the Project inspector
+Current/Resume section. They resolve one registered project, read the current
+repository context, persistent handoff, stored project workspaces, active
+Operations and local agents, latest retained verification, and newest failure,
+then return one bounded next action and an explicit instruction to call
+`open_project` and reuse its workspace.
+
+The projection never opens a workspace, starts an agent, retries an operation,
+changes a permission, or claims remote-dashboard control. Handoff next action
+has precedence; otherwise active work, latest failure, dirty repository state,
+or a safe open/reconcile instruction determines the next step. Provider and
+operation failure text passes the existing sensitive-content redaction owner
+before browser or model output.
+
+**Alternatives rejected:** a second “current project” database; another handoff
+format; automatic continuation on read; raw-log diagnosis; exposing only the
+last error without Git/Handoff context; or making the local dashboard pretend it
+can command the remote ChatGPT host.
+
+**Complexity receipt:** One pure projection/formatter, one read-only MCP tool,
+one authenticated dashboard read route, one existing Project inspector section,
+and focused tests. No table, migration, scheduler, background agent, execution
+path, policy mutation, provider call, or dependency was added.
+
+**Evidence:** Unit tests prove handoff precedence, dirty-tree fallback, workspace
+active/archived totals, latest verification, quota diagnosis, explicit no-silent
+fallback recovery, and secret redaction. MCP client tests prove catalog/schema,
+read-only annotations, selector ambiguity, pre-open state and post-open compact
+workspace identity. Admin tests prove the public route is absent and the local
+response retains no secret-like provider output. TypeScript and UI builds pass;
+full gates, publication and installed host acceptance remain.
+
+**Failure and recovery:** Removing the projection leaves every canonical owner
+unchanged. An unavailable source reports the bounded repository/project state
+rather than guessing. Missing Handoff, verification, agent or Operation data
+produces explicit empty states and never blocks normal `open_project`.
+
+**Reconsider when:** A standard MCP host supplies an authoritative cross-chat
+resume primitive that covers the same local owners, or evidence shows one of the
+projection precedence rules routinely selects a less useful next action than
+the canonical Handoff.

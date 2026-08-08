@@ -5,9 +5,9 @@ Last synchronized: 2026-08-08
 ## Current position
 
 - Selective upstream `v1.0.6` ingestion plus independent Helix reliability
-  hardening is published from `16e236c`; updater truth and migration repair are
-  installed through `dfd3e26`, Operations standby checkpoint `4995421` is
-  managed-deployed, and same-conversation checkout reuse is live-verified.
+  hardening is published from `16e236c`; updater truth, migration repair,
+  Operations standby, and final state are installed through `7ee08d8`, and
+  same-conversation checkout reuse is live-verified.
   Reuse now
   applies to both `open_workspace` and `open_project`, survives restart, keeps
   worktrees fresh, suppresses repeated static bootstrap, and persists only a
@@ -66,6 +66,20 @@ Last synchronized: 2026-08-08
   The installed runtime exposes the five-queue order and compiled `STANDBY`
   label; after restart retired old connections, installed classification reports
   `NOW=1`, `ACTION=2`, and `STANDBY=8`.
+- A practical daily-use candidate is now source-verified. Existing agent history
+  derives structured quota/rate/provider/auth/config/policy/temporary failure
+  states and reset times; an active quota/rate cooldown blocks a duplicate worker
+  before side effects and explicitly offers retry-later or a user-selected other
+  profile/provider, never silent fallback. System reports 24-hour/seven-day
+  workspace growth plus reversible archive eligibility. The local-only archive
+  action confirms the count, uses a fixed seven-day contract, excludes every
+  worktree, binding, active operation and active agent, deletes no files, and
+  reactivates on reuse. The read-only `get_project_resume` tool and Project
+  inspector provide Git, Handoff, workspace, active work, latest verification,
+  latest sanitized failure, and next action in one bounded view. Focused source,
+  policy-boundary, redaction, TypeScript and UI-build checks pass. Full gates,
+  publication, deployment and live acceptance remain; no production history was
+  archived.
 - Two unmerged post-release upstream branches using host-installed Codex and the
   experimental `codex app-server` were classified as promising research, not a
   safe runtime replacement. A future isolated comparison must preserve

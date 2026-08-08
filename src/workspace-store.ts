@@ -47,7 +47,9 @@ export interface WorkspaceStore {
   }): WorkspaceSession;
   getSession(id: string): WorkspaceSession | undefined;
   findSessionByRoot(root: string): WorkspaceSession | undefined;
+  listSessions(): WorkspaceSession[];
   touchSession(id: string): void;
+  archiveSessions(candidates: readonly { id: string; lastUsedAt: string }[]): number;
   getConversationBinding(
     conversationScopeId: string,
     targetKey: string,
@@ -59,6 +61,7 @@ export interface WorkspaceStore {
   }): WorkspaceConversationBinding;
   touchConversationBinding(conversationScopeId: string, targetKey: string): void;
   deleteConversationBinding(conversationScopeId: string, targetKey: string): void;
+  listConversationBindings(): WorkspaceConversationBinding[];
   close?(): void;
 }
 
@@ -126,22 +129,68 @@ export class SqliteWorkspaceStore implements WorkspaceStore {
 
   findSessionByRoot(root: string): WorkspaceSession | undefined {
     const resolvedRoot = resolve(root);
-    const row = this.database.db
+    const rows = this.database.db
+      .select()
+      .from(workspaceSessions)
+      .orderBy(desc(workspaceSessions.lastUsedAt))
+      .all();
+    const row = rows.find((candidate) =>
+      candidate.status === "active" && sameWorkspaceRoot(candidate.root, resolvedRoot)
+    ) ?? rows.find((candidate) => sameWorkspaceRoot(candidate.root, resolvedRoot));
+
+    return row ? rowToWorkspaceSession(row) : undefined;
+  }
+
+  listSessions(): WorkspaceSession[] {
+    return this.database.db
       .select()
       .from(workspaceSessions)
       .orderBy(desc(workspaceSessions.lastUsedAt))
       .all()
-      .find((candidate) => sameWorkspaceRoot(candidate.root, resolvedRoot));
-
-    return row ? rowToWorkspaceSession(row) : undefined;
+      .map(rowToWorkspaceSession);
   }
 
   touchSession(id: string): void {
     this.database.db
       .update(workspaceSessions)
-      .set({ lastUsedAt: new Date().toISOString() })
+      .set({ status: "active", lastUsedAt: new Date().toISOString() })
       .where(eq(workspaceSessions.id, id))
       .run();
+  }
+
+  archiveSessions(candidates: readonly { id: string; lastUsedAt: string }[]): number {
+    if (candidates.length === 0) return 0;
+    const update = this.database.sqlite.prepare(`
+      update workspace_sessions
+      set status = 'archived'
+      where id = ?
+        and status = 'active'
+        and mode = 'checkout'
+        and last_used_at = ?
+        and not exists (
+          select 1 from workspace_conversation_bindings
+          where workspace_session_id = workspace_sessions.id
+        )
+        and not exists (
+          select 1 from operation_runs
+          where workspace_id = workspace_sessions.id
+            and state in ('queued', 'running', 'blocked', 'stopping')
+        )
+        and not exists (
+          select 1 from local_agent_sessions
+          where workspace_id = workspace_sessions.id
+            and status in ('starting', 'running')
+            and coalesce(disposition, '') != 'needs_input'
+        )
+    `);
+    const archive = this.database.sqlite.transaction(() => {
+      let archived = 0;
+      for (const candidate of candidates) {
+        archived += update.run(candidate.id, candidate.lastUsedAt).changes;
+      }
+      return archived;
+    });
+    return archive.immediate();
   }
 
   getConversationBinding(
@@ -224,6 +273,15 @@ export class SqliteWorkspaceStore implements WorkspaceStore {
         ),
       )
       .run();
+  }
+
+  listConversationBindings(): WorkspaceConversationBinding[] {
+    return this.database.db
+      .select()
+      .from(workspaceConversationBindings)
+      .orderBy(desc(workspaceConversationBindings.lastUsedAt))
+      .all()
+      .map(rowToWorkspaceConversationBinding);
   }
 
   close(): void {

@@ -182,7 +182,7 @@ try {
     handoffs,
     reviewCheckpoints,
     new ProcessSessionManager(),
-    [{ name: "codex", available: true }],
+    [{ name: "codex", available: true, state: "available" }],
     [],
     localAgents,
     undefined,

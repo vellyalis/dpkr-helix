@@ -1,4 +1,5 @@
 import type { LocalAgentRecord } from "../local-agent-store.js";
+import type { ProjectResumeSnapshot } from "../project-resume.js";
 import type {
   OperationEvidence,
 } from "../operations/operation-contracts.js";
@@ -27,7 +28,11 @@ export interface DashboardStatus {
   providers: Array<{
     name: string;
     available: boolean;
+    state?: "available" | "unavailable" | "cooldown";
     reason?: string;
+    failureCode?: string;
+    retryAt?: string;
+    sourceAgentId?: string;
     profileCount: number;
   }>;
   providerSummary: string;
@@ -56,6 +61,23 @@ export interface DashboardStatus {
       detailedCompletedRunRetention: number;
       retainedRuns: number;
       truncatedRuns: number;
+    };
+    workspaces?: {
+      archiveAfterDays: number;
+      totalSessions: number;
+      activeSessions: number;
+      archivedSessions: number;
+      checkoutSessions: number;
+      worktreeSessions: number;
+      distinctRoots: number;
+      boundSessions: number;
+      protectedSessions: number;
+      ephemeralSessions: number;
+      eligibleForArchive: number;
+      createdLast24Hours: number;
+      createdLast7Days: number;
+      oldestLastUsedAt?: string;
+      newestLastUsedAt?: string;
     };
   };
 }
@@ -257,6 +279,20 @@ export async function chooseFolder(): Promise<{ supported: boolean; path?: strin
 export async function getAgents(projectId?: string): Promise<LocalAgentRecord[]> {
   const suffix = projectId ? `?projectId=${encodeURIComponent(projectId)}` : "";
   return (await request<{ sessions: LocalAgentRecord[] }>(`/api/agents${suffix}`)).sessions;
+}
+
+export async function getProjectResume(projectId: string): Promise<ProjectResumeSnapshot & { result: string }> {
+  return request(`/api/projects/${encodeURIComponent(projectId)}/resume`);
+}
+
+export async function archiveEligibleWorkspaceSessions(): Promise<{
+  archived: number;
+  filesDeleted: false;
+  worktreesDeleted: false;
+  automaticallyReactivatesOnUse: true;
+  summary: NonNullable<DashboardStatus["storage"]["workspaces"]>;
+}> {
+  return request("/api/workspaces/archive", { method: "POST", body: {} });
 }
 
 async function request<T>(

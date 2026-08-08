@@ -185,11 +185,19 @@ Sections:
    - branch
    - dirty count
    - source root/worktree relationship when known
-4. Activity
+4. Current / Resume
+   - persistent handoff status and summary
+   - next recorded action
+   - active/archived workspace-session count
+   - latest retained verification stage
+   - latest sanitized failure, structured reason, reset time, and recovery action
+   - explicit instruction to open/reuse the registered project without claiming
+     that the dashboard controls the remote host
+5. Activity
    - active workspaces
    - active and recent runs
    - recent local-agent sessions
-5. Actions
+6. Actions
    - edit project
    - copy ID/path
    - forget project
@@ -646,11 +654,14 @@ A start action appears only after GOAL_05 provides a canonical `LocalAgentServic
 Each provider shows:
 
 - name,
-- available/unavailable,
+- available/unavailable/cooldown,
 - configured profiles count,
-- sanitized diagnostic summary when unavailable.
+- sanitized diagnostic summary when unavailable,
+- quota/rate reset time when a retained failure creates a temporary cooldown.
 
 Provider details do not expose command templates, credentials, or environment values.
+Cooldown never implies an automatic provider or model switch. The UI directs the
+user to retry after reset or explicitly select another configured profile.
 
 ### Agent sessions table
 
@@ -730,7 +741,15 @@ Changing root configuration remains in the established config workflow unless a 
 - database path in safe local form,
 - schema/migration version,
 - operation history retention summary,
-- truncation/cleanup status.
+- truncation/cleanup status,
+- workspace-session total, active/archived split, distinct roots, bindings, and
+  24-hour/seven-day creation counts,
+- fixed-contract workspace archive eligibility.
+
+The workspace archive control is local-dashboard-only and requires a count-aware
+confirmation. It archives only old unbound checkout session-index rows after
+rechecking active Operations and local agents. It excludes every worktree,
+deletes no repository file, and reactivates a session automatically when used.
 
 #### Diagnostics
 

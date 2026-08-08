@@ -152,6 +152,7 @@ export const localAgentSessions = sqliteTable(
     disposition: text("disposition"),
     question: text("question"),
     error: text("error"),
+    failureCode: text("failure_code"),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
   },

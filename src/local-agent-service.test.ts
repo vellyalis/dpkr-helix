@@ -253,6 +253,7 @@ const failingWorkerService = new LocalAgentService({
 await failingWorkerService.runWorker(failingWorker.id, "failing-prompt.txt");
 assert.equal(failingWorkerStore.get(failingWorker.id)?.status, "error");
 assert.equal(failingWorkerStore.get(failingWorker.id)?.error, "provider failed");
+assert.equal(failingWorkerStore.get(failingWorker.id)?.failureCode, "agent_failure");
 assert.deepEqual(failingWorkerCleanup, ["failing-prompt.txt"]);
 
 const settled = await service.waitForStatus(started.id, { waitMs: 0 });
@@ -322,6 +323,7 @@ await assert.rejects(
 );
 assert.equal(spawnFailureStore.get("agt_1")?.status, "error");
 assert.equal(spawnFailureStore.get("agt_1")?.error, "worker spawn failed");
+assert.equal(spawnFailureStore.get("agt_1")?.failureCode, "agent_failure");
 assert.deepEqual(spawnFailureCleanup, ["prompt-4.txt"]);
 
 const missingProfileStore = new FakeStore();

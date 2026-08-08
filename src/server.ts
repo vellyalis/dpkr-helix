@@ -70,7 +70,10 @@ import { OperationRunService } from "./operations/operation-run-service.js";
 import { requestOperationStop } from "./operations/operation-stop.js";
 import { OperationStore } from "./operations/operation-store.js";
 import { OperationVerificationProjector } from "./operations/verification-projector.js";
-import { readCurrentRepositoryFingerprint } from "./operations/repository-diff.js";
+import {
+  readCurrentRepositoryFingerprint,
+  readRepositoryContext,
+} from "./operations/repository-diff.js";
 import { createReviewCheckpointManager } from "./review-checkpoints.js";
 import { registerReviewTool } from "./review-tool.js";
 import { openAiConversationScopeId } from "./request-meta.js";
@@ -94,6 +97,10 @@ import {
   workspaceProjectOutputSchema,
 } from "./projects/project-mcp.js";
 import { createProjectStore } from "./projects/project-store.js";
+import {
+  createProjectResumeSnapshot,
+  formatProjectResumeSnapshot,
+} from "./project-resume.js";
 import { createWorkspaceStore } from "./workspace-store.js";
 import {
   createWorkspaceHandoffStore,
@@ -255,6 +262,7 @@ function toolWidgetDescriptorMeta(
 
 const toolNames = {
   listProjects: "list_projects",
+  getProjectResume: "get_project_resume",
   openProject: "open_project",
   delegateTask: "delegate_task",
   getAgentStatus: "get_agent_status",
@@ -457,6 +465,82 @@ const projectOpenOutputSchema = {
         .optional(),
     })
     .optional(),
+};
+
+const projectResumeFailureOutputSchema = z.object({
+  source: z.enum(["local_agent", "operation"]),
+  id: z.string(),
+  code: z.string().optional(),
+  summary: z.string(),
+  occurredAt: z.string(),
+  retryAt: z.string().optional(),
+  recommendedAction: z.string(),
+});
+
+const projectResumeOutputSchema = {
+  ...resultOutputSchema(),
+  project: z.object({
+    id: z.string(),
+    slug: z.string(),
+    name: z.string(),
+    root: z.string(),
+    permissionPreset: z.enum(["inspect", "design", "develop"]),
+    defaultMode: z.enum(["checkout", "worktree"]),
+    availability: z.enum(["available", "missing", "not_allowed", "invalid"]),
+    unavailableReason: z.string().optional(),
+  }).optional(),
+  repository: z.object({
+    state: z.enum(["available", "unavailable"]),
+    branch: z.string().optional(),
+    head: z.string().optional(),
+    dirtyCount: z.number().int().nonnegative(),
+    dirtyFiles: z.array(z.string()),
+    message: z.string().optional(),
+  }).optional(),
+  handoff: workspaceHandoffOutputSchema.optional(),
+  workspaces: z.object({
+    total: z.number().int().nonnegative(),
+    active: z.number().int().nonnegative(),
+    archived: z.number().int().nonnegative(),
+    latestWorkspaceId: z.string().optional(),
+    latestMode: z.string().optional(),
+    lastUsedAt: z.string().optional(),
+  }).optional(),
+  activity: z.object({
+    activeRuns: z.array(z.object({
+      id: z.string(),
+      title: z.string(),
+      state: z.string(),
+      currentAction: z.string().optional(),
+      updatedAt: z.string(),
+    })),
+    activeAgents: z.array(z.object({
+      id: z.string(),
+      profileName: z.string(),
+      provider: z.string(),
+      status: z.string(),
+      updatedAt: z.string(),
+    })),
+  }).optional(),
+  verification: z.object({
+    runId: z.string(),
+    stage: z.string(),
+    summary: z.string().optional(),
+    updatedAt: z.string(),
+  }).optional(),
+  latestFailure: projectResumeFailureOutputSchema.optional(),
+  nextAction: z.string().optional(),
+  resumeInstruction: z.string().optional(),
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+    candidates: z.array(z.object({
+      id: z.string(),
+      slug: z.string(),
+      name: z.string(),
+      root: z.string(),
+    })).optional(),
+  }).optional(),
 };
 
 const handoffListItemSchema = z.string().trim().min(1).max(1000);
@@ -1443,6 +1527,84 @@ export function createMcpServer(
         },
         structuredContent: output,
       };
+    },
+  );
+
+  registerAppTool(
+    server,
+    toolNames.getProjectResume,
+    {
+      title: "Get project resume state",
+      description:
+        "Read one registered project's concise resume state without opening or mutating it. Combines current Git context, persistent handoff, stored workspaces, active runs/agents, latest verification, and the latest structured failure diagnosis. Use this when continuing in a new chat or when the user asks why the latest project attempt failed.",
+      inputSchema: {
+        project: z
+          .string()
+          .describe("Project ID, exact slug, or unambiguous exact display name returned by list_projects."),
+      },
+      outputSchema: projectResumeOutputSchema,
+      _meta: {},
+      annotations: PROJECT_LIST_TOOL_ANNOTATIONS,
+    },
+    async ({ project: selector }) => {
+      const startedAt = performance.now();
+      try {
+        const project = projects.resolveSelector(selector);
+        const projectView = await projects.getViewById(project.id);
+        if (!projectView) {
+          throw new ProjectSelectorError(
+            "PROJECT_NOT_FOUND",
+            `Registered project not found: ${selector}`,
+          );
+        }
+        const [repositoryContext] = await Promise.all([
+          readRepositoryContext(project.root),
+        ]);
+        const snapshot = createProjectResumeSnapshot({
+          project: projectView,
+          repositoryContext,
+          handoff: handoffs.get(project.root),
+          workspaceSessions: workspaces.listStoredSessions().filter((session) =>
+            session.projectId === project.id || isSameCanonicalPath(session.root, project.root)
+          ),
+          agents: localAgents?.list({ workspaceRoot: project.root }) ?? [],
+          runs: operationStore?.listRuns({ projectId: project.id, limit: 100 }) ?? [],
+        });
+        const output = {
+          result: formatProjectResumeSnapshot(snapshot),
+          ...snapshot,
+        };
+        logToolCall(config, {
+          tool: toolNames.getProjectResume,
+          path: project.root,
+          success: true,
+          durationMs: Math.round(performance.now() - startedAt),
+        });
+        return {
+          content: [textBlock(output.result)],
+          structuredContent: output,
+        };
+      } catch (error) {
+        if (error instanceof ProjectSelectorError) {
+          const output = createProjectErrorOutput(
+            error.code,
+            error.message,
+            error.candidates,
+          );
+          logToolCall(config, {
+            tool: toolNames.getProjectResume,
+            success: false,
+            durationMs: Math.round(performance.now() - startedAt),
+            error: output.error.code,
+          });
+          return {
+            isError: true,
+            content: [textBlock(output.result)],
+            structuredContent: output,
+          };
+        }
+        throw error;
+      }
     },
   );
 

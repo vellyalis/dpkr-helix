@@ -444,6 +444,8 @@ function renderAgentCard(card: ToolResultCard, display: ToolDisplay): void {
     if (agent.disposition) record.append(renderKeyValue("Outcome", agent.disposition));
     if (agent.model) record.append(renderKeyValue("Model", agent.model));
     if (agent.thinking) record.append(renderKeyValue("Thinking", agent.thinking));
+    if (agent.failureCode) record.append(renderKeyValue("Failure", agent.failureCode));
+    if (agent.retryAt) record.append(renderKeyValue("Retry after", agent.retryAt));
     if (agent.resultAvailable) {
       record.append(renderKeyValue("Assurance", "Result available — verification pending"));
     }
@@ -461,6 +463,9 @@ function renderAgentCard(card: ToolResultCard, display: ToolDisplay): void {
     }
     if (agent.error) {
       record.append(element("div", { className: "status error", text: agent.error }));
+    }
+    if (agent.retryHint) {
+      record.append(element("div", { className: "status warning", text: agent.retryHint }));
     }
     body.append(record);
   }

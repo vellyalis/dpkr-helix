@@ -97,16 +97,21 @@ export function AgentsView(props: AgentsViewProps): React.JSX.Element {
         </div>
         <div className="provider-grid">
           {(props.status?.providers ?? []).map((provider) => (
-            <article className={`provider-card ${provider.available ? "available" : "unavailable"}`} key={provider.name}>
+            <article className={`provider-card ${provider.state ?? (provider.available ? "available" : "unavailable")}`} key={provider.name}>
               <header>
                 <strong>{provider.name}</strong>
                 <StatusBadge
-                  state={provider.available ? "success" : "danger"}
-                  label={provider.available ? "Available" : "Unavailable"}
+                  state={provider.available ? "success" : provider.state === "cooldown" ? "warning" : "danger"}
+                  label={provider.available ? "Available" : provider.state === "cooldown" ? "Cooldown" : "Unavailable"}
                 />
               </header>
               <p><strong>{provider.profileCount}</strong> configured profile{provider.profileCount === 1 ? "" : "s"}</p>
-              {!provider.available ? <small>{provider.reason ?? "Provider preflight failed."}</small> : null}
+              {!provider.available ? (
+                <small>
+                  {provider.reason ?? "Provider preflight failed."}
+                  {provider.retryAt ? ` Retry after ${formatTimestamp(provider.retryAt)}.` : ""}
+                </small>
+              ) : null}
             </article>
           ))}
           {props.ready && props.status?.providers.length === 0 ? (

@@ -35,6 +35,8 @@ try {
     question: "Which target should be changed?",
     providerSessionId: "thread_123",
     thinking: "medium",
+    error: "You've hit your usage limit. Try again in 10 minutes.",
+    failureCode: "usage_limit",
   });
 
   assert.equal(updated.status, "idle");
@@ -44,12 +46,17 @@ try {
   assert.equal(store.get(created.id)?.thinking, "medium");
   assert.equal(store.get(created.id)?.disposition, "needs_input");
   assert.equal(store.get(created.id)?.question, "Which target should be changed?");
+  assert.equal(store.get(created.id)?.failureCode, "usage_limit");
+  assert.match(store.get(created.id)?.retryAt ?? "", /^\d{4}-\d{2}-\d{2}T/);
   assert.equal(store.get(created.id)?.workspaceRoot, join(aliasRoot, "project"));
   assert.equal(store.update(created.id, {
     latestResponse: undefined,
     disposition: undefined,
     question: undefined,
+    error: undefined,
+    failureCode: undefined,
   }).latestResponse, undefined);
+  assert.equal(store.get(created.id)?.failureCode, undefined);
   const touched = store.touch(created.id);
   assert.equal(touched.status, "idle");
   assert.equal(touched.providerSessionId, "thread_123");

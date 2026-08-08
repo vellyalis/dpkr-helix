@@ -265,7 +265,13 @@ function Dashboard(): React.JSX.Element {
               />
             </>
           ) : (
-            <SystemView status={status} ready={ready} theme={theme} onThemeChange={setTheme} />
+            <SystemView
+              status={status}
+              ready={ready}
+              theme={theme}
+              onThemeChange={setTheme}
+              onRefresh={() => refresh()}
+            />
           )}
         </main>
       </div>

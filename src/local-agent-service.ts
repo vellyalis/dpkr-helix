@@ -6,6 +6,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import type { ServerConfig } from "./config.js";
 import { runLocalAgentProvider } from "./local-agent-adapters.js";
 import { assertLocalAgentProviderAvailable } from "./local-agent-availability.js";
+import { normalizeLocalAgentFailure } from "./local-agent-failure.js";
 import {
   isLocalAgentProvider,
   loadLocalAgentProfiles,
@@ -139,16 +140,23 @@ export class LocalAgentService {
     this.config = options.config;
     this.writeMode = options.writeMode;
     this.store = options.store ?? createLocalAgentStore(options.config);
+    this.now = options.now ?? Date.now;
     this.profileLoader = options.profileLoader ?? loadLocalAgentProfiles;
     this.providerAvailabilityChecker =
-      options.providerAvailabilityChecker ?? assertLocalAgentProviderAvailable;
+      options.providerAvailabilityChecker ?? ((provider) => {
+        assertLocalAgentProviderAvailable(
+          provider,
+          process.env,
+          this.store.list(),
+          this.now(),
+        );
+      });
     this.providerRunner = options.providerRunner ?? runLocalAgentProvider;
     this.workerSpawner = options.workerSpawner;
     this.promptFileWriter = options.promptFileWriter ?? writeLocalAgentPromptFile;
     this.promptFileReader = options.promptFileReader ?? ((path) => readFile(path, "utf8"));
     this.promptFileCleanup = options.promptFileCleanup ?? cleanupLocalAgentPromptFile;
     this.authorizer = options.authorizer ?? runAuthorizedLocalAgentAction;
-    this.now = options.now ?? Date.now;
     this.delay = options.delay ?? sleep;
     this.workerHeartbeatIntervalMs = optionalDuration(
       options.workerHeartbeatIntervalMs,
@@ -328,6 +336,7 @@ export class LocalAgentService {
             disposition: undefined,
             question: undefined,
             error: undefined,
+            failureCode: undefined,
           });
           this.observe(() => this.observation?.statusChanged(updated!));
           await this.workerSpawner(existing.id, promptFile);
@@ -359,6 +368,7 @@ export class LocalAgentService {
           const running = this.store.update(record.id, {
             status: "running",
             error: undefined,
+            failureCode: undefined,
           });
           this.observe(() => this.observation?.statusChanged(running));
           heartbeat = this.startWorkerHeartbeat(record.id);
@@ -385,15 +395,22 @@ export class LocalAgentService {
               disposition: outcome?.disposition,
               question: outcome?.question,
               error: undefined,
+              failureCode: undefined,
             });
             this.observe(() => this.observation?.statusChanged(completed));
             this.observe(() => outcome?.disposition === "needs_input"
               ? this.observation?.inputRequired(completed)
               : this.observation?.resultAvailable(completed));
           } catch (error) {
+            const failure = normalizeLocalAgentFailure(
+              isLocalAgentProvider(record.provider) ? record.provider : undefined,
+              error,
+              this.now(),
+            );
             const failed = this.store.update(record.id, {
               status: "error",
-              error: error instanceof Error ? error.message : String(error),
+              error: failure.message,
+              failureCode: failure.code,
             });
             this.observe(() => this.observation?.statusChanged(failed));
           }
@@ -413,9 +430,15 @@ export class LocalAgentService {
   }
 
   private recordLaunchError(id: string, error: unknown): void {
+    const current = this.store.get(id);
+    const provider = current && isLocalAgentProvider(current.provider)
+      ? current.provider
+      : undefined;
+    const failure = normalizeLocalAgentFailure(provider, error, this.now());
     const failed = this.store.update(id, {
       status: "error",
-      error: error instanceof Error ? error.message : String(error),
+      error: failure.message,
+      failureCode: failure.code,
     });
     this.observe(() => this.observation?.statusChanged(failed));
   }
@@ -461,6 +484,7 @@ export class LocalAgentService {
           disposition: undefined,
           question: undefined,
           error: "Local agent worker stopped reporting activity and was reconciled as interrupted.",
+          failureCode: "temporary_failure",
         });
         this.observe(() => this.observation?.statusChanged(failed));
       } catch {

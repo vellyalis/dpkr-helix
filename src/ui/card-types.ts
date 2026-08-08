@@ -108,6 +108,9 @@ export interface AgentCardView {
   disposition?: "completed" | "needs_input";
   question?: string;
   error?: string;
+  failureCode?: string;
+  retryAt?: string;
+  retryHint?: string;
   resultAvailable: boolean;
   verificationStatus: "pending" | "not_available";
   createdAt: string;

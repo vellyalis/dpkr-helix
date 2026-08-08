@@ -1,5 +1,8 @@
 import { useState } from "react";
-import type { DashboardStatus } from "./api.js";
+import {
+  archiveEligibleWorkspaceSessions,
+  type DashboardStatus,
+} from "./api.js";
 import {
   formatBytes,
   formatSanitizedDiagnostics,
@@ -12,10 +15,13 @@ interface SystemViewProps {
   ready: boolean;
   theme: DashboardTheme;
   onThemeChange(theme: DashboardTheme): void;
+  onRefresh(): Promise<void>;
 }
 
 export function SystemView(props: SystemViewProps): React.JSX.Element {
   const [copyMessage, setCopyMessage] = useState<string>();
+  const [archiveMessage, setArchiveMessage] = useState<string>();
+  const [archiveBusy, setArchiveBusy] = useState(false);
   if (!props.ready || !props.status) {
     return (
       <div className="system-screen">
@@ -32,6 +38,35 @@ export function SystemView(props: SystemViewProps): React.JSX.Element {
   async function copyDiagnostics(): Promise<void> {
     await navigator.clipboard.writeText(formatSanitizedDiagnostics(status));
     setCopyMessage("Sanitized diagnostics copied.");
+  }
+
+  async function archiveEligibleWorkspaces(): Promise<void> {
+    const eligible = props.status?.storage.workspaces?.eligibleForArchive ?? 0;
+    if (
+      eligible > 0
+      && !confirm([
+        `Archive ${eligible.toLocaleString()} eligible workspace session${eligible === 1 ? "" : "s"}?`,
+        "",
+        "Only inactive local session-index records older than seven days are archived.",
+        "Conversation-bound sessions, active runs or agents, and every worktree are excluded.",
+        "No repository file or worktree is deleted, and a reused session reactivates automatically.",
+      ].join("\n"))
+    ) return;
+    setArchiveBusy(true);
+    setArchiveMessage(undefined);
+    try {
+      const result = await archiveEligibleWorkspaceSessions();
+      await props.onRefresh();
+      setArchiveMessage(
+        result.archived === 0
+          ? "No workspace sessions were eligible for archive."
+          : `Archived ${result.archived.toLocaleString()} inactive workspace session${result.archived === 1 ? "" : "s"}. No files or worktrees were deleted.`,
+      );
+    } catch (error) {
+      setArchiveMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setArchiveBusy(false);
+    }
   }
 
   return (
@@ -100,8 +135,14 @@ export function SystemView(props: SystemViewProps): React.JSX.Element {
                   <small>{provider.profileCount} configured profile{provider.profileCount === 1 ? "" : "s"}</small>
                 </div>
                 <StatusBadge
-                  state={provider.available ? "success" : "danger"}
-                  label={provider.available ? "Available" : provider.reason ?? "Unavailable"}
+                  state={provider.available ? "success" : provider.state === "cooldown" ? "warning" : "danger"}
+                  label={provider.available
+                    ? "Available"
+                    : provider.state === "cooldown"
+                      ? provider.retryAt
+                        ? `Cooldown until ${formatTimestamp(provider.retryAt)}`
+                        : "Cooldown"
+                      : provider.reason ?? "Unavailable"}
                 />
               </li>
             ))}
@@ -133,6 +174,33 @@ export function SystemView(props: SystemViewProps): React.JSX.Element {
                 : `${status.storage.retention.truncatedRuns} retained run(s) truncated`}
             />
           </> : <p className="diagnostic-note">Operation retention is unavailable.</p>}
+          {status.storage.workspaces ? <>
+            <Definition label="Workspace sessions" value={status.storage.workspaces.totalSessions.toLocaleString()} />
+            <Definition
+              label="Active / archived"
+              value={`${status.storage.workspaces.activeSessions.toLocaleString()} / ${status.storage.workspaces.archivedSessions.toLocaleString()}`}
+            />
+            <Definition label="Distinct roots" value={status.storage.workspaces.distinctRoots.toLocaleString()} />
+            <Definition label="Conversation-bound" value={status.storage.workspaces.boundSessions.toLocaleString()} />
+            <Definition label="Created in 24h" value={status.storage.workspaces.createdLast24Hours.toLocaleString()} />
+            <Definition label="Created in 7d" value={status.storage.workspaces.createdLast7Days.toLocaleString()} />
+            <Definition
+              label={`Archive eligible (> ${status.storage.workspaces.archiveAfterDays}d)`}
+              value={status.storage.workspaces.eligibleForArchive.toLocaleString()}
+            />
+            <button
+              type="button"
+              className="button secondary"
+              disabled={archiveBusy || status.storage.workspaces.eligibleForArchive === 0}
+              onClick={() => void archiveEligibleWorkspaces()}
+            >
+              {archiveBusy ? "Archiving…" : "Archive eligible sessions"}
+            </button>
+            <p className="diagnostic-note">
+              Archive changes only the local session index. Bound sessions, active work, local agents, and every managed worktree are excluded. Reusing an archived workspace reactivates it automatically.
+            </p>
+            {archiveMessage ? <p className="copy-status" role="status">{archiveMessage}</p> : null}
+          </> : <p className="diagnostic-note">Workspace lifecycle diagnostics are unavailable.</p>}
         </DiagnosticPanel>
 
         <DiagnosticPanel title="Diagnostics" code="COPY">
@@ -228,4 +296,9 @@ function formatUptime(seconds: number): string {
     hours ? `${hours}h` : undefined,
     `${minutes}m`,
   ].filter(Boolean).join(" ");
+}
+
+function formatTimestamp(value: string): string {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleString();
 }

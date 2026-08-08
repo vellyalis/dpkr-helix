@@ -28,6 +28,7 @@ measured baseline shows that it would not improve a real outcome.
 | Daily operation quality and continuity | Shipped | Fresh-session operation, reconnect continuity, direct tools, handoffs, and bounded nested-instruction discovery are live-verified |
 | Selective upstream continuity and card clarity | Shipped | Same-conversation reuse, restart-safe review state, truthful deployment provenance, migration v10 compatibility, clearer cards, and bounded worker cold starts are live-verified |
 | Operations standby presentation | Shipped | Connected MCP session roots are separated from active `NOW` work without changing canonical state or lifecycle |
+| Practical daily-use controls | In validation | Provider quota cooldowns, reversible workspace-session archive, and one Current/Resume plus failure-diagnosis surface pass source gates; publication and live acceptance remain |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -151,6 +152,38 @@ connections, the installed classifier reported `NOW=1`, `ACTION=2`, and
 `STANDBY=8` for the remaining top-level active roots. Doctor, local/public
 health, OAuth metadata, and a fresh installed-provenance `UP_TO_DATE` check all
 pass. No lifecycle or database change was involved.
+
+## In validation: practical daily-use controls
+
+The current source candidate closes three repeated workflow costs without
+introducing a scheduler, provider router, second project owner, or destructive
+cleanup service.
+
+First, local-agent failures now carry a bounded structured reason such as
+`usage_limit`, `rate_limited`, authentication, configuration, policy, provider,
+temporary, or generic failure. A usage/rate failure records or derives its
+reset time from the existing agent row, temporarily changes provider status to
+`cooldown`, and prevents duplicate worker launches until expiry. Helix never
+silently switches provider, model, billing, or privacy boundary; the user may
+retry later or explicitly select another configured profile/provider.
+
+Second, System reports workspace-session total, active/archived split, roots,
+conversation bindings, recent creation rate, and safe archive eligibility. The
+local-only archive action uses a fixed seven-day threshold, excludes every
+worktree, rechecks bindings plus active operations and agents transactionally,
+deletes no files, and reactivates a session automatically on reuse. Source
+validation does not archive the owner's production history.
+
+Third, the read-only `get_project_resume` tool and Project inspector combine the
+existing Project, Handoff, repository, workspace, Operations, local-agent, and
+verification owners into one bounded Current/Resume view. It identifies the
+next recorded action and the latest sanitized failure, including quota reset
+time and a concrete recovery action, before a new chat opens the project.
+
+Completion requires the normal public checkpoint and managed replacement,
+followed by installed catalog, provider-cooldown, live resume, workspace-growth,
+health, and provenance acceptance. Production archive remains an explicit local
+dashboard action after the owner reviews the live eligible count.
 
 ## Decision rules
 

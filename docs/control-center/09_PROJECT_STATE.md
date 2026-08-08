@@ -18,9 +18,9 @@ Last synchronized: 2026-08-08
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-OPS-05 is live-verified and complete.
 - Current release line: `CONTINUITY / UPDATE TRUTH / MIGRATION / STANDBY LIVE
-  VERIFIED`. The selective upstream and
-  worker-reliability candidate is public from `16e236c`, and the physical
-  installed runtime is `dfd3e26`. It adapts upstream DevSpace `v1.0.6`
+  VERIFIED`; final public and installed state is `7ee08d8`. The selective
+  upstream and worker-reliability candidate is public from `16e236c`. It adapts
+  upstream DevSpace `v1.0.6`
   conversation-aware checkout reuse, restart-safe review checkpoints, compact
   workspace IDs, and correctness-bearing MCP App card improvements without
   replacing Helix Project, Handoff, repository-context, policy, Operations,
@@ -60,6 +60,20 @@ Last synchronized: 2026-08-08
   order and compiled UI label, while run state, assurance, retention, and
   transport lifecycle remain unchanged. Doctor, local/public health, OAuth
   metadata, and fresh installed-provenance `UP_TO_DATE` all pass.
+- The next practical daily-use candidate is `SOURCE VERIFIED / PUBLICATION +
+  LIVE ACCEPTANCE PENDING`. Provider failures are classified through the
+  existing agent record and historical `failure_code` field; usage/rate limits
+  expose a reset time and a temporary provider cooldown before prompt, record,
+  or worker side effects, without silently changing provider. System now
+  exposes workspace-session growth and a confirmed local-only archive action
+  that uses a fixed seven-day threshold, excludes bindings, active work and all
+  worktrees, deletes no files, and reactivates on reuse. A read-only
+  `get_project_resume` tool and Project inspector join current Git, Handoff,
+  workspace, run, agent, verification, latest sanitized failure, and next action
+  through existing owners. Focused tests, TypeScript, UI build, redaction, CSRF,
+  race rechecks, and public-boundary checks pass; full gates, publication,
+  managed deployment, and live acceptance remain. Production workspace history
+  has not been archived.
 - Post-`v1.0.6` upstream host-installed Codex and experimental `app-server`
   branches were audited but not imported. They remain isolated research because
   they do not yet preserve Helix's schema-constrained completed/needs-input

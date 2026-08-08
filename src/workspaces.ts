@@ -3,6 +3,7 @@ import type { Stats } from "node:fs";
 import type {
   WorkspaceConversationBinding,
   WorkspaceMode,
+  WorkspaceSession,
   WorkspaceStore,
 } from "./workspace-store.js";
 import { lstat, mkdir, opendir, readFile, realpath, stat } from "node:fs/promises";
@@ -304,6 +305,10 @@ export class WorkspaceRegistry {
     this.workspaces.set(restoredWorkspace.id, restoredWorkspace);
 
     return restoredWorkspace;
+  }
+
+  listStoredSessions(): WorkspaceSession[] {
+    return this.store?.listSessions() ?? [];
   }
 
   resolvePath(workspace: Workspace, inputPath: string): string {

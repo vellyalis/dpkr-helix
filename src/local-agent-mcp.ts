@@ -27,6 +27,9 @@ export interface LocalAgentView {
   disposition?: LocalAgentRecord["disposition"];
   question?: string;
   error?: string;
+  failureCode?: LocalAgentRecord["failureCode"];
+  retryAt?: string;
+  retryHint?: string;
   resultAvailable: boolean;
   verificationStatus: "pending" | "not_available";
   createdAt: string;
@@ -57,6 +60,18 @@ export const localAgentViewOutputSchema = z.object({
   disposition: z.enum(["completed", "needs_input"]).optional(),
   question: z.string().optional(),
   error: z.string().optional(),
+  failureCode: z.enum([
+    "usage_limit",
+    "rate_limited",
+    "provider_unavailable",
+    "temporary_failure",
+    "authentication_failed",
+    "invalid_configuration",
+    "policy_denied",
+    "agent_failure",
+  ]).optional(),
+  retryAt: z.string().optional(),
+  retryHint: z.string().optional(),
   resultAvailable: z.boolean(),
   verificationStatus: z.enum(["pending", "not_available"]),
   createdAt: z.string(),
@@ -80,6 +95,9 @@ export function createLocalAgentActionOutput(
       agent.latestResponse,
       agent.question ? `Input required: ${agent.question}` : undefined,
       agent.error ? `Error: ${agent.error}` : undefined,
+      agent.failureCode ? `Failure code: ${agent.failureCode}` : undefined,
+      agent.retryAt ? `Retry after: ${agent.retryAt}` : undefined,
+      agent.retryHint,
       agent.resultAvailable ? "Result available — verification pending." : undefined,
     ].filter((line): line is string => Boolean(line)).join("\n"),
     agent,
@@ -131,6 +149,9 @@ function toLocalAgentView(
   includeOutput: boolean,
 ): LocalAgentView {
   const resultAvailable = record.disposition !== "needs_input" && Boolean(record.latestResponse);
+  const retryHint = record.failureCode === "usage_limit" || record.failureCode === "rate_limited"
+    ? "Helix did not switch providers automatically. Retry later, or explicitly start a new agent with another configured provider or profile."
+    : undefined;
   return {
     id: record.id,
     workspaceId: record.workspaceId,
@@ -143,6 +164,9 @@ function toLocalAgentView(
     disposition: record.disposition,
     question: includeOutput ? record.question : undefined,
     error: includeOutput ? record.error : undefined,
+    failureCode: record.failureCode,
+    retryAt: record.retryAt,
+    retryHint,
     resultAvailable,
     verificationStatus: resultAvailable ? "pending" : "not_available",
     createdAt: record.createdAt,

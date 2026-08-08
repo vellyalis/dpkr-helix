@@ -120,6 +120,12 @@ try {
   });
   const workspaceStore = new SqliteWorkspaceStore(stateDir);
   const handoffs = new SqliteWorkspaceHandoffStore(stateDir);
+  handoffs.upsert(checkoutRoot, {
+    status: "in_progress",
+    summary: "Continue the project from the retained resume state.",
+    nextActions: ["Run the focused project test."],
+    verification: ["Initial repository setup completed."],
+  });
   const workspaces = new WorkspaceRegistry(config, workspaceStore, projects);
   const reviewCheckpoints = createReviewCheckpointManager();
   const server = createMcpServer(
@@ -143,12 +149,14 @@ try {
 
     const tools = await client.listTools();
     const listTool = tools.tools.find((tool) => tool.name === "list_projects");
+    const resumeTool = tools.tools.find((tool) => tool.name === "get_project_resume");
     const openTool = tools.tools.find((tool) => tool.name === "open_project");
     const openWorkspaceTool = tools.tools.find((tool) => tool.name === "open_workspace");
     const readTool = tools.tools.find((tool) => tool.name === "read");
     const editTool = tools.tools.find((tool) => tool.name === "edit");
     const writeTool = tools.tools.find((tool) => tool.name === "write");
     assert.ok(listTool, "list_projects is registered in the MCP tool catalog");
+    assert.ok(resumeTool, "get_project_resume is registered in the MCP tool catalog");
     assert.ok(openTool, "open_project is registered in the MCP tool catalog");
     assert.ok(openWorkspaceTool, "legacy open_workspace remains in the MCP tool catalog");
     assert.ok(readTool, "workspace-scoped read remains in the MCP tool catalog");
@@ -159,6 +167,7 @@ try {
       /Advertising a skill never expands the user's or task's granted read scope/,
     );
     assert.deepEqual(listTool.annotations, PROJECT_LIST_TOOL_ANNOTATIONS);
+    assert.deepEqual(resumeTool.annotations, PROJECT_LIST_TOOL_ANNOTATIONS);
     assert.deepEqual(openTool.annotations, PROJECT_OPEN_TOOL_ANNOTATIONS);
     assert.deepEqual(openTool._meta?.ui, {
       resourceUri: "ui://devspace/workspace-app.html",
@@ -180,6 +189,9 @@ try {
     );
     assert.ok("includeUnavailable" in (listTool.inputSchema.properties ?? {}));
     assert.ok("projects" in (listTool.outputSchema?.properties ?? {}));
+    assert.deepEqual(resumeTool.inputSchema.required, ["project"]);
+    assert.ok("latestFailure" in (resumeTool.outputSchema?.properties ?? {}));
+    assert.ok("nextAction" in (resumeTool.outputSchema?.properties ?? {}));
     assert.deepEqual(openTool.inputSchema.required, ["project"]);
     assert.ok("project" in (openTool.inputSchema.properties ?? {}));
     assert.ok("baseRef" in (openTool.inputSchema.properties ?? {}));
@@ -217,6 +229,26 @@ try {
     assert.equal((listResult.structuredContent?.projects as unknown[] | undefined)?.length, 2);
     assert.equal(JSON.stringify(listResult.structuredContent), JSON.stringify(listResult.structuredContent).replace(/rootKey/g, ""));
 
+    const resumeBeforeOpen = asTextToolResult(await client.callTool({
+      name: "get_project_resume",
+      arguments: { project: checkout.slug },
+    }));
+    assert.equal(resumeBeforeOpen.isError, undefined);
+    assert.match(resumeBeforeOpen.content[0]?.text ?? "", /Current project: Shared Name/);
+    assert.match(resumeBeforeOpen.content[0]?.text ?? "", /Run the focused project test/);
+    assert.equal(
+      (resumeBeforeOpen.structuredContent?.workspaces as { total?: number } | undefined)?.total,
+      0,
+    );
+    assert.equal(resumeBeforeOpen.structuredContent?.nextAction, "Run the focused project test.");
+
+    const ambiguousResume = asTextToolResult(await client.callTool({
+      name: "get_project_resume",
+      arguments: { project: "Shared Name" },
+    }));
+    assert.equal(ambiguousResume.isError, true);
+    assert.match(ambiguousResume.content[0]?.text ?? "", /Project display name is ambiguous/);
+
     const unavailable = asTextToolResult(await client.callTool({
       name: "open_project",
       arguments: { project: missing.id },
@@ -239,6 +271,19 @@ try {
       arguments: { project: checkout.slug },
       _meta: { "openai/session": "project-conversation" },
     }));
+
+    const resumeAfterOpen = asTextToolResult(await client.callTool({
+      name: "get_project_resume",
+      arguments: { project: checkout.slug },
+    }));
+    assert.equal(
+      (resumeAfterOpen.structuredContent?.workspaces as { total?: number } | undefined)?.total,
+      1,
+    );
+    assert.equal(
+      (resumeAfterOpen.structuredContent?.workspaces as { latestWorkspaceId?: string } | undefined)?.latestWorkspaceId,
+      openedCheckout.structuredContent?.workspaceId,
+    );
     assert.equal(openedCheckout.isError, undefined);
     assert.match(openedCheckout.content[0]?.text ?? "", /Opened project Shared Name \(checkout-project\)/);
     assert.equal(openedCheckout.structuredContent?.mode, "checkout");

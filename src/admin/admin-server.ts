@@ -12,14 +12,32 @@ import { LATEST_SCHEMA_VERSION } from "../db/migrations.js";
 import { formatLocalAgentProviderAvailabilitySummary, getLocalAgentProviderAvailabilitySnapshot } from "../local-agent-availability.js";
 import { loadLocalAgentProfiles, type LocalAgentProvider } from "../local-agent-profiles.js";
 import { createLocalAgentStore } from "../local-agent-store.js";
+import type { LocalAgentRecord } from "../local-agent-store.js";
+import type { StoredOperationRun } from "../operations/operation-store.js";
+import { readRepositoryContext } from "../operations/repository-diff.js";
 import {
   PROJECT_DISCOVERY_DEFAULTS,
   ProjectDiscovery,
 } from "../projects/project-discovery.js";
 import type { ProjectView } from "../projects/project-types.js";
-import { ProjectRegistry, ProjectRegistryError, ProjectPathError } from "../projects/project-registry.js";
+import {
+  ProjectRegistry,
+  ProjectRegistryError,
+  ProjectPathError,
+} from "../projects/project-registry.js";
 import { createProjectStore, type ProjectStore } from "../projects/project-store.js";
+import {
+  createProjectResumeSnapshot,
+  formatProjectResumeSnapshot,
+} from "../project-resume.js";
+import { isSameCanonicalPath } from "../roots.js";
 import { redactForbiddenSensitiveContent } from "../sensitive-content.js";
+import {
+  analyzeWorkspaceLifecycle,
+  type WorkspaceLifecycleAnalysis,
+} from "../workspace-lifecycle.js";
+import { createWorkspaceStore, type WorkspaceStore } from "../workspace-store.js";
+import { createWorkspaceHandoffStore } from "../workspace-handoff-store.js";
 import { apiError, AdminAuth } from "./admin-auth.js";
 import { createFolderPicker, type FolderPicker } from "./folder-picker.js";
 import {
@@ -49,6 +67,8 @@ export function createAdminServer(config: ServerConfig, options: AdminServerOpti
   }
   const app = express();
   const projectStore = options.projectStore ?? createProjectStore(config.stateDir);
+  const workspaceStore = createWorkspaceStore(config.stateDir);
+  const handoffs = createWorkspaceHandoffStore(config.stateDir);
   const projects = new ProjectRegistry(projectStore, config.allowedRoots);
   const discovery = new ProjectDiscovery(config.allowedRoots, projectStore);
   const folderPicker = options.folderPicker ?? createFolderPicker();
@@ -102,7 +122,12 @@ export function createAdminServer(config: ServerConfig, options: AdminServerOpti
   });
 
   app.get("/api/status", auth.requireRead.bind(auth), asyncHandler(async (_req, res) => {
-    const providers = config.subagents ? getLocalAgentProviderAvailabilitySnapshot() : [];
+    const agentStore = createLocalAgentStore(config);
+    const agentRecords = agentStore.list();
+    const providers = config.subagents
+      ? getLocalAgentProviderAvailabilitySnapshot(process.env, agentRecords)
+      : [];
+    agentStore.close();
     const projectViews = await projects.list();
     const profileCounts = await providerProfileCounts(config, projectViews);
     const allowedRootStatus = await Promise.all(config.allowedRoots.map(async (root) => ({
@@ -114,6 +139,11 @@ export function createAdminServer(config: ServerConfig, options: AdminServerOpti
       limit: options.operations.store.limits.completedRunRetention,
     }) ?? [];
     const truncatedRuns = retainedRuns.filter((run) => run.historyTruncated).length;
+    const workspaceLifecycle = readWorkspaceLifecycle(
+      workspaceStore,
+      retainedRuns,
+      agentRecords,
+    );
     res.json({
       ok: true,
       data: {
@@ -158,7 +188,71 @@ export function createAdminServer(config: ServerConfig, options: AdminServerOpti
             retainedRuns: retainedRuns.length,
             truncatedRuns,
           } : undefined,
+          workspaces: workspaceLifecycle.summary,
         },
+      },
+    });
+  }));
+
+  app.post("/api/workspaces/archive", auth.requireMutation.bind(auth), asyncHandler(async (req, res) => {
+    if (req.body && Object.keys(req.body).length > 0) {
+      res.status(400).json(apiError(
+        "WORKSPACE_ARCHIVE_INPUT_NOT_ALLOWED",
+        "Workspace archive uses the fixed safe eligibility contract and accepts no options.",
+      ));
+      return;
+    }
+    const agentStore = createLocalAgentStore(config);
+    const agentRecords = agentStore.list();
+    agentStore.close();
+    const retainedRuns = options.operations?.store.listRuns({
+      limit: options.operations.store.limits.completedRunRetention,
+    }) ?? [];
+    const before = readWorkspaceLifecycle(workspaceStore, retainedRuns, agentRecords);
+    const archived = workspaceStore.archiveSessions(before.archiveCandidates);
+    const after = readWorkspaceLifecycle(workspaceStore, retainedRuns, agentRecords);
+    res.json({
+      ok: true,
+      data: {
+        archived,
+        filesDeleted: false,
+        worktreesDeleted: false,
+        automaticallyReactivatesOnUse: true,
+        summary: after.summary,
+      },
+    });
+  }));
+
+  app.get("/api/projects/:id/resume", auth.requireRead.bind(auth), asyncHandler(async (req, res) => {
+    const projectId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    if (!projectId) {
+      res.status(400).json(apiError("PROJECT_ID_REQUIRED", "Project ID is required."));
+      return;
+    }
+    const project = projects.getById(projectId);
+    const projectView = await projects.getViewById(projectId);
+    if (!project || !projectView) {
+      res.status(404).json(apiError("PROJECT_UNKNOWN", "Registered project not found."));
+      return;
+    }
+    const agentStore = createLocalAgentStore(config);
+    const agents = agentStore.list({ workspaceRoot: project.root });
+    agentStore.close();
+    const snapshot = createProjectResumeSnapshot({
+      project: projectView,
+      repositoryContext: await readRepositoryContext(project.root),
+      handoff: handoffs.get(project.root),
+      workspaceSessions: workspaceStore.listSessions().filter((session) =>
+        session.projectId === project.id || isSameCanonicalPath(session.root, project.root)
+      ),
+      agents,
+      runs: options.operations?.store.listRuns({ projectId: project.id, limit: 100 }) ?? [],
+    });
+    res.json({
+      ok: true,
+      data: {
+        ...snapshot,
+        result: formatProjectResumeSnapshot(snapshot),
       },
     });
   }));
@@ -256,9 +350,46 @@ export function createAdminServer(config: ServerConfig, options: AdminServerOpti
     app,
     close: async () => {
       operationRoutes?.close();
+      handoffs.close?.();
+      workspaceStore.close?.();
       projectStore.close?.();
     },
   };
+}
+
+function readWorkspaceLifecycle(
+  workspaceStore: WorkspaceStore,
+  runs: readonly StoredOperationRun[],
+  agents: readonly LocalAgentRecord[],
+): WorkspaceLifecycleAnalysis {
+  const protectedWorkspaceIds = new Set<string>();
+  for (const run of runs) {
+    if (
+      run.workspaceId
+      && (
+        run.state === "queued"
+        || run.state === "running"
+        || run.state === "blocked"
+        || run.state === "stopping"
+      )
+    ) {
+      protectedWorkspaceIds.add(run.workspaceId);
+    }
+  }
+  for (const agent of agents) {
+    if (
+      agent.workspaceId
+      && agent.disposition !== "needs_input"
+      && (agent.status === "starting" || agent.status === "running")
+    ) {
+      protectedWorkspaceIds.add(agent.workspaceId);
+    }
+  }
+  return analyzeWorkspaceLifecycle({
+    sessions: workspaceStore.listSessions(),
+    bindings: workspaceStore.listConversationBindings(),
+    protectedWorkspaceIds,
+  });
 }
 
 async function providerProfileCounts(

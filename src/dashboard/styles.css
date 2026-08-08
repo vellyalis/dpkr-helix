@@ -977,6 +977,26 @@ input::placeholder {
   list-style: none;
 }
 
+.resume-failure {
+  display: grid;
+  gap: 5px;
+}
+
+.resume-failure strong {
+  color: var(--ds-danger);
+  font: 700 11px/16px var(--ds-font-mono);
+  text-transform: uppercase;
+}
+
+.resume-failure small {
+  color: var(--ds-text-secondary);
+  line-height: 1.45;
+}
+
+.danger-text {
+  color: var(--ds-danger);
+}
+
 .compact-list li {
   display: flex;
   justify-content: space-between;
@@ -2885,6 +2905,10 @@ input::placeholder {
   line-height: 16px;
 }
 
+.provider-card.cooldown small {
+  color: var(--ds-warning);
+}
+
 .provider-card.available {
   box-shadow: inset 0 2px 0 var(--ds-success);
 }
@@ -2892,6 +2916,11 @@ input::placeholder {
 .provider-card.unavailable {
   background: color-mix(in srgb, var(--ds-danger-subtle) 42%, var(--ds-bg-surface));
   box-shadow: inset 0 2px 0 var(--ds-danger);
+}
+
+.provider-card.cooldown {
+  background: color-mix(in srgb, var(--ds-warning-subtle) 42%, var(--ds-bg-surface));
+  box-shadow: inset 0 2px 0 var(--ds-warning);
 }
 
 .provider-empty {

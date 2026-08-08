@@ -4,11 +4,14 @@ import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadConfig } from "../config.js";
+import { openDatabase } from "../db/client.js";
 import { createLocalAgentStore } from "../local-agent-store.js";
 import { OperationEventBus } from "../operations/operation-event-bus.js";
 import { OperationRunService } from "../operations/operation-run-service.js";
 import { OperationStore } from "../operations/operation-store.js";
 import { createServer, type RunningServer } from "../server.js";
+import { SqliteWorkspaceHandoffStore } from "../workspace-handoff-store.js";
+import { SqliteWorkspaceStore } from "../workspace-store.js";
 import { createAdminServer } from "./admin-server.js";
 
 const root = await mkdtemp(join(tmpdir(), "devspace-admin-server-test-"));
@@ -40,6 +43,35 @@ try {
 
   assert.equal(config.dashboard.host, "127.0.0.1");
   assert.notEqual(config.dashboard.port, config.port);
+
+  const workspaceStore = new SqliteWorkspaceStore(stateDir);
+  workspaceStore.createSession({
+    id: "ws_admin_old",
+    root: join(allowed, "old-workspace"),
+  });
+  workspaceStore.createSession({
+    id: "ws_admin_bound",
+    root: join(allowed, "bound-workspace"),
+  });
+  workspaceStore.setConversationBinding({
+    conversationScopeId: "admin-test-conversation",
+    targetKey: "project:admin-bound:checkout",
+    workspaceSessionId: "ws_admin_bound",
+  });
+  workspaceStore.close();
+  const workspaceDatabase = openDatabase(stateDir);
+  workspaceDatabase.sqlite.prepare(
+    "update workspace_sessions set created_at = ?, last_used_at = ?",
+  ).run("2026-07-01T00:00:00.000Z", "2026-07-01T00:00:00.000Z");
+  workspaceDatabase.close();
+  const handoffStore = new SqliteWorkspaceHandoffStore(stateDir);
+  handoffStore.upsert(project, {
+    status: "in_progress",
+    summary: "Continue from the retained dashboard resume state.",
+    nextActions: ["Inspect the latest provider failure before retrying."],
+    verification: ["Admin setup passed."],
+  });
+  handoffStore.close();
 
   operationStore = new OperationStore(stateDir, { maxEventsPerRun: 2 });
   const operationEventBus = new OperationEventBus();
@@ -112,8 +144,10 @@ try {
     { method: "PATCH", path: "/api/projects/project_test" },
     { method: "DELETE", path: "/api/projects/project_test" },
     { method: "GET", path: "/api/projects/project_test/git-status" },
+    { method: "GET", path: "/api/projects/project_test/resume" },
     { method: "POST", path: "/api/folder-picker" },
     { method: "GET", path: "/api/agents?projectId=project_test" },
+    { method: "POST", path: "/api/workspaces/archive" },
     { method: "GET", path: "/api/diagnostics/troubleshooting" },
     { method: "GET", path: "/dashboard" },
     { method: "GET", path: "/mcp-app-assets/dashboard.html" },
@@ -214,6 +248,9 @@ try {
   assert.equal(status.data.storage.database.available, true);
   assert.equal(status.data.storage.database.schemaVersion, status.data.storage.database.latestSchemaVersion);
   assert.equal(status.data.storage.retention.maxEventsPerRun, 2);
+  assert.equal(status.data.storage.workspaces.totalSessions, 2);
+  assert.equal(status.data.storage.workspaces.boundSessions, 1);
+  assert.equal(status.data.storage.workspaces.eligibleForArchive, 1);
   assert.deepEqual(status.data.allowedRootStatus, [{ path: allowed, available: true }]);
 
   const diagnosticsWithoutSession = await fetch(`${base}/api/diagnostics/troubleshooting`, {
@@ -287,6 +324,45 @@ try {
   });
   assert.equal(stopWithoutCsrf.status, 401);
   assert.equal(stopRequests, 0);
+
+  const archiveWithoutCsrf = await fetch(`${base}/api/workspaces/archive`, {
+    method: "POST",
+    headers: {
+      host: `${config.dashboard.host}:${config.dashboard.port}`,
+      origin: base,
+      cookie,
+      "content-type": "application/json",
+    },
+    body: "{}",
+  });
+  assert.equal(archiveWithoutCsrf.status, 401);
+
+  const archiveWithOptions = await api(base, "/api/workspaces/archive", {
+    method: "POST",
+    cookie,
+    csrfToken,
+    body: { days: 1 },
+  });
+  assert.equal(archiveWithOptions.error.code, "WORKSPACE_ARCHIVE_INPUT_NOT_ALLOWED");
+
+  const archivedWorkspaces = await api(base, "/api/workspaces/archive", {
+    method: "POST",
+    cookie,
+    csrfToken,
+    body: {},
+  });
+  assert.equal(archivedWorkspaces.ok, true);
+  assert.equal(archivedWorkspaces.data.archived, 1);
+  assert.equal(archivedWorkspaces.data.filesDeleted, false);
+  assert.equal(archivedWorkspaces.data.worktreesDeleted, false);
+  assert.equal(archivedWorkspaces.data.summary.archivedSessions, 1);
+  assert.equal(archivedWorkspaces.data.summary.boundSessions, 1);
+  const archivedStore = new SqliteWorkspaceStore(stateDir);
+  assert.equal(archivedStore.getSession("ws_admin_old")?.status, "archived");
+  assert.equal(archivedStore.getSession("ws_admin_bound")?.status, "active");
+  archivedStore.touchSession("ws_admin_old");
+  assert.equal(archivedStore.getSession("ws_admin_old")?.status, "active");
+  archivedStore.close();
 
   const stopWithPid = await api(base, "/api/operations/runs/op_admin_test/stop", {
     method: "POST",
@@ -405,6 +481,16 @@ try {
     status: "idle",
     latestResponse: "Bearer supersecretvalue",
   });
+  const failedAgent = agentStore.create({
+    workspaceRoot: project,
+    profileName: "codex-explorer",
+    provider: "codex",
+  });
+  agentStore.update(failedAgent.id, {
+    status: "error",
+    error: "You've hit your usage limit. Try again at 12:34 PM.",
+    failureCode: "usage_limit",
+  });
   agentStore.close();
 
   const scan = await api(base, "/api/projects/scan", {
@@ -428,8 +514,19 @@ try {
 
   const agents = await api(base, `/api/agents?projectId=${projectId}`, { cookie });
   assert.equal(agents.ok, true);
-  assert.equal(agents.data.sessions[0].latestResponse, "[redacted sensitive output]");
+  assert.equal(
+    agents.data.sessions.find((session: { id: string }) => session.id === agent.id)?.latestResponse,
+    "[redacted sensitive output]",
+  );
   assert.doesNotMatch(JSON.stringify(agents), /supersecretvalue/);
+
+  const resume = await api(base, `/api/projects/${projectId}/resume`, { cookie });
+  assert.equal(resume.ok, true);
+  assert.equal(resume.data.nextAction, "Inspect the latest provider failure before retrying.");
+  assert.equal(resume.data.latestFailure.source, "local_agent");
+  assert.equal(resume.data.latestFailure.code, "usage_limit");
+  assert.match(resume.data.latestFailure.recommendedAction, /did not switch providers automatically/i);
+  assert.doesNotMatch(JSON.stringify(resume), /supersecretvalue/);
 
   const forgot = await api(base, `/api/projects/${projectId}`, {
     method: "DELETE",

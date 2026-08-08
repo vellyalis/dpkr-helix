@@ -14,7 +14,12 @@ import { SqliteProjectStore } from "./projects/project-store.js";
 import { SqliteWorkspaceHandoffStore } from "./workspace-handoff-store.js";
 import { SqliteWorkspaceStore } from "./workspace-store.js";
 
-const MANAGED_RUNTIME_READINESS_TIMEOUT_MS = 30_000;
+// This test launches the full TypeScript source graph through tsx. A cold Windows
+// run completed just under the former 30-second bound and crossed it while the
+// complete suite was concurrently warming the same dependency graph. Keep the
+// source-only proof finite without confusing compiler cold start with runtime
+// readiness failure; installed JavaScript health remains covered separately.
+const MANAGED_RUNTIME_READINESS_TIMEOUT_MS = 45_000;
 const root = await mkdtemp(join(tmpdir(), "devspace-managed-restart-test-"));
 const allowedRoot = join(root, "allowed");
 const projectRoot = join(allowedRoot, "persisted-project");

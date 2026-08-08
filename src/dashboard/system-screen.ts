@@ -18,7 +18,8 @@ export function systemHealth(status: DashboardStatus): SystemHealth {
 
 export function formatSanitizedDiagnostics(status: DashboardStatus): string {
   const availableProviders = status.providers.filter((provider) => provider.available).length;
-  const unavailableProviders = status.providers.length - availableProviders;
+  const cooldownProviders = status.providers.filter((provider) => provider.state === "cooldown").length;
+  const unavailableProviders = status.providers.length - availableProviders - cooldownProviders;
   const rootsAvailable = status.allowedRootStatus.filter((root) => root.available).length;
   const retention = status.storage.retention;
   return [
@@ -30,12 +31,15 @@ export function formatSanitizedDiagnostics(status: DashboardStatus): string {
     `Public admin routes: ${status.security.publicAdminRoutes}`,
     `Session: ${status.security.dashboardSession}`,
     `Allowed roots: ${rootsAvailable}/${status.allowedRootStatus.length} available`,
-    `Providers: ${availableProviders} available, ${unavailableProviders} unavailable`,
+    `Providers: ${availableProviders} available, ${cooldownProviders} cooldown, ${unavailableProviders} unavailable`,
     `Database: ${status.storage.database.available ? "available" : "unavailable"} (${status.storage.database.path})`,
     `Schema: ${status.storage.database.schemaVersion ?? "unknown"}/${status.storage.database.latestSchemaVersion}`,
     retention
       ? `Retention: ${retention.retainedRuns}/${retention.completedRunRetention} runs, ${retention.truncatedRuns} truncated`
       : "Retention: unavailable",
+    status.storage.workspaces
+      ? `Workspaces: ${status.storage.workspaces.activeSessions} active, ${status.storage.workspaces.archivedSessions} archived, ${status.storage.workspaces.eligibleForArchive} eligible`
+      : "Workspaces: unavailable",
     "Project mutations: local dashboard only",
     "Next check: run `devspace doctor` for command-line diagnostics.",
   ].join("\n");

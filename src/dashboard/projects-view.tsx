@@ -9,11 +9,13 @@ import {
 } from "react";
 import type { LocalAgentRecord } from "../local-agent-store.js";
 import type { OperationRun } from "../operations/operation-contracts.js";
+import type { ProjectResumeSnapshot } from "../project-resume.js";
 import type { DiscoveryCandidate } from "../projects/project-discovery.js";
 import type { ProjectView } from "../projects/project-types.js";
 import {
   chooseFolder,
   forgetProject,
+  getProjectResume,
   registerProject,
   scanProjects,
   updateProject,
@@ -67,6 +69,8 @@ const EMPTY_FILTERS: ProjectScreenFilters = {
 export function ProjectsView(props: ProjectsViewProps): React.JSX.Element {
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const [resume, setResume] = useState<ProjectResumeSnapshot | null>(null);
+  const [resumeError, setResumeError] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const selectedInspectButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -88,6 +92,21 @@ export function ProjectsView(props: ProjectsViewProps): React.JSX.Element {
     .filter((run) => run.projectId === props.selectedProjectId)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, 5);
+
+  useEffect(() => {
+    let cancelled = false;
+    setResume(null);
+    setResumeError(null);
+    if (!props.selectedProjectId) return () => { cancelled = true; };
+    void getProjectResume(props.selectedProjectId)
+      .then((nextResume) => {
+        if (!cancelled) setResume(nextResume);
+      })
+      .catch((error) => {
+        if (!cancelled) setResumeError(errorMessage(error));
+      });
+    return () => { cancelled = true; };
+  }, [props.selectedProjectId, props.runs, props.agents]);
 
   async function closeSelectedProject(): Promise<void> {
     const returnFocus = selectedInspectButtonRef.current;
@@ -284,6 +303,8 @@ export function ProjectsView(props: ProjectsViewProps): React.JSX.Element {
             record={selectedRecord}
             agents={props.agents}
             runs={selectedRuns}
+            resume={resume}
+            resumeError={resumeError}
             copyMessage={copyMessage}
             onClose={() => void props.run(closeSelectedProject)}
             onCopy={(label, value) => void props.run(() => copyValue(label, value))}
@@ -395,6 +416,8 @@ function ProjectInspector(props: {
   record: ProjectScreenRecord;
   agents: LocalAgentRecord[];
   runs: OperationRun[];
+  resume: ProjectResumeSnapshot | null;
+  resumeError: string | null;
   copyMessage: string | null;
   onClose(): void;
   onCopy(label: string, value: string): void;
@@ -437,6 +460,41 @@ function ProjectInspector(props: {
         <Definition label="Branch"><span>{gitStatus.stale ? "Status unavailable" : gitStatus.branch ?? "Unknown"}</span></Definition>
         <Definition label="Changed files"><span>{gitStatus.stale ? "Status stale" : gitStatus.dirtyCount ?? "Unknown"}</span></Definition>
         <Definition label="Last opened"><span>{formatDate(project.lastOpenedAt)}</span></Definition>
+      </InspectorSection>
+      <InspectorSection title="Current / Resume">
+        {props.resumeError ? (
+          <Definition label="Status"><span className="danger-text">{props.resumeError}</span></Definition>
+        ) : props.resume ? <>
+          <Definition label="Handoff">
+            <span>{props.resume.handoff
+              ? `${props.resume.handoff.status} · ${props.resume.handoff.summary}`
+              : "None recorded"}</span>
+          </Definition>
+          <Definition label="Next action"><strong>{props.resume.nextAction}</strong></Definition>
+          <Definition label="Workspace sessions">
+            <span>{props.resume.workspaces.active} active · {props.resume.workspaces.archived} archived</span>
+          </Definition>
+          <Definition label="Latest verification">
+            <span>{props.resume.verification
+              ? `${props.resume.verification.stage} · ${formatDate(props.resume.verification.updatedAt)}`
+              : "None retained"}</span>
+          </Definition>
+          <Definition label="Latest failure">
+            {props.resume.latestFailure ? (
+              <div className="resume-failure">
+                <strong>{props.resume.latestFailure.code ?? "failure"}</strong>
+                <span>{props.resume.latestFailure.summary}</span>
+                {props.resume.latestFailure.retryAt
+                  ? <small>Retry after {formatDate(props.resume.latestFailure.retryAt)}</small>
+                  : null}
+                <small>{props.resume.latestFailure.recommendedAction}</small>
+              </div>
+            ) : <span>None retained</span>}
+          </Definition>
+          <Definition label="Resume"><span>{props.resume.resumeInstruction}</span></Definition>
+        </> : (
+          <Definition label="Status"><span>Loading current resume state…</span></Definition>
+        )}
       </InspectorSection>
       <InspectorSection title="Activity">
         <Definition label="Active runs"><span>{activeRunCount}</span></Definition>
