@@ -1819,7 +1819,7 @@ the clean-root sequence.
 
 **Date:** 2026-08-08
 
-**Status:** Accepted; source and live-state classification proof complete
+**Status:** Accepted; managed deployment and installed classification proof complete
 
 **Context:** After conversation reuse and migration version 10 were deployed,
 the Runs dashboard still presented nearly every retained MCP connection as
@@ -1861,7 +1861,11 @@ execution owner was added.
 reject an ordinary waiting MCP run and a local-agent lookalike. TypeScript and
 the production UI build pass. Replaying the same live 66-root dataset through
 the accepted source classification yields `NOW=1`, `ACTION=2`, `STANDBY=63`,
-with no canonical row mutation.
+with no canonical row mutation. Managed deployment exposes the five-queue order,
+the exported standby predicate, and the compiled `STANDBY` label from the
+physical global package. After restart retired old connections, the installed
+classifier reports `NOW=1`, `ACTION=2`, and `STANDBY=8`. Doctor, local/public
+health, OAuth metadata, and a fresh provenance-aware `UP_TO_DATE` check pass.
 
 **Failure and recovery:** Reverting the derived queue returns those sessions to
 `NOW`; persisted runs and live transports are untouched. If a future host uses a

@@ -27,7 +27,7 @@ measured baseline shows that it would not improve a real outcome.
 | GPT-5.6 Sol effort comparison | Stopped | Owner stopped the incomplete 24/96 matrix because it no longer changes a current product, release, or setting decision |
 | Daily operation quality and continuity | Shipped | Fresh-session operation, reconnect continuity, direct tools, handoffs, and bounded nested-instruction discovery are live-verified |
 | Selective upstream continuity and card clarity | Shipped | Same-conversation reuse, restart-safe review state, truthful deployment provenance, migration v10 compatibility, clearer cards, and bounded worker cold starts are live-verified |
-| Operations standby presentation | In validation | Connected MCP session roots are separated from active `NOW` work without changing canonical state or lifecycle |
+| Operations standby presentation | Shipped | Connected MCP session roots are separated from active `NOW` work without changing canonical state or lifecycle |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -133,7 +133,7 @@ The provider then rejected execution only because the external usage allowance
 was exhausted; the retained failure was not a worker acknowledgement timeout,
 and the repository remained clean.
 
-## In validation: Operations standby presentation
+## Shipped: Operations standby presentation
 
 Post-deployment observation found that the Runs `NOW` queue was dominated by
 connected but idle MCP session roots. Of 66 top-level active roots, 63 were
@@ -145,8 +145,12 @@ exact MCP-session shape. It keeps the underlying state `running`, preserves the
 transport and retention owners, and leaves ordinary running work, local-agent
 input waits, and non-session MCP operations in their existing queues. Replaying
 the same live rows through the pure classifier yields `NOW=1`, `ACTION=2`, and
-`STANDBY=63`. Completion requires the normal managed deployment plus an installed
-dashboard classification check; no lifecycle or database change is involved.
+`STANDBY=63`. Managed deployment then exposed the five-queue order and
+`STANDBY` label from the physical installed package. After restart retired old
+connections, the installed classifier reported `NOW=1`, `ACTION=2`, and
+`STANDBY=8` for the remaining top-level active roots. Doctor, local/public
+health, OAuth metadata, and a fresh installed-provenance `UP_TO_DATE` check all
+pass. No lifecycle or database change was involved.
 
 ## Decision rules
 

@@ -17,8 +17,8 @@ Last synchronized: 2026-08-08
 - Public `origin/main`: parentless release root plus public-safe release state
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-OPS-05 is live-verified and complete.
-- Current release line: `CONTINUITY / UPDATE TRUTH / MIGRATION LIVE VERIFIED;
-  STANDBY PRESENTATION SOURCE VERIFIED`. The selective upstream and
+- Current release line: `CONTINUITY / UPDATE TRUTH / MIGRATION / STANDBY LIVE
+  VERIFIED`. The selective upstream and
   worker-reliability candidate is public from `16e236c`, and the physical
   installed runtime is `dfd3e26`. It adapts upstream DevSpace `v1.0.6`
   conversation-aware checkout reuse, restart-safe review checkpoints, compact
@@ -52,10 +52,14 @@ Last synchronized: 2026-08-08
 - A live Operations trace then showed 63 of 66 top-level active roots were not
   executing; they were connected `mcp-session:` roots in canonical phase
   `waiting` with current action `Waiting for the MCP client`. The accepted
-  source presentation adds `STANDBY` after the three actionable queues and moves
-  only that exact shape out of `NOW`. Replaying the same rows yields `NOW=1`,
-  `ACTION=2`, and `STANDBY=63` without changing any run state, assurance,
-  retention, or transport lifecycle.
+  presentation published at `4995421` adds `STANDBY` after the three actionable
+  queues and moves only that exact shape out of `NOW`. Replaying the original
+  rows yielded `NOW=1`, `ACTION=2`, and `STANDBY=63`; after managed restart
+  retired old connections, the physical installed classifier reported
+  `NOW=1`, `ACTION=2`, and `STANDBY=8`. The global runtime exports the five-queue
+  order and compiled UI label, while run state, assurance, retention, and
+  transport lifecycle remain unchanged. Doctor, local/public health, OAuth
+  metadata, and fresh installed-provenance `UP_TO_DATE` all pass.
 - Post-`v1.0.6` upstream host-installed Codex and experimental `app-server`
   branches were audited but not imported. They remain isolated research because
   they do not yet preserve Helix's schema-constrained completed/needs-input

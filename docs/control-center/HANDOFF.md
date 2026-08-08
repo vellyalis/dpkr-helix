@@ -6,8 +6,9 @@ Last synchronized: 2026-08-08
 
 - Selective upstream `v1.0.6` ingestion plus independent Helix reliability
   hardening is published from `16e236c`; updater truth and migration repair are
-  installed through `dfd3e26`, and same-conversation checkout reuse is
-  live-verified. Reuse now
+  installed through `dfd3e26`, Operations standby checkpoint `4995421` is
+  managed-deployed, and same-conversation checkout reuse is live-verified.
+  Reuse now
   applies to both `open_workspace` and `open_project`, survives restart, keeps
   worktrees fresh, suppresses repeated static bootstrap, and persists only a
   prefixed SHA-256 key of the opaque host conversation scope. Review checkpoints
@@ -31,8 +32,9 @@ Last synchronized: 2026-08-08
   build, `npm run audit:production`, isolated-index public-release scan, and
   `git diff --check` pass. Production audit verifies reviewed Pi dependency
   repairs, hidden Codex Windows spawn behavior, and zero reported vulnerabilities.
-  The physical installed package, settings, runtime record, doctor, health,
-  OAuth metadata, and canonical update status agree on `dfd3e26`.
+  The physical installed package contains standby checkpoint `4995421`; its
+  settings/runtime fingerprint, doctor, local/public health, OAuth metadata,
+  and canonical update status agree.
 - The first managed update request falsely returned `UP_TO_DATE` because source
   `HEAD` already matched `origin/main`, even though the physical installed
   package lacked the new runtime. The follow-up stores a clean source commit
@@ -56,12 +58,14 @@ Last synchronized: 2026-08-08
   execution itself stopped at the external Codex usage limit; the retained
   error is a usage-limit result, not an acknowledgement timeout, and Git stayed
   clean.
-- The next accepted Operations/UI unit adds a presentation-only `STANDBY` queue.
-  A live trace classified 63 of 66 top-level active roots as connected MCP
-  session waits, leaving one true `NOW` run and two `ACTION` runs. The predicate
-  requires the exact `mcp-session:` / `running` / `waiting` / `Waiting for the
-  MCP client` shape; it does not mutate state, assurance, retention, or the
-  transport lifecycle.
+- The Operations/UI standby unit is shipped. A pre-deployment live trace
+  classified 63 of 66 top-level active roots as connected MCP session waits,
+  leaving one true `NOW` run and two `ACTION` runs. The predicate requires the
+  exact `mcp-session:` / `running` / `waiting` / `Waiting for the MCP client`
+  shape and does not mutate state, assurance, retention, or transport lifecycle.
+  The installed runtime exposes the five-queue order and compiled `STANDBY`
+  label; after restart retired old connections, installed classification reports
+  `NOW=1`, `ACTION=2`, and `STANDBY=8`.
 - Two unmerged post-release upstream branches using host-installed Codex and the
   experimental `codex app-server` were classified as promising research, not a
   safe runtime replacement. A future isolated comparison must preserve
