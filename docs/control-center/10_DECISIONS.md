@@ -2244,7 +2244,7 @@ shows that package-root replacement no longer contributes material latency.
 
 **Date:** 2026-08-08
 
-**Status:** Accepted; functional source and installation complete, installed-lane timing pending
+**Status:** Accepted; functional source and first installed-lane timing complete, confirmation pending
 
 **Context:** After candidate verification and prepared-runtime replacement, the
 remaining post-runtime closure varied from roughly 38 to 54 seconds. Read-only
@@ -2305,7 +2305,14 @@ Transition request `97a4513d-e247-451b-a82b-df80d490298a` completed in 348.274
 seconds, reached runtime in 307.018 seconds and closed in 41.256 seconds, but it
 began under the old installed canary; the retained agent still used max effort
 and ran for 34.852 seconds. A state-only deployment through the new updater is
-required before timing acceptance.
+required before timing acceptance. First valid new-canary request
+`52fb4ac2-f4d2-410d-94af-32ed24dff745` then deployed checkpoint `5a90d12`,
+closed 19.231 seconds after runtime start and completed its `thinking=low` agent
+in 13.769 seconds. Compared with the transition run, closure improved by 22.025
+seconds / 53.4 percent and the provider turn by 21.083 seconds / 60.5 percent.
+Source, origin, installed commit, physical fingerprint, Doctor, SQLite,
+local/public health and local/public OAuth metadata agree. One confirmatory
+installed-lane run remains before final acceptance.
 
 **Failure and recovery:** Launch failure, missing run ID, malformed output,
 timeout and every non-quota agent error still fail deployment and trigger the

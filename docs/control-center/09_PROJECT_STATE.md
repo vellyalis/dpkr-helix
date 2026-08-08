@@ -144,7 +144,13 @@ Last synchronized: 2026-08-08
   a one-line test-only repair passed 20/20 and 68/68, transition request
   `97a4513d-e247-451b-a82b-df80d490298a` installed `80b853d`. It completed in
   348.274 seconds and closed 41.256 seconds after runtime start, but used the old
-  max-effort canary and is not the valid performance measurement.
+  max-effort canary. The first valid new-canary request
+  `52fb4ac2-f4d2-410d-94af-32ed24dff745` deployed `5a90d12`, closed 19.231
+  seconds after runtime start and completed its low-effort external turn in
+  13.769 seconds. Closure improved by 22.025 seconds / 53.4 percent and the turn
+  by 21.083 seconds / 60.5 percent versus the transition run. Source, installed
+  commit, fingerprint, Doctor, SQLite, local/public health and OAuth agree; one
+  confirmatory installed-lane run remains before shipment.
 - Post-`v1.0.6` upstream host-installed Codex and experimental `app-server`
   branches were audited but not imported. They remain isolated research because
   they do not yet preserve Helix's schema-constrained completed/needs-input

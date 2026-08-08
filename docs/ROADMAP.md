@@ -303,8 +303,14 @@ that timer, passed the focused test 20/20 and the complete 68-file suite, and is
 installed. Transition request `97a4513d-e247-451b-a82b-df80d490298a` completed
 in 348.274 seconds and reached runtime in 307.018 seconds, but it began under the
 old installed canary. That old turn still used max effort and consumed 34.852
-of the 41.256 post-runtime seconds. The next state-only deployment is the first
-valid end-to-end measurement of the new canary.
+of the 41.256 post-runtime seconds. The first valid new-canary request
+`52fb4ac2-f4d2-410d-94af-32ed24dff745` deployed checkpoint `5a90d12` and closed
+19.231 seconds after runtime start. Its `thinking=low` external turn completed
+in 13.769 seconds, reducing closure by 22.025 seconds, or 53.4 percent, and the
+provider turn by 21.083 seconds, or 60.5 percent, versus the transition run.
+Source, installed commit, fingerprint, Doctor, SQLite, local/public health and
+local/public OAuth agree. One confirmatory installed-lane run remains before the
+workstream is marked shipped.
 
 ## Decision rules
 

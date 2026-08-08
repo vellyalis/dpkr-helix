@@ -147,8 +147,13 @@ Last synchronized: 2026-08-08
   passed 20/20 focused repetitions and 68/68 complete regression, and is now
   installed. Transition request `97a4513d-e247-451b-a82b-df80d490298a` took
   348.274 seconds total / 307.018 seconds to runtime / 41.256 seconds closure,
-  but it began under the old max-effort canary. A state-only deployment through
-  the new installed updater remains the valid timing gate.
+  but it began under the old max-effort canary. First valid new-canary request
+  `52fb4ac2-f4d2-410d-94af-32ed24dff745` deployed `5a90d12`, closed 19.231
+  seconds after runtime start and completed the low-effort agent in 13.769
+  seconds. That is 22.025 seconds / 53.4 percent less closure and 21.083 seconds
+  / 60.5 percent less agent time than the transition. Provenance, fingerprint,
+  Doctor, SQLite, health and OAuth all pass. One confirmatory installed-lane run
+  remains before final acceptance.
 - Two unmerged post-release upstream branches using host-installed Codex and the
   experimental `codex app-server` were classified as promising research, not a
   safe runtime replacement. A future isolated comparison must preserve
