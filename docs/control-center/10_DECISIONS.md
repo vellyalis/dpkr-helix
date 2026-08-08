@@ -2239,3 +2239,82 @@ the package's deployment shrinkwrap exactly and creates the same hidden lock and
 physical fingerprint in one pass; the fixed CLI shim contract changes; a
 supported installation uses different volumes routinely; or installed timing
 shows that package-root replacement no longer contributes material latency.
+
+## ADR-055: Verify installed Codex delegation with a bounded exact-token canary
+
+**Date:** 2026-08-08
+
+**Status:** Accepted; functional source and installation complete, installed-lane timing pending
+
+**Context:** After candidate verification and prepared-runtime replacement, the
+remaining post-runtime closure varied from roughly 38 to 54 seconds. Read-only
+inspection of recent agent records showed that 28.236 to 49.056 seconds belonged
+to the external Codex turn, while runtime start to agent creation was about five
+seconds. The installed canary launched `codex-explorer`, asked it to read the
+candidate `package.json`, and required the package name and version. Even with
+`gpt-5.6-sol` forced to low effort, that interpretation task took 52.096
+seconds. The package identity was already proven deterministically by preflight,
+the npm archive contract, source commit, deployment lock and physical
+fingerprint; asking an external model to reinterpret it did not add independent
+deployment truth.
+
+**Decision:** Keep the installed `devspace` CLI, `codex-explorer` profile
+resolution, detached worker, explicit configured model, Codex provider adapter,
+external account, structured terminal result, quota advisory and strict
+non-quota failure path. Replace only the task with an exact
+`DPKR_HELIX_PROBE_OK` response and explicitly prohibit file reads or
+modifications. When the configured model is `gpt-5.6-sol`, request low effort;
+do not assume that arbitrary future models accept that setting. Remove the
+extra two-second sleeps and retain four bounded status waits, so the existing
+approximately sixty-second failure ceiling remains without idle polling delay.
+
+Continue running Doctor and local/public OAuth metadata before launching the
+detached canary. Starting it earlier or concurrently could leave a worker active
+when a deterministic runtime or endpoint check had already failed. Package,
+profile, policy, filesystem and source correctness remain owned by the complete
+candidate regression suite and physical deployment evidence rather than by an
+LLM response.
+
+**Alternatives rejected:** Removing the external canary entirely; checking only
+`codex login status`; silently treating any assistant text as success; keeping
+the package-read prompt and merely lowering effort; starting the worker before
+Doctor/OAuth; caching a prior external success; or forcing low effort on every
+future model. These respectively lose provider-path evidence, verify too little,
+weaken the result contract, retain measured latency, risk an orphan worker, add
+stale state, or assume unsupported provider behavior.
+
+**Complexity receipt:** One fixed marker, one conditional launch argument and a
+smaller polling loop inside the existing verification function, plus one source
+contract. No dependency, database, schema, cache, setting, service, scheduler,
+permission, credential, public tool or second verification owner was added.
+The external prompt reveals less information because it no longer requests
+package metadata.
+
+**Evidence:** The old package-read task took 52.096 seconds at low effort. The
+same exact-token task completed through raw Codex in 15.750 seconds, through the
+retained `codex-explorer` profile in 14.097 and 13.721 seconds, and through the
+candidate function in 14.571 seconds. All returned the exact marker and made no
+repository change. Focused setup/recovery tests, 68/68 regression, policy,
+typecheck, build, zero-vulnerability production audit, public-release and diff
+checks pass. Functional checkpoint `00ae449` is public. Its first managed
+preflight safely rejected before replacement when an existing process-session
+test's artificial 100ms child timer exceeded the default 250ms interactive wait
+under loaded parallel execution. Follow-up `80b853d` removes only that timer,
+passes the focused test 20/20 and complete 68/68 regression, and is installed.
+Transition request `97a4513d-e247-451b-a82b-df80d490298a` completed in 348.274
+seconds, reached runtime in 307.018 seconds and closed in 41.256 seconds, but it
+began under the old installed canary; the retained agent still used max effort
+and ran for 34.852 seconds. A state-only deployment through the new updater is
+required before timing acceptance.
+
+**Failure and recovery:** Launch failure, missing run ID, malformed output,
+timeout and every non-quota agent error still fail deployment and trigger the
+existing rollback path. Explicit provider rate/usage exhaustion remains the
+same advisory exception. Reverting this decision restores the package-read
+prompt and sleeps without any state migration.
+
+**Reconsider when:** The external provider offers a deterministic authenticated
+health endpoint that proves the same installed adapter/account/model path, the
+exact-token canary stops detecting observed provider regressions, a configured
+model rejects low effort, or ordinary installed timings show no material closure
+improvement.

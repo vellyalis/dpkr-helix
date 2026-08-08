@@ -18,7 +18,8 @@ Last synchronized: 2026-08-08
 - Public roadmap: `docs/ROADMAP.md`; completed GOAL_08 product parity remains
   intact and WS-OPS-05 is live-verified and complete.
 - Current release line: `PRACTICAL CONTROLS / UPDATE FAST LANE / PREPARED
-  RUNTIME SHIPPED`; the measured installed checkpoint is `64be57a`. The selective
+  RUNTIME SHIPPED / CODEX CANARY IN VALIDATION`; the installed functional
+  checkpoint is `80b853d`. The selective
   upstream and worker-reliability candidate is public from `16e236c`. It adapts
   upstream DevSpace `v1.0.6`
   conversation-aware checkout reuse, restart-safe review checkpoints, compact
@@ -128,6 +129,22 @@ Last synchronized: 2026-08-08
   availability improved by 34.608 seconds. The installed log contains one
   prepared 353-package production install and no fallback warning; source,
   installed commit, fingerprint, Doctor, SQLite, health and OAuth agree.
+- Installed Codex canary closure is `IN VALIDATION` from functional checkpoint
+  `00ae449` plus test-stability follow-up `80b853d`. Live update records showed
+  that the external provider turn consumed 28.236 to 49.056 seconds after agent
+  creation, while runtime start to creation was about five seconds. The old
+  package-read prompt still took 52.096 seconds at low effort. The accepted
+  canary keeps the installed CLI, `codex-explorer` profile, detached worker,
+  configured model, Codex adapter, external account, structured result and
+  quota/strict-failure semantics, but requests only an exact fixed marker and no
+  file access. On `gpt-5.6-sol` it uses low effort; other configured models keep
+  profile effort. Direct profile runs took 14.097 and 13.721 seconds and the
+  candidate function took 14.571 seconds. The first managed request was safely
+  rejected before replacement by an unrelated load-sensitive test timer; after
+  a one-line test-only repair passed 20/20 and 68/68, transition request
+  `97a4513d-e247-451b-a82b-df80d490298a` installed `80b853d`. It completed in
+  348.274 seconds and closed 41.256 seconds after runtime start, but used the old
+  max-effort canary and is not the valid performance measurement.
 - Post-`v1.0.6` upstream host-installed Codex and experimental `app-server`
   branches were audited but not imported. They remain isolated research because
   they do not yet preserve Helix's schema-constrained completed/needs-input

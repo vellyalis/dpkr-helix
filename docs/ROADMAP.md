@@ -31,6 +31,7 @@ measured baseline shows that it would not improve a real outcome.
 | Practical daily-use controls | Shipped | Provider quota cooldowns, reversible workspace-session archive, and one Current/Resume plus failure-diagnosis surface are public, managed-deployed, and installed-verified |
 | Managed update verification throughput | Shipped | Every existing update gate remains mandatory while independent read-only checks use bounded parallel execution; installed end-to-end timing is live-verified |
 | Prepared runtime replacement | Shipped | The exact lock-restored runtime is built and fingerprinted before downtime, then its fixed package root replaces the previous generation without rerunning global dependency resolution |
+| Installed Codex canary closure | In validation | The same installed CLI, profile, worker, configured model, Codex adapter and external account are checked with a bounded exact-token canary instead of asking the model to interpret package metadata; installed timing is being measured |
 | Additional product expansion | Not committed | Add only capabilities justified by a measured parity failure or a concrete user requirement |
 
 ## Completed program: measured Codex-quality parity
@@ -272,6 +273,38 @@ shows one 385-package development install for candidate verification and one
 353-package production install for the prepared runtime, with no fallback
 installer warning. Source, installed commit, physical fingerprint, Doctor,
 SQLite, local/public health and local/public OAuth metadata agree.
+
+## In validation: bounded installed Codex canary
+
+The remaining post-runtime closure was dominated by the external Codex turn,
+not by Doctor or OAuth metadata. Recent managed updates spent 28.236 to 49.056
+seconds inside the retained `codex-explorer` session after creation. Lowering
+effort alone did not solve the old prompt: asking Codex to read `package.json`
+and report its identity still took 52.096 seconds at low effort.
+
+The accepted candidate keeps the installed `devspace` CLI, `codex-explorer`
+profile resolution, detached worker, explicit configured model, Codex adapter,
+external account, structured terminal record, quota advisory, and strict
+non-quota failure behavior. It narrows only the external task to an exact
+`DPKR_HELIX_PROBE_OK` response with no file read or modification. For the
+managed `gpt-5.6-sol` model it requests low effort; other configured models keep
+their profile setting because low-effort support is not assumed generically.
+Doctor plus local/public OAuth checks still run first, so a prior verification
+failure cannot strand a detached canary worker.
+
+Read-only comparison runs completed the exact-token canary through the same
+profile in 14.097 and 13.721 seconds; the candidate function itself completed in
+14.571 seconds. Complete 68/68 regression, policy, typecheck, build,
+zero-vulnerability production audit, setup/recovery, public-release and diff
+gates pass. Functional checkpoint `00ae449` is public. Its first preflight was
+safely rejected before replacement when an existing process-session test
+exposed a load-sensitive artificial timer; follow-up `80b853d` removes only
+that timer, passed the focused test 20/20 and the complete 68-file suite, and is
+installed. Transition request `97a4513d-e247-451b-a82b-df80d490298a` completed
+in 348.274 seconds and reached runtime in 307.018 seconds, but it began under the
+old installed canary. That old turn still used max effort and consumed 34.852
+of the 41.256 post-runtime seconds. The next state-only deployment is the first
+valid end-to-end measurement of the new canary.
 
 ## Decision rules
 

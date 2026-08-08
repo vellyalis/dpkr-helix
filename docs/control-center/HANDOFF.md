@@ -6,8 +6,9 @@ Last synchronized: 2026-08-08
 
 - Selective upstream `v1.0.6` ingestion plus independent Helix reliability
   hardening is published from `16e236c`; updater truth, migration repair,
-  Operations standby, practical controls, update verification fast lane, and
-  prepared-runtime functional checkpoint are installed through `cbdfad8`, and
+  Operations standby, practical controls, update verification fast lane,
+  prepared-runtime replacement, and the bounded Codex canary functional
+  checkpoint are installed through `80b853d`, and
   same-conversation checkout reuse is live-verified.
   Reuse now
   applies to both `open_workspace` and `open_project`, survives restart, keeps
@@ -131,6 +132,23 @@ Last synchronized: 2026-08-08
   Its update log shows one prepared 353-package production install and no
   fallback warning; source, runtime commit, fingerprint, Doctor, SQLite, health
   and OAuth metadata agree.
+- Installed Codex canary closure is `IN VALIDATION`. Recent managed records
+  attributed 28.236 to 49.056 seconds to the external `codex-explorer` turn.
+  The former package-read prompt remained 52.096 seconds even at low effort.
+  Functional checkpoint `00ae449` now preserves the installed CLI, profile,
+  detached worker, explicit model, Codex adapter, account, structured result and
+  quota/strict-failure behavior while asking only for exact marker
+  `DPKR_HELIX_PROBE_OK` and prohibiting file access. It uses low effort only for
+  managed `gpt-5.6-sol`; other configured models retain profile effort. Direct
+  profile probes took 14.097 and 13.721 seconds and the candidate function took
+  14.571 seconds. Initial managed preflight rejected before replacement because
+  an existing test's artificial 100ms timer exceeded the 250ms default wait
+  under parallel load. Follow-up `80b853d` changes only that test process,
+  passed 20/20 focused repetitions and 68/68 complete regression, and is now
+  installed. Transition request `97a4513d-e247-451b-a82b-df80d490298a` took
+  348.274 seconds total / 307.018 seconds to runtime / 41.256 seconds closure,
+  but it began under the old max-effort canary. A state-only deployment through
+  the new installed updater remains the valid timing gate.
 - Two unmerged post-release upstream branches using host-installed Codex and the
   experimental `codex app-server` were classified as promising research, not a
   safe runtime replacement. A future isolated comparison must preserve
